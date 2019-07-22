@@ -1,0 +1,531 @@
+=========================================================================================================
+                                   Functions
+=========================================================================================================
+Functions usage => \name[optional arg]{agrs}
+If function doesnt take argument it can be used without curly brackets but this can be ambigous, it this
+case it is called next way {\name} Whitespaces after function are removed, therefore to leave them we need
+to use empty param {} or command
+
+---------------------------------------------------------------------------------------------------------
+                               Redefine function
+---------------------------------------------------------------------------------------------------------
+\renewcommand{\name}{
+....
+}
+
+For instance, to remove title
+\renewcommand{\maketitle}{}
+
+=========================================================================================================
+                                     Macro
+=========================================================================================================
+To creat new command use
+\newcommand{\name}[#how many arguments]{definition}
+positional arguments can be used like in a bash but with hashtag #num
+
+To creat macros use
+\def\name{definitopn}
+Now u can use it as any other function
+
+=========================================================================================================
+                                  Environments
+=========================================================================================================
+verbatim => displays text as is
+titlepage => generate title
+tabular => genearal table generating env
+
+=========================================================================================================
+                                 File structure
+=========================================================================================================
+Every input file must start with \documentclass, specifying the type of document author is going to write
+documentclass
+[ options
+twoside                 % To make document format book like, specify twoside class
+a4paper                 %
+draft                   % wount render imgs, usefull for big projects
+10pt                    % base font size
+titlepage/notitlepage   % whether a new page starts after a title page
+twoside/oneside
+letterpapter
+]
+{ class
+article
+proc    % ?
+minimal % sets only page size and base font, used for debugging
+report  % long reports, small books, PhD theses
+book    % real book
+slides  % consider beamer
+
+}
+
+User defined function and imports should be used before begin method
+Documment text area should be started with begin and and functions
+\begin{document}
+...
+\end{document}
+
+
+---------------------------------------------------------------------------------------------------------
+                                 Header/footer
+---------------------------------------------------------------------------------------------------------
+Header and footer can be configured using
+\pagestyle
+\thispagestyle
+
+
+---------------------------------------------------------------------------------------------------------
+                                  Adding title
+---------------------------------------------------------------------------------------------------------
+To add title, we should specify author and then add title
+
+\author{name}
+\title{Latex title}
+
+Now u need to call it from text area with
+\maketitle
+
+To change date, use before begin
+\date{date str}
+
+---------------------------------------------------------------------------------------------------------
+                                    Section
+---------------------------------------------------------------------------------------------------------
+To separate content of your writing, use
+\section{...}, \subsection{...}, \subsubsection{...},
+\paragraph{...},\subparagraph{...},\part{...},\chapter{...}
+
+Use start version of commands if you dont wont latex to number your section nor add it to \tableofcontents
+\section*{name}
+
+
+---------------------------------------------------------------------------------------------------------
+                                  Page spacing
+---------------------------------------------------------------------------------------------------------
+\vspace{.1em}                     % vertical space
+\usepackage[margin=1in]{geometry} % all margins on page
+ possible params => top, bottom, left, right, margin
+\filcenter                        % move text to center
+\newpage
+\clearpage
+\hrule height h width w depth d   %  black line
+\hrulefill                        %  extend \hrule to width of the scope
+\rule[height]{width}{thickens}    $ black box, can be used as line
+    \rule{\textwidth}{0.4pt}
+\paperwidth
+
+To increase gap between paragraphs use package called 'parskip'
+\baselinkeskip => line height
+\topskip => vertical spacing of the first line of a page
+\parindent => identifies indent of all paragpraphs except the first one
+
+To position elemnt in the center, it can be wrapped into environment like
+\begin{center} ... element ...  \end{center}
+---------------------------------------------------------------------------------------------------------
+                                  Line spacing
+---------------------------------------------------------------------------------------------------------
+\parskip
+\baselineskip => spacing between two lines
+\topskip      => vertical spacing of the first line of a page in relation
+                 to the default
+\parindent    => can be used to change indetatition of paragraphs except
+                 the first one
+
+
+=========================================================================================================
+                                     Fonts
+=========================================================================================================
+To change font size for part of the text, use
+{ \fontsize{size}\selectfont{lineheight} text \par on 2 new lines }
+A rule of thumb is that the baselineskip should be 1.2 times the font size
+Default documment clases have a limitation about fonts they support, for instance article will support
+11..14pt fonts, wich can be extended with packages
+http://www.sascha-frank.com/latex-font-size.html
+=========================================================================================================
+                                     Links
+=========================================================================================================
+\url{path}                         % Uses typewriter font
+                                   % Can be changed with \urlstyle{options}
+\href[options]{path}{text}
+
+
+=========================================================================================================
+                                    Comments
+=========================================================================================================
+To start a comment a line use %
+To comment more then one sentence a time usr
+\iffalse ... \fi
+
+or package comment, which provides comment environment
+\usepackage{comment}
+% uncomment to include stuff in standard comment-environment
+%\includecomment{comment}
+% define a mysection env which content is excluded
+\excludecomment{mysection}
+\begin{document}
+    This text will be displayed
+\begin{comment}
+    This text will only be displayed, if \includecomment{comment} was given
+\end{comment}
+\begin{mysection}
+    This text will only be displayed, if \includecomment{mysection} was given
+\end{mysection}
+\end{document}
+
+Or
+
+\usepackage{verbatim}
+\begin{comment}
+    This text will not be displayed.
+\end{comment}
+
+=========================================================================================================
+                                   Paragraphs
+=========================================================================================================
+\\                                 % Shorthand for \newline
+
+\par starts a new paragraph while \\ ends the current line
+Use \\ when u keep writing your idea and \par when u start a new one. However \par will make text les
+s readable, therefore new line is prefered, and \par is used when defining macros.
+---------------------------------------------------------------------------------------------------------
+                               \par vs \paragraph
+---------------------------------------------------------------------------------------------------------
+\par ends a paragraph, that is starts a new line
+\paragraph highlits section heading
+
+=========================================================================================================
+                                     Table
+=========================================================================================================
+To add contents table use
+\newpage
+\tableofcontents
+\clearpage
+
+=========================================================================================================
+                                   Numbering
+=========================================================================================================
+To renumber pages, firstly suppress numbering on pages u want to skip
+\thispagestyle{empty}
+Then set counter to one
+\setcounter{page}{1}
+
+To change style of page numbering use
+\pagenumbering{roman/arabic/...}
+
+=========================================================================================================
+                                     Dates
+=========================================================================================================
+\today
+
+=========================================================================================================
+                             Page break vs new page
+=========================================================================================================
+To start a new page, u can issue \pagebreak or \newpage, the difference between them is that break will
+stretch content of page so it doesn`t looks empty and new page will start new page without stratching
+
+=========================================================================================================
+                                 Text formating
+=========================================================================================================
+To start new line in compiled file u need to add new lines in tex
+variant
+
+line 1      ==\   line1
+            ==/   line2
+line 2
+
+\textbf{This text will be bold}        % bold text
+{\bfseries ... }
+\textit{This is italic}                % italic
+\enph{This is emphatic}                % emphatic, by default italic but can be redefined
+\underline{This is undeline}           % underline
+``Proper quotation''                   % smart quotes
+                                         `Proper quotation'
+\paragraph                             % paragraph
+\noindent                              % start without indent, works for one paragraph
+
+Sizing tiny => small => large => Large => huge => Huge
+
+---------------------------------------------------------------------------------------------------------
+To justify test, you can use one of the following environments: center, flushleft, flushright, or if you
+are already within some environment, you can switch justification with \raggedright \raggedleft
+Another solution is to fill free space, like "Left word\hspace*{\fill}Right word"
+
+=========================================================================================================
+                                     Lists
+=========================================================================================================
+To start ordered list use
+\begin{enumerate}
+\item item1
+\item item2
+\end{enumerate}
+
+To start unordered list use
+\begin{itemize}
+...
+\end{itemize}
+
+---------------------------------------------------------------------------------------------------------
+Item spacing
+---------------------------------------------------------------------------------------------------------
+Remove space between list items
+\usepackage{enumitem}
+\setlist{nolistsep}
+or make change length before adding items
+\setlength\itemsep{1em}
+---------------------------------------------------------------------------------------------------------
+To change left indentation, use
+\setlength{\itemindent}{-10pt}
+Or there is optional agrument to itemize,
+\begin{itemize}[leftmargin=*]      % Locally applied changes
+\begin{itemize}[leftmargin=0px]    %
+\setlist[itemize]{leftmargin=*}    % Globally applied changes
+
+---------------------------------------------------------------------------------------------------------
+Using custom bullet points
+---------------------------------------------------------------------------------------------------------
+To use castom word/symbol instead of default, use item optional field
+\item[name]val
+
+To hide bullet points use one of following
+\item[] val                     % empy bullet point character
+\renewcommand{\labelitemi}{}    % redefine labelitem, changes default behavior for entire file
+
+
+=========================================================================================================
+                                    Columns
+=========================================================================================================
+To switch between one and two column layout, use
+\twocolumn
+..........
+\onecolumn
+
+Or more styled version, where # is number of columns
+\begin{multicols}{#}
+...
+\end{multicols}
+
+Package allows explicitly to specify column break with
+\columnbreak
+
+Otherwise, they can be made with minipages
+\begin{minipage}[position]{width}
+  text
+\end{minipage}
+=========================================================================================================
+                              Labels && References
+=========================================================================================================
+In case u want to refence one section from another , use labels and references
+Label section u will refere to
+Use ref function in place of refering
+
+\section{1}
+In this section i want to reference \ref{my_label}
+
+\section{2\label{my_label}}
+a
+Ref will return object number, therefore we need to clarify context
+It takes double recompilation to make them point to right object
+Page number of refence can be shown with \pageref{label}
+
+=========================================================================================================
+                                     Notes
+=========================================================================================================
+To add footnote use \footnote{text} after text that should contain reference
+Footnote will be displayed down and a reference to it HERE\footnote{note}
+
+=========================================================================================================
+                                   Using imgs
+=========================================================================================================
+Use package
+\usepackage{graphicx}
+
+Use tag
+\includegraphics[
+width=0px,
+width=\textwidth,
+height=0px,
+angle=90
+scale=0.5
+keepaspectratio,
+]{img_name.ext}
+
+As well u can use package that gives more flrxibility to img usage
+\usepackage(blindtext)
+
+Then enclose picture into figure
+\begin{figure}[
+h   % display in written order
+t   % put figure at the top of the page
+b   %                   bottom
+p   % new page for picture
+]
+\includegraphics{picture}
+\caption{This phrase will be displayed under picture}
+\end{figure}
+
+Nex extensions are supported => png,jpg,gif,pdf
+=========================================================================================================
+                                Wrapping figure
+=========================================================================================================
+Use package
+\usepackage{wrapfig}
+
+And tag
+\begin(wrapfigure)
+% orientation
+{
+    r,  %right
+}
+{3in} % space
+%   Img or phrase that will be wrapped
+\end(wrapfigure)
+
+=========================================================================================================
+                                      Math
+=========================================================================================================
+To enter math mode during sentence use $$
+supersciprts: $2x^3$
+or to start expression from new line $$..$$
+
+Opearions like exponent takes only one symbol after ^, if you need more,
+wrap all symbols into {}
+x^{123}
+
+greek letters =>
+\pi
+\alfa
+...
+
+Trig functions =>
+\sin{x}
+...
+
+Log functions =>
+\log{x}
+\log_2{x}
+\ln{x}
+
+Square root =>
+\sqrt{value}
+\sqrt[root]{value}
+
+Fraction => \frac{enum}{denom}
+To expand parenthesis/brackets/curly braces  around fractions, use left and right
+\left(\frac{2}{5}\right)
+Note \left expects \right next to it, otherwise u will get an error. Workadround for this is dot
+\left[ ... \right. or \left. ... \right]
+
+Tables
+\begin{tabular}{columns orientation,
+c => centered}
+
+to switch collumns use &
+to switch row use \\
+to separate rows use \hline
+to separate columns use | in orientation part
+
+1 & 2 & 3 \\ \hline
+1 & 2 & 3
+
+\end{tabular}
+
+Equation arrays
+\begin{eqnarray}
+x+y=y+x
+x+y+z=z+y+x
+\end{eqnarray}
+
+To allign all rquations by some sign, like equal, escape it with &sign&
+To hide line numbering, add asterisk to eqnarray in env
+
+Size of inline math functions is choosen so it can fit line, since it can be non readable
+we can use default size with \displaystyle{\func}
+
+=========================================================================================================
+                                   Debugging
+=========================================================================================================
+Extra logging, append after begin{document}
+\tracingall
+
+=========================================================================================================
+                                   Modulation
+=========================================================================================================
+To include another file, use \include{filename}, this will start a new page, unless was called from a preamble.
+To explicilty define files that can be include throughout file, u can specify them in preamble
+\includeonly(name1,name2,...). Any another include will be ignored. If u want to insert file without
+starting a new line, use \input(name)
+
+=========================================================================================================
+                          Indentation and hyphenation
+=========================================================================================================
+Latex is always trying to produce the best line breaks possible and if there is no way to break the lines
+in a manner that meets its standart, it lets one line to stick out on the right of the paragraph. This will
+involve 'overgull hbox' error during compilation. To lower standart use \sloppy, this will recalculate
+spacing between words even if output is not optimal. Use \fussy to undo last command.
+
+To redefine hyphenation for word u can use \hyphenation{words ... wo-rd-s} where '-' defines in which
+places word can be divided. This can be used if latex hyphenation algorithm is not optimal, or u want to
+dissalow hyphens for a word. Latex may not know whether hyphen is need in words with characters like
+accents etc. In this case u can define them explicitly with '\-' therefore during compilation, if
+hyphenation will be used if new line starts and ignored otherwise
+
+To logically join multiple words, so they wont be split between multiple lines u can use \mbox{text}
+=========================================================================================================
+                                     Dashes
+=========================================================================================================
+There is four kinds of dashes
+hyphen => -
+en-dash => --
+em-dash => ---
+minus sign => $-$
+=========================================================================================================
+                                     Tilde
+=========================================================================================================
+Small in upper part => \~{}
+One big => $\sim$
+=========================================================================================================
+                                     Slash
+=========================================================================================================
+Can be simply tiped like qwe/ewq but this disables hyphenation.
+Use \slash to allow hyphenation, instead
+
+=========================================================================================================
+                                     Files
+=========================================================================================================
+.sty => macro package, loadable with \usepackage
+.dtx => docs for packages
+.ins => package installer, use latex on it
+.cls => class files, selected with \documentclass
+.fd  => font description for latex
+
+=========================================================================================================
+                                Internalization
+=========================================================================================================
+To use another languages, use next packages
+\usepackage[utf8]{inputenc}
+\usepackage[english, ukrainian, ... <languages>]{babel}
+
+=========================================================================================================
+                                     Random
+=========================================================================================================
+To add lorem ipsum, use
+\blindtext
+Or use pacakge
+\usepackage{lipsum}
+\lipsump[#num of lines]
+
+Make pdflatex abort on compilation error
+pdflatex
+-halt-on-error    # exit with status code
+-file-line-error  # display line and file with error
+-interaction=
+nonstopmode   # tex stop on serious error
+errorstopmode # stop on any error
+scrollmode    # doesn`t stop on erros but requests for input on seriour error
+batchmode     # preevnts any output, but keeps log, intended for scripting
+
+PS (PostScript) => file format describes text and graphics on page and is based on vector graphics.
+PostScript is a standart in desktop publishing areas
+
+PDF (Portable Document Format) => file format ,based on PostScript, used to represnt documents in a manner
+independent of application software, hardware, and OS. It is now widely used as a file format for printing
+and for disctibution on the Web

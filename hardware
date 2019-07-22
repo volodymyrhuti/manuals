@@ -1,0 +1,95 @@
+=========================================================================================================
+                                   Baud rate
+=========================================================================================================
+Baud rate. Rate at which information is trasferred in a communication channel. In the serial port context
+9600 baud means that hte serial port is capable of transferring a maximum of 9600 bits/second. The higher
+the baud rate, the more sensitive the cable becomes to the quality of installation, such as how much of
+the wire is untwisted around each device.
+The most common RS232 format requires 10 bits to send each byte, so at 9600 baud you can send 960 bytes
+per second.
+A baud rate can also be expressed in kHz, so 9600 baud is 9.6kHz. It means the same thing
+
+To get characteristics of your terminal or serial port issue `stty -F /dev/ttyS<n>`
+By default serial ports are configured as terminal emulator (canonical mode). If you want to use them as
+"raw" serial port you will have do `stty -F /dev/tty<S0> raw -echo -echoe -echok` 
+You can write/read from such device, like
+echo 123 > /dev/ttyS0
+cat /dev/ttyS0
+
+TODO Herz
+www.armadeus.org/wiki/index.php?title=Serial_ports_usage_on_Linux
+https://www.microchip.com/forums/m105451.aspx
+=========================================================================================================
+
+CPU => Central Processing Unit
+MPU => Micro Processing Unti
+MCU => Micro Computer Unit or micro controller, is non general purpose 'computer' used
+to controll another hardware device
+SOC => System on chip, is an MCU with application processor ?
+MCM => Multi chip module 
+PCBA => Printed Circuit Board Assemblie
+
+
+JTAG => Joint Test Action Group, protocol 
+Boundary scan => additional circuit on chip used for debugging. Is small element
+connecting chip I/0 to external resources, one element/pin, which are interconnected
+and goes to JTAG controller
+
+      ||||
+|---------------|
+| Boundary scan | ==================|
+|---------------|                   |
+      ||||                  =================== ---> TDO
+|---------------|           | JTAG controller | <--- TDI
+| Chip I/O      |           |                 | <--- TCK
+|---------------|           =================== <--- TMS
+
+TDO => data out
+TDI => data in
+TCK => clock
+TMS => managment
+
+JTAGs can be chanined with TDO of one circuit connected to TDI of another, this
+allows you to test pins of multiple chips interconnected
+
+
+BSDL (Boundary Scan Description Language) => variant of VHDL used for describing
+JTAG scheme by manufacturer, needed to run boundary scan
+
+PCB (printed circuit board) => mechanically supports and electrically connects electronic/electrical
+components using conductive tracks, pads and other features etched from one or more sheet layers
+of copper laminated onto and/or betweeb sheet layers oa non-conductibe substrate. Components are both
+mechanically and electrically connected to PCB. It is used for everythin except the simplest electronic
+products. This about it as plastick sheet covered with elements and paths that interconnect them.
+Alternatives wire wrap and point to point construction.
+
+Wire wrap => electronic components mounted on insulating board are interconnected by lenghs of
+insulated wire run between their terminals, with the connections made by wrapping several turns of
+uninsulated sections of the wire around a component lead or a socket pin. It is old techology
+used for telephone switches and later used for prototyping since it can be well automated and
+easily fixed by hand.
+
+IC => integrated circuit or monolithic integrated circuit (or IC, chip, microchip) is a set of electronic
+circuits on one small flat piece (or 'chip') of semiconductor material that is normally silicon.
+
+SMT (Surface-mount technology) => is a methid for producing electronic circuits in which the components
+are mounted or placed directly on the surface of PCB.
+
+SMD (surface-mount device) => an electronic device made with SMT. They may have short pins or leads of various
+styles, flat contacts, a matrix of solder balls (BGAs), or terminations on the body of the component
+
+BGA (ball grid array) => type of surface-mount packaging used for IC. It is used to permamently mount devices such
+as microprocessors. 
+
+
+SPI (Serial Perhipheral Interface) => a way fro microcontrollers to communicate with each other or with
+the outside world. Is just another serial port on a device?
+
+Microcontroller programmer => hardware device + doftwware used to transfer binary to the microcontroller
+EEPROM from PC. It contains a preprogrammed microcontroller which takes data from PC and using 
+protocols like SPI, parallel interfacing, CAN programs the target controller. If device has a bootloader,
+it can self burn, in this case there is only task to trasfer program from PC to target
+
+If you want to program the chip through USB, the chip needs to be preprogrammed with a bootloader from the
+factory, The bootloader is called DFU Bootloader?
+=========================================================================================================

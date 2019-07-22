@@ -1,0 +1,161 @@
+=========================================================================================================
+                               Mutex vs Semaphore
+=========================================================================================================
+Mutex and semaphore are kernel resources that provide synchronization services (also called as synchronization
+primitives). Lets look at them in scope of producer-consumer problem ( producer fills 4096 byte buffer,
+consumer reads it, threads should not run at the same time).
+
+Using Mutex:
+A mutex provides mutual exclusion, either producer or consumer have the key (mutex) and proceed with their
+work. At any point of time, only one thread can work with the entire buffer. The concept can be generalized
+using semaphore. Using Semaphore:
+# A semaphore is generalized mutex. We can split the 4KB buffer into four 1KB buffers (identical rersources).
+A semaphore can be associated with these four buffers. The consumer and producer can work on different
+buffers at the same time.
+# It`s a way to limit the number of consumers for a specific resource
+
+# It is a counter that is manipulated atomically through two operations: signal and wait
+---------------------------------------------------------------------------------------------------------
+                           Binary semaphore != mutex.
+---------------------------------------------------------------------------------------------------------
+Mutex is locking mechanism, only one task can acquire the mutex => it means there is ownership associated
+with mutex and only the owner can release the lock(mutex) Semaphore is signalling mechanism ("I am done,
+you can carry on")
+
+Mutex can be recursive => locked many times and unlocked the same amount. If one tries to lock again
+non-recursive mutex, it will enter into the waiting list of that mutex, whcih may result in deadlock if
+one thread tries to lock the same mutex twice
+
+---------------------------------------------------------------------------------------------------------
+                                Semaphore usage
+---------------------------------------------------------------------------------------------------------
+- wait (semaphore) => decrement, if counter == 0. block until semaphore is signaled
+  Also called P(), after Dutch word for test, also called down()
+- signal (semaphore) => increment counter, wake up one waiter if any
+  Also called V(). after Dutch word for increment, also called up()
+- sem_init(semaphore, counter): set the first counter value
+
+Since wait and signal are critical sections, they are required to be runned with respective atomicity,
+therefore usually they are syncronized with a spinlocks. It has list of associated processes, when
+- wait is called =>
+  if semaphore is available, thread continues
+  if semaphore is unavailable, thread blocks, waits on queue
+- signal is called =>
+  if thread(s) are waiting, one from list is unblocked
+  if there is no threads waiting, counter is incremented
+
+
+=========================================================================================================
+                       Monitors and Conditional Variables
+=========================================================================================================
+There are situations when semaphores are not flexible enough and we need another solution.
+- cannot capture relationships with only semaphores
+- need extra state variables to record information
+- use semaphores such that => 
+ - one is for mutual exclusion around state variables
+ - one for each class of waiting
+
+To solve this problem people invented monitors. This can be a programming languare construct or user library.
+In programming languages this is a construct that supports contolled access to shared data. Compiler will
+generate locks, and aquire/release around critical sections + this may be less buggy than hand written.
+Example is synchronized method in Java that can be runned by one thread a time?
+Monitor is a software module that encapsulates =>
+- 'shared data' structures
+- 'procedures' that operate on the shared data
+- 'synchronization' between concurrent processes that invoke those procedures
+It protects the data from unstractured access => guarantees only access data through procedures
+
+A monitore provides mutual exclusion between all threads for shared resources and other threads are required
+to enter queue. Monitor is more restrictive then a semaphore but it has option to sleep or unblock another
+thread when can`t continue. This is done using conditional variables, that can wait or signal one thread
+in queue or all together . Condtional variables are encapsulated inside monitor. Difference between
+conditional variables and semaphores is that semaphores have history (counter) and conditional variables
+notify last thread in queue. However notifier can keep lock for cpu, callee thread can not start until
+notifier has finished. Therefore there is time interval between notify receive and start during which state
+variable could change. This implies that we need to recheck state of conditional variable and return to sleep
+if needed. wait lets thread to add itself to queue and release the lock without worrying that some one has entered
+function and send signal faster then you waited. When thread is notified, it awakes and waits to reaquire
+the lock.
+
+Example with a bug =>
+struct counter {
+    int count;
+    thread_mutex lock;
+    threda_cond above_zero;
+}
+increment(struct counter *c){
+    thread_mutex_lock(&c->lock);
+    int n = c->count;
+    c->count = n+1;
+    if (c->count > 0)
+        pthread_cond_signal(c->above_zero);
+    thread_mutex_unlock(&c->lock)
+}
+decrement(struct counter *c){
+    thread_mutex_lock(&c->lock);
+    int n = c->count;
+    c->count = n-1;
+    thread_mutex_unlock(&c->lock)
+}
+print_val(struct count *c){
+    thread_mutex_lock(&c->lock);
+    if(c->count <= 0)
+        thread_cond_wait(&c->above_zero,&c->lock)
+    thread_mutex_unlock(&c->lock)
+}
+
+T1 => increment , c->count == 1, signal
+T2 => decrement , c->count == 0
+T3 => print , wake up, c->count ! <= 0
+Proper way is to check and wait in loop
+    while(c->count <= 0)
+        thread_cond_wait(&c->above_zero,&c->lock)
+
+Conditional variables gives ability to cover multiple conditions. For instance, there may be multpile users
+trying to withdrow funds from a bank, and if there is nit much funds but we can still supplie at list one
+client, we can signal all of them that money are awailable, but each of them will check if there is enough
+individually and go to slip if not
+
+Should we always protect conditional variable with a mutex?
+Yes, otherwise two thread may enter function an signal can be send before wait. This mutex protects you
+till wait. Conditional variables don`t have history (counter on semaphore) therefore signals can be missed.
+
+=========================================================================================================
+                             Test and set approach
+=========================================================================================================
+The simplest possible lock is implement with bool flag called lock. We would aquire it with aquire() function
+and release with release. Another thread in meantime would sit in loop checking when lock == false and it can
+continue. This would look like this
+
+aquire(){ lock = true; }
+release(){ lock = false; }
+
+while (!lock){ wait() }
+# If there is no lock we aquire it
+acquire()
+# Critical section
+release()
+
+The problem with this approach is that multiple threads may check lock and try to aquire
+Hardware support is used to resolve this problem using test and set instruction. 
+Pseudo code =>
+bool test_and_set (bool *flag) {
+    bool old = *flag;
+    *flag = true;
+    return old;
+}
+
+This is done in one assembly instruction and what is important, reading and writing is done
+atomically, meaning that no one can modify variable while u are reading. Now acquire looks
+next way
+acquire(lock) {
+    while(test_and_set(&lock->held))
+        wait();
+}
+
+Possible values =>
+# Initially lock if false, then we set it to true and return false => while breaks => we skip waiting
+# Lock if true, we rewrite lock with, true and retrun true => while is running => we are waiting
+
+
+

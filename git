@@ -1,0 +1,451 @@
+=========================================================================================================
+                                      Git
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                                 Debug options
+---------------------------------------------------------------------------------------------------------
+GIT_CURL_VERBOSE=1                         # use these before as prefix to cmd
+GIT_TRACE=1                                # being issued
+GIT_TRACE_PACKET=1
+GIT_REFLOG_ACTION="<description>" <intf>   # description displayed in reflog
+
+GIT_CURL_VERBOSE=1 GIT_TRACE=1 GIT_TRACE_PACKET=1 
+=========================================================================================================
+                                    Branches
+=========================================================================================================
+Branch => active parallel line of development, usefull for isolation and separation different types of work.
+A single repository can have an arbitrary numer of branches. There are next types of brnaches =>
+Branches on local machine
+* Local branch
+  To list local branches issue `git branch`
+* Non-tracking local branch
+  Standalone branches not associated with any other branches, newly crated branches with `git branch <name>`
+* Local-tracking branch
+  Branch associated with remote tracking. To list local tracking/nontracking branches issue `git branch -vv`
+  <name> <hash> [optional tracking branch]
+* Remote tracking branch
+Branches on remote machine
+* Remote branch
+
+Default branch (probably named master) is considered the base branch in your repository, against which
+all pull requests and code commits are automatically made unless you specify a different branch. Note
+that this applies only to GitHub and not git. This way people will, by default, clone branch defined by
+you, and upstream will be the same  branch? but this doesn`t stop you from commiting into master.
+There is option to set hooks with permisions on branch therefore, you can specify who can change branch
+and don`t.
+
+When you pull like `git pull origin master`, chages from master will be pulled into whichever branch is
+currently checked out.
+
+https://help.github.com/en/articles/setting-the-default-branch
+---------------------------------------------------------------------------------------------------------
+git push <remote> <branch_name>                             # push branch to remote 
+                                                              local branch has the same name as remote
+git push origin <local_branch>:<branch_on_remote>
+git branch --set-upstream my_branch origin/origin_branch    # set upstream branch
+            -u <remote> <branch>                            # -u is short for set-upstream
+            -d <branch_name>                                # delete branch name
+            -b <branch_name>                                # create and checkout branch
+           --contains <commit>                              # will show all branches containing commit
+                                                              not very usefull if commit`s already been merged
+            -r                                              # list branches on the remote
+            -a                                              # list all (local?) branches
+            -m <newname>                                    # rename current branch
+            -m <oldname> <newname>                          # rename any branch
+=========================================================================================================
+                                Fetching
+=========================================================================================================
+To fetch one branch from remote, use
+git fetch <remote> <remote_branch>:<local_branch>           # fetch branch from remote into local non existing branch
+git checkout <local_branch>
+=========================================================================================================
+                                     Applying
+=========================================================================================================
+git apply --check             # dry run
+git apply --reject            # apply any valid hunks and save rejected to *.rej files
+
+If git apply makes no output, and changes are not applied, try -v flag. If there is no output as well
+check paths used during patch creating and try applying from another directory.
+
+If you need to apply big patch, and it fails on many hunks, you can use -3 (--3way) flag to merge conficts
+by hand after applying.
+
+https://www.drupal.org/node/1129120
+---------------------------------------------------------------------------------------------------------
+                                      Show
+---------------------------------------------------------------------------------------------------------
+git show --pretty="" --name-only commitHash -> lists commited files
+git show #commithash
+git show <hash>:<file>      # look at file at specific commit
+
+---------------------------------------------------------------------------------------------------------
+                                Unstaged changes
+---------------------------------------------------------------------------------------------------------
+git clean
+          -n        # display which files will be cleaned
+          -f        # remove unstaged files
+          -f <flag> # force
+          -f -d     # delete unstaged directories
+          -f -X     # delete unstaged ignored file?
+          -f -x     # delete unstaged ignored and non-ignored files?
+
+git trash
+=========================================================================================================
+                                      Tags
+=========================================================================================================
+git tag -a <tag> <hash> -m "Create tag ..."       # set tag for specific commit, if hash is not defined
+                                                    last commit will be tagged
+git push --tags                                   # push tags
+
+git tag -l | xargs git tag -d && git fetch -t     # delete local(all) unpushed tags
+git push --delete <origin> <tag>                  # delete tag remotly
+git push <remote> :<tag>                          #
+                                                  ! NOTE don`t forget do delete locally
+git tag -d <name>                                 # delete tag locally
+
+git tag -l -n<count> [tag_regex_name?]            # print tags with description message
+git tag -l --points-at <hash>                     # list tags pointing to commit
+git rev-parse <tag>^{}                            # to get hash of tagged commit
+              <tag>{}                             # to get hash of tag
+              -d <tag>                            # to get hash of both
+
+---------------------------------------------------------------------------------------------------------
+        Updating tags
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/7813194/how-do-i-edit-an-existing-tag-message-in-git
+git tag <tag> <tag>^{} -f -m "<new message>"      # replace tag message
+                       -f -a                      # opens editor for message
+---------------------------------------------------------------------------------------------------------
+Replace tag flow
+---------------------------------------------------------------------------------------------------------
+git tag <new_tag> <old_tag>                 # create new tag aliasing old one
+git tag -d <old_tag>                        # delete locally old
+git push <remote> :refs/tags/<old_tag>      # delete remotely
+git push --tags
+
+annotated tags?
+unshallow ?
+---------------------------------------------------------------------------------------------------------
+To list unpushed tags issue one of the next
+---------------------------------------------------------------------------------------------------------
+git show-ref --tags | grep -v -F "$(git ls-remote --tags <remote name> | grep -v '\^{}' | cut -f 2)"
+git push --tags --dry-run           # -n can be used instead of --dry-run (requires to have permisions
+                                      for remote)
+
+=========================================================================================================
+                                      Logs
+=========================================================================================================
+git log --author=Smith
+git log --diff-filter=A                 # commit when file was added
+git log --follow -- filename            #  -- all commits touching file 
+git log
+        --pretty=oneline                # hash + commit in 1 line
+        --pretty=fuller                 # by default git log displays date when commit was made locally
+                                          but not when pushed, this option display both timestamps
+                                        
+git log --abbrev-commit --pretty=oneline        -- short hash + commit in 1 line
+git log --oneline --decorate  --all --graph
+git grep -n ‘log_syslog’ v1.5.3.8 v1.0.0 -- *.c
+git log --merges <commit>..             -- to see merge commits that have the given commit as an ancestor.
+git log --graph --oneline --all
+git log --all-match --grep=frotz --author=Linus     -- word and author within entire file
+    --since=1.month
+    --author
+git shortlog                        -- commit message + empty line + summary
+
+git log -S<word> -- path            -- find commit where word was added or removed but not moved
+        -G<wold> -- path            -- find commit adding, removing or moving regex
+            --since=<date> --untill=<date>
+
+#   Files
+git log --stat #hash                -- files + some stats
+        --name                      -- name only
+        --name-status               -- name + status (one letter abriviation)
+
+---------------------------------------------------------------------------------------------------------
+                                     Config
+---------------------------------------------------------------------------------------------------------
+   git config --global alias.whatadded 'log --diff-filter=A'   --adding alias
+---------------------------------------------------------------------------------------------------------
+                                     Reflog
+---------------------------------------------------------------------------------------------------------
+git reflog                          -- create a branch for deleted commit so it won`t be cleaned 
+git reflog show --all | grep <commit_hash>      -- can be use to find first occurence of commit
+=========================================================================================================
+                                    Merging
+=========================================================================================================
+Fast-forward merge, can be used when ther is not diverge between branches that want to merge. This will
+just move branch head to merged branch head. Note, there will be no history showing that this merge has
+occured, if you want to save it there is special flag.
+
+Three-Way merge, occurs when there is dirverge between branches. This merge creates an extra commit to tie
+together the two branches.
+
+When merge occurs, diverged hunks will be outlined with 
+<<<<<<<<<<<<< Conflict marker, conflict starts here
+============= Divider, divides changes done by commits
+>>>>>>>>>>>>> End of confilct
+
+https://dev.to/neshaz/how-to-use-git-merge-the-correctway-25pd
+---------------------------------------------------------------------------------------------------------
+            Merge history
+---------------------------------------------------------------------------------------------------------
+git diff-tree -cc <hash>    # to see merge resolving
+                            #or maybe -c ?
+---------------------------------------------------------------------------------------------------------
+                Merge vs Rebase
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+                              Undoing && Reverting
+---------------------------------------------------------------------------------------------------------
+git revert  -- for already pushed commits 
+git reset HEAD^        -- moves head to a specific commit (doesnt remove changes)
+        --hard
+        --soft
+git checkout file : to clean file from chages since commit
+git bisect start
+            goot 
+            bad
+            visualize :(gtk)
+            run <script>
+---------------------------------------------------------------------------------------------------------
+                                   Submodules
+---------------------------------------------------------------------------------------------------------
+git submodele add ../mainmod.git submod
+git submodule update
+
+
+---------------------------------------------------------------------------------------------------------
+                                    Stashing
+---------------------------------------------------------------------------------------------------------
+git stash
+git stash list
+git stash apply
+git stash apply stash@{#}
+
+git stash show -p       
+git stash show -p stash@{any}
+---------------------------------------------------------------------------------------------------------
+                                    Rebasing
+---------------------------------------------------------------------------------------------------------
+git rebase <dst> : chage <<current branch>> base commit to point for <dst>
+git rebase -i HEAD~5   -- redo content/msg of last local commits
+git rebase -i          -- rebase for all unpushed commits
+            fixup       -- clears commit message and merge content
+            squash      -- merger changes and lets you to give new commit message
+git rebase --continue
+            —abort
+
+#rebase preferring current branch changes merge during conflicts
+git rebase -Xtheirs branch-b
+       -Xours       #will apply their changes
+It is reversed for git merge
+git merge -Xours origin/master  #to leave your changes over master
+
+---------------------------------------------------------------------------------------------------------
+                                     Clean
+---------------------------------------------------------------------------------------------------------
+git clean           # remove untracked files and directories
+            -f      # force, is required if clean.requireForce == true
+            -d      # remove directories as well
+            -i      # interactive
+            -n      # dry run
+
+---------------------------------------------------------------------------------------------------------
+                                   Commiting
+---------------------------------------------------------------------------------------------------------
+git commit --amend --no-edit
+git commit --amend -m "Your new commit message"
+git commit --amend <<< :wq  -- will merge last commit and current changes?
+=========================================================================================================
+                                     Diffs
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                          Diff strategies(algorithms)
+---------------------------------------------------------------------------------------------------------
+There are 4 different diff strategies: myer, patience, histogram and minimal. Myer is the default mode
+that is used when taking diff, it is faster then others but quality isn`t the best. Patience was the first
+implementation of quality oriented diff. histogram is version implemented by jgit project that is supposed
+to be both fast and provide decent quality. Minimal is extension of myer, which will perform for some
+predefined CPU time and then return the best (smallest) diff it made.
+To define one algorithm by default there is configuration variable diff.algorithm that can be one of the
+    'myers' 'minimal' 'patience' 'histogram'.
+
+
+It is possible to use external diff engine by defining GIT_EXTERNAL_DIFF
+
+https://stackoverflow.com/questions/19949526/examples-of-different-results-produced-by-the-standard-myers-minimal-patienc
+https://fabiensanglard.net/git_code_review/diff.php
+https://stackoverflow.com/questions/32365271/whats-the-difference-between-git-diff-patience-and-git-diff-histogram
+---------------------------------------------------------------------------------------------------------
+                                    vimdiff
+---------------------------------------------------------------------------------------------------------
+If you want to view difference between file and patch (like you would apply patch and check diff), issue
+  vim <file>
+  :vertical diffpatch <diff_path>
+or
+  vim file +'vert diffpatch <diff_path>'
+This is equivalent to calling vimdiff on original and patched file, but vim calls patch on a temporary
+file for you. If patch applies to another files as well, diff will give you choise to skip them.
+
+Hotkeys for vimdiff
+do      # get changes from other window into current (dg?)
+dp      # put the changes from current window into the other window
+]c      # jump to the next change
+[c      # jump to the previous change
+
+https://stackoverflow.com/questions/242646/use-vimdiff-with-a-diff-file
+---------------------------------------------------------------------------------------------------------
+
+git diff --no-index <file1.txt> <file2.txt>           # diff on non git files
+git diff --staged                                     # same to git diff HEAD
+patch -p1 < patch.diff                                # apply patch, remove first dir from paths in patch
+
+To take diff for all file of one type issue `git diff -- '*.c' '*.h'` or if you want it to be recursive
+shopt -s globstar
+git diff -- *.py **/*.py
+
+https://stackoverflow.com/questions/8554776/how-to-filter-git-diff-based-on-file-extensions
+---------------------------------------------------------------------------------------------------------
+                                      Gui
+---------------------------------------------------------------------------------------------------------
+gitk
+git instaweb --httpd=webrick
+
+---------------------------------------------------------------------------------------------------------
+                                    diffall
+---------------------------------------------------------------------------------------------------------
+git-diffall : open all diffs at once
+git diffall rev1..rev2
+
+#!/bin/sh
+git diff --name-only "$@" | while read filename; do
+    git difftool "$@" --no-prompt "$filename" &
+done
+=========================================================================================================
+                                Low level-staff
+=========================================================================================================
+git rev-parse HEAD          : returns hash of HEAD
+git cat-file commit HEAD        : returns hash of tree + additional info like author and comiter
+             -t HEAD    : shows type of object
+             -p <object>    : instructs the command to first figure out the type of content, then display it appropriately
+git ls-tree #commit         : get hash for tree of commit
+git ls-tree #hash           : shows what files tree references
+git hash-object <object>        : adds object to objects/ and prints hash
+git write-tree              : write the staging area out to a tree object
+GIT_CURL_VERBOSE            : to show curl flow
+GIT_REFLOG_ACTION  <git operation>  : to add comment into reflog for operation
+---------------------------------------------------------------------------------------------------------
+                             Restore file by commit
+---------------------------------------------------------------------------------------------------------
+git reset <hash> <filename>
+git checkout <hash> -- <filename>
+
+=========================================================================================================
+                            Clone and Fetch
+=========================================================================================================
+To get your local copy of remote repository issue `git clone <url>`, which by default will get full copy
+of specified branch (master by default?) and metadata for other branches (saved under .git). However, such
+version may include huge history which you may don`t need for your use case. To overcome this issue, you
+can have partial/shallow copy. There are two types of partial clone.
+1. Shallow clone, has all changes from last revision, you define depth of history you want to have using
+   `git clone --depth=<number> <url>`. Note that this depth is applied for all branches and they may become
+   orphaned (no shared parent). In case of orphaned branches, it is not allowed to performe merge/rebase
+   since there is no common ancestor. It is possible to perform pull/push on such repos, since you have
+   tip of branch.
+2. Sparce clone, has subset of features from repository, defined by filter.
+
+If you want full copy or remote with all branches and their history, use --bare option.
+If you want to make full clone from shallow clone, issue 
+git fetch
+      --unshallow
+      --shallow-since=day/month/year
+      --deepen=<depth>                 # incremental one, number of commits from the current shallow
+                                         boundary instead of from the tip of each remote branch history
+                                         Note, this by default assumes --single-branch flag but can be
+                                         overriden with --no-single-branch
+      --update-shllow
+      --depth=1000000000               # literally download all commits and tags(?) from repo
+      --tags/--no-tags                 # by default tags that points into the history being fetched are
+                                         also fetched.
+
+      --single-branch
+
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git fetch origin
+---------------------------------------------------------------------------------------------------------
+                                   FETCH_HEAD
+---------------------------------------------------------------------------------------------------------
+Short lived ref(?), to keep track of what has just benn fetched from the remote repo. It points to the tip
+of new fetched branch. Git pull merges FETCH_HEAD into active branch. It`s value is saved under
+.git/FETCH_HEAD
+
+---------------------------------------------------------------------------------------------------------
+                            Cloning part of project
+---------------------------------------------------------------------------------------------------------
+git clone sparse # still downloads all history but lets to checkout only part of project
+git clone --filter
+
+https://unix.stackexchange.com/questions/233327/is-it-possible-to-clone-only-part-of-a-git-project
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/42906152/git-clone-by-default-shallow-or-not
+=========================================================================================================
+Special characters
+=========================================================================================================
+HEAD => points to last commit in repo
+@ => alias for HEAD, can be like
+git diff HEAD~ HEAD  == git diff @~ @
+
+=========================================================================================================
+Rules for making good commit
+=========================================================================================================
+Why is this change necessary?
+How does it address the issue? (describe at high level what was fone to affect change)
+What side effects does this change have?
+
+
+Write your commit message in the imperative: "Fix bug" and not "Fixed bug" or "Fixes bug."
+# 50-character subject line
+#
+# 72-character wrapped longer description. This should answer:
+#
+# * Why was this change necessary?
+# * How does it address the problem?
+# * Are there any side effects?
+#
+# Include a link to the ticket, if any.
+=========================================================================================================
+                        Misc
+---------------------------------------------------------------------------------------------------------
+wget --no-check-certificate --content-disposition https://URL-RAW   # download one file
+curl -LJO                                                           #
+=========================================================================================================
+ Amending
+=========================================================================================================
+To change commit msg or merge currently staged objects to your last local commit, from directory with
+repository issue (commit window will popup)
+  git commit --amend
+  git commot --amend --no-edit     # if you don`t want to change commit message
+=========================================================================================================
+Index
+=========================================================================================================
+                             stage/
+             add             commit                 push
+workspace ==========> index ==========> local repo =========> remote repo
+
+https://stackoverflow.com/questions/3689838/whats-the-difference-between-head-working-tree-and-index-in-git
+
+=========================================================================================================
+                        Questions
+--cached vs --staged
+indent heuristics
+https://git-memo.readthedocs.io/en/latest/index.html
+http://www.cirosantilli.com/git-tutorial/#tag
+https://news.ycombinator.com/item?id=13983085
+
+1 --base
+-2 --ours
+-3 --theirs
+What is refspec in git
+=========================================================================================================

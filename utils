@@ -1,0 +1,401 @@
+=========================================================================================================
+                                      Grep
+=========================================================================================================
+Flags:
+    Matcher selection
+    -E/-G  <pattern>            # consider expresion as regular
+    -F                          # take new-line separated list of string ,any of wich to be matched
+    Matching control
+    -e                          # regex
+    -f <file>                   # take paterns from file
+    -i                          # ignore case
+    -v                          # invert match
+    Output control
+    -H                          # print file name with result
+    -h                          # don`t print file name
+    -n                          # line number
+    -I                          #skip binary files
+    --exclude     <patern*>
+    --exclude-dir <name/path>
+    --include     <patern*>
+
+=========================================================================================================
+                      Sed non-interactive text file editor
+=========================================================================================================
+It is more easy to pass shell arguments to sed then awk
+
+sed
+    -f #file        # execute script
+    -n              # print only lines matching pattern
+    -e 'cmds...'    # execute commands, can be ommitted for single instruction?
+
+    's/from/to'     # substitute
+        /to/p       # print sustitutions
+        /to/I       # case insansitive substitution
+        /to/w       # write to file
+        \c          # any character,
+                    # can be usefull to not escape slashes
+    'r'             # read file
+    'q'             # quit
+    '#'             # comment
+    'y/from/1234'   #replace character by character (tr like)
+    '='             # output line number
+    'p'             # print pattern space to output space
+    'n'             # dump pattern space to output and go to next line
+    'N'             # pull next line in pattern-space
+    'P'             # print first line of pattern space
+    'D'             # delete first line
+    'l'             # list pattern space
+    'a/i/c'         # append/inset/change
+    x               # swap pattern-space and hold-space
+                    # by default hold-space containt new line
+    h               # copy paatern-space to hold-space
+    H               # copt hold-space to patern space
+    g               # append to hold-space
+    G               # append to patter space
+    :#name          # define label
+    b#name          # break for label
+    t#name          # jump on label depending on last substitute
+                    # no label == script end
+    T#name          # ~t
+
+#using multiple cmds on range
+sed -n '2,3 {p; d}'
+
+#ex
+sed 'p; d'                      # print and delete
+'/range_start/,/range_end/s/from/to'   # substitue in range
+
+
+sed -i 's/original/new/g' file          # serch and replace (s), on <file>, inplace (-i)
+sed -n '/\<h1/I,/\<\/h1/Ip' file.html   # print all <h1/> blocks
+
+=========================================================================================================
+                                      Awk
+=========================================================================================================
+awk => a field-oriented pattern processing language with a C-style syntax, it separates input lines into
+fields which is ideal for handling structured text files. It is more complicated to pass shell argument to
+awk, then to sed
+
+=========================================================================================================
+                             Possitional arguments
+=========================================================================================================
+Each field in sentence can be referenced with positional number starting with 1.
+This is done like in bash => `awk 'print $1 $2 $3 ...'`. Notice that $0 gives
+entire line or file if it is passed as cli argument
+
+=========================================================================================================
+                                 Some examples
+=========================================================================================================
+echo 'maps.google.com' | awk -F. '{print $NF}'  # separate line by '.' and return last word?
+echo 'foo bar baz'     | awk '{print $(NF)}'    # print last word
+awk 'NR >= 3 && NR <= 6' file                   # print all lines in range
+=========================================================================================================
+                             Some parsing examples
+=========================================================================================================
+echo "a.b.c.txt" | rev | cut -d"." -f2- | rev   # get file extension without name
+echo "a.b.c.txt" | rev | cut -d"." -f1  | rev   # get file name without extension
+echo 'foo bar'   | rev | cut -d' ' -f1  | rev   # get last word from list
+=========================================================================================================
+                                     Xargs
+=========================================================================================================
+# NOTICE declaring function with -f flag is enough to use it within bash under xargs 
+find . -maxdepth 1 -not -type d | xargs -i{} bash -c "$(declare -f gri) ;  gri package  {}"
+
+echo arg1 arg2 | xargs  bash -cil 'myFuncOrAlias "$@"' arg0
+
+ls | grep dir | xargs -i{} mv {} ../       ## foreach
+find ./ -type f -name *".html" | xargs sed -i "s/php/html/g"
+#  cpy and rename files
+find -name '*.as' | while read f; do cp $f ${f%.as}_dir.as; done 
+
+=========================================================================================================
+                                      Find
+=========================================================================================================
+
+find . -type f -maxdepth 1
+find . | xargs -i{} bash -c "tmp={} && echo \${tmp##*.}"
+find . -name fsck  -exec file {} \;
+
+# path to scipt requires to be relative, no need for logical operators
+find -name file ! -path "./dir1/*" ! -path "./dir2/*"
+
+# note, escpaed parentethis with logical operator
+find . -type f \( -name "*.conf" -or -name "*.txt" \)
+
+# grep for all source files
+find ./ -regextype posix-extended -regex '.*\.(c|cpp|cxx|hpp|h|xml)' -type f -exec grep 
+
+# find word, commit where it was changed, context around
+find -type f | xargs -i{} git blame {}| grep -C 10 -i <word>
+
+=========================================================================================================
+                                      Cut
+=========================================================================================================
+cut foram start(,-)end
+-b <byte> position
+-b 1,3 | 1 | 1-3 | 1- | -3
+
+-c                         # character, is usefull when symboll takes dynamic number of bytes
+-d"<char>"                 # delimiter used for separation, print want columns with -f<start>-<end>
+-s                         # dont output line if delimeter is not present
+--complement               # invert condition
+--output-delimiter <del>   # print with new delim <del> (replace old?)
+
+=========================================================================================================
+                                     Strace
+=========================================================================================================
+Flags
+    -p <pid>            # trace active process
+    -i                  # display instruction pointer
+    -t                  # display timestamps
+    -T                  # display time spent in system call
+    -e trace=<modifier> # filter calls to trace, for instance -e trace=write, by default `all`
+    -o log.file         # save output to file
+=========================================================================================================
+                                      Apt
+=========================================================================================================
+apt-file search <filename>                    # determine packages providing file
+sudo apt-cache search <package> | grep dev    #
+
+sudo dpkg -l | vim -                         # list installed packages
+dpkg --listfiles <pkg_name>                  # list files installed with package
+
+Install package dependencies
+apt-get install `apt-cache depends pkgname | awk '/Depends:/{print$2}'
+apt-get build-dep <package name>
+
+apt-cache policy <pkg>                       # list versions and remote locations
+apt-cache madison <pkg>
+rmadison <pkg>                               # from devscripts package
+
+apt purge <pkg>                         # remove everything related to the package + configs
+apt remove <pkg>                        # remove the binaries of a package
+---------------------------------------------------------------------------------------------------------
+                        Proxy
+---------------------------------------------------------------------------------------------------------
+sudo vim /etc/apt/apt.conf
+Acquire::http::proxy  "http://ip:port/";
+Acquire::https::proxy "https://ip:port/";
+---------------------------------------------------------------------------------------------------------
+                                Troubleshooting
+---------------------------------------------------------------------------------------------------------
+error processing archive  ...  trying to overwrite shared  ...  which is different from other instances of
+package ...  Errors were encountered while processing: Sub-process /usr/bin/dpkg returned an error code (1)
+Probably ur trying to overwrite currently installed package. If you want to force overwrite package =>
+sudo dpkg -i --force-overwrite /var/cache/apt/archives/<pkg>
+? sudo apt-get -f install
+
+=========================================================================================================
+                                      Snap
+=========================================================================================================
+Proxy configuration
+
+sudo systemctl edit snapd.service
+[Service]
+Environment=http_proxy=http://ip:port/
+Environment=https_proxy=http://ip:port/
+
+sudo systemctl daemon-reload
+sudo systemctl restart snapd.service
+
+=========================================================================================================
+                                      Gdb
+=========================================================================================================
+gdb --silent            # clears warranty info
+    -q ,--quiet
+    -symblols / -s file # Read symbol table from file
+    -exec / -e file     # execute file
+    -core/ -c file      # use file as core
+    -pid/ -p num        # connect to proc by id
+    -directory / -d dir # add directory to path to search gto soutce and scrip files
+    -cd dir             # use dir as wirking directory
+    -ex command         # execute command
+                          gdb -ex <break 1> -ex <break 2> <binary>
+    -x file             # execure from file
+    --args              # arguments following executable are passed as command line
+                          gdb --args executablename arg1 arg2 arg3
+                          another solution
+                          set args "arg 1" arg2
+    -readnow / -r       # read symbol table before run time ? purpose
+    --readnever         # Do not read debugging information use when attach, dump core, detach ? purpose
+
+
+save breakpoint <filename> # save breakpoints, use source to read them back
+tbreak <pos>               # one time break point
+backtrace full             # backtrace + information about locals
+clear <breakpoint_id>      # delete breakpoint
+shell <command>            # in case you wont to call shell
+!command                   # another way to call shell?
+
+make make-args| equivalent to shell make make-args
+apropos args  | gives doc for command usage
+set disable-randomization on | affects virtual address
+
+checkpoint |save current state can be used in case virtual address is always randomized
+
+break ... if <cond>
+rbreak regex
+rbreak file:regex
+
+//commands called on breakpoint
+commands [list ...]
+  ...
+end
+---------------------------------------------------------------------------------------------------------
+Gdb uses next init files 
+system.gdbint (somewhere under etc)
+~/.gdbinit
+./.gdbinit
+---------------------------------------------------------------------------------------------------------
+                                Handling signals
+---------------------------------------------------------------------------------------------------------
+You can query the gdb handler rules like so:
+info signal SIGUSR1
+To stop handling of signals like SIGUSR1
+handle SIGUSR1 noprint nostop
+---------------------------------------------------------------------------------------------------------
+                                Changing values
+---------------------------------------------------------------------------------------------------------
+It is possible to change valeus in runtime. This is done using set command
+and write. If you want to change value of variable or register, use
+set var=value
+set $ref=0xValue
+To write into memory you can start write mode
+set write
+set {unsigned int}$pc = 0x90909090      # set 4byte instruction to nop
+set {unsigned char}($pc+4) = 0x90
+set write off
+---------------------------------------------------------------------------------------------------------
+                                 Output formats
+---------------------------------------------------------------------------------------------------------
+x   => hex
+d   => decimal
+u   => unsigned devicemal
+o   => octal
+t   => binary, 't' for two
+a   => print as an address and an offset from the nearest preceding symbol
+       can be used to discover where (in what function) an unknown address is located
+       info symbol #addr yields similar results
+c   => character, '\nnn' for char out if 7bit ASCII range
+f   => float
+s   => null terminated string
+z   => x with leading zeroes to pad the value to the size of the integer type
+r   => 'raw' formatting, used to bypasse pretty-printing
+
+https://sourceware.org/gdb/onlinedocs/gdb/Output-Formats.html#Output-Formats
+---------------------------------------------------------------------------------------------------------
+
+x/nfu  [addr]           # dispaly memory at addr
+  n                       number of units
+  f                       format, used by print 'x,d,u,o,t,a,c,f,s'
+  u                       unit 'b,h,w,g' => 'byte, halfword, word, giant word'
+
+=========================================================================================================
+Random
+---------------------------------------------------------------------------------------------------------
+To break on some file function, or list file symbols you need to use quotes
+arounde file name otherwis it will be parsed as three different words 'name'
+'.''extension'.
+---------------------------------------------------------------------------------------------------------
+If you want to find symbol behind address or have jumped to udefined position in the
+executable, issue `info symbol addr` to get the closest valid symbol and offset to it
+As well you can use `info scope addr` to list locals in scope of addr/source line/function name
+---------------------------------------------------------------------------------------------------------
+Enabling gdb dashboard 
+dashboard -enabled on
+---------------------------------------------------------------------------------------------------------
+Getting stack pointer
+uint64_t sp;
+asm( "mov %%rsp, %0" : "=rm" ( sp ));
+printf("foo 0x%lx\n",sp);
+---------------------------------------------------------------------------------------------------------
+Check stack direction
+void func(int *p) {
+    int i;
+    if (!p) func(&i);
+    else if (p < &i) printf("Stack grows upward\n");
+    else printf("Stack grows downward\n");
+}
+func(NULL);
+---------------------------------------------------------------------------------------------------------
+Examine excutable sections info
+info file
+---------------------------------------------------------------------------------------------------------
+In case of jump through the null pointer you can
+recover pc and take a backtrace
+set $pc = *(void **)$esp
+set $esp = $esp +4
+bt
+---------------------------------------------------------------------------------------------------------
+To get descriotion of expression type, issue
+whatis expr             # expr is not executed, no side efects
+ptype struct            # all fields are displayed as in code
+ptype /o struct name    # list sizes of fields + paddings + bitfields
+=========================================================================================================
+Todo
+watch points
+dynamic printf
+skipp
+record reply
+debugging macro
+debugging optimizations
+tracepoints
+examining symbolic data
+altering execution
+extanding gdb 335
+restart checkpoint-id | return to state 
+=========================================================================================================
+                                    Valgrind
+=========================================================================================================
+How to suppres unneded library error in valgrind
+0) --gen-suppresions=<yes|no|all>
+        Output needed to be saved to suppresion file
+    Pause after each error
+
+Flags
+--read-inline-info=yes
+--log-file=name
+--log-socket=ip.port        :can be used with valgrind listener
+--tool=<toolname>
+--trace-children=<yes|no>
+--trace-children-ski=patt1,patt2,...
+--vgdb=<no|yes|full>
+--vgdb-error=<number>       :how many errors detected before launching gdbserver, 0 means launching on start
+--track-fds=<yes|no>        :will print out list of open descriptors on exir/request + trace of openning and details like file name
+--log-fd=<number> (def:2)
+--log-file=<filename>
+--fullpath-after=<string>   :print path starting from <string>
+--read-var-info=<yes|no>    :read var type and location
+
+
+ What is a defference between --vgdb = yes/full
+---------------------------------------------------------------------------------------------------------
+Suppresion files
+Default suppresion file is $PREFIX/lib/valgrind/default.supp ,can be skipped with flag --default-suppressions=no.
+Additional suppresions can be loaded --suppressions=/path/to/file.supp
+
+There can be problems with C++ if mangling is turned on , --demangle=no will demagnle names.
+---------------------------------------------------------------------------------------------------------
+Default options
+1)~/.valgrindrc
+2)$VALGRIND_OPTS
+3)./.valgrindrc
+
+---------------------------------------------------------------------------------------------------------
+Running under gdb
+
+valgrind --vgdb=yes --vgdb-error=0 prg
+
+In another shell : gdb prog
+target remote | vgdb
+
+=========================================================================================================
+                        Youtube dl
+=========================================================================================================
+-F                  # list quality 
+-f <num>            # choose possible quality from prev list to download
+   best             # so there is no need to lookup formats
+-a <file>           # batchmod , download all links within file
+
+youtube-dl --extract-audio --audio-format mp3 <video URL>

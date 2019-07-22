@@ -1,0 +1,107 @@
+=========================================================================================================
+                               Segments/registers
+=========================================================================================================
+SI      # Source Index
+DI      # Destination Index
+
+AX      # accumulator
+DX      # double word accumulator
+CX      # counter
+BX      # base register
+
+CS      # code segment
+DS      # data segment
+SS      # stack segment
+FS      # points to exception handling chain (Windows??),
+         thread local storage (Linux??)
+ES      # extra segment
+GS      # general purpose segments (Windows??)
+          processor data area (Linux??)
+
+=========================================================================================================
+                 Stack (grows down, from high addresses to low)
+=========================================================================================================
+Arguments passed to function are pushed on the stack from right to left
+? Why exactly from right to left => specific for gcc ABI
+Then return address is pushed and ESP points here
+Now we save (push) EBP and mov ESP to EBP so EBP points on ESP
+pushl  %ebp
+movl   %esp, %ebp
+
+To allocate local variable we move ESP down (subtracting word) 
+subl   %0x8, %esp
+
+To passed args  we move it to register from EBP + offset 
+(passed variables are in higher memory)
+EBP + 0 => return address
+EBP + sizeof all arg => most right arg
+EBP + sizeof most left arg => most left arg
+To access local we subtract offset from ebp (local variables are in lower address)
+
+Stack cleaning up =>
+1.To clear local variable add its size to ESP so it goes up
+2.To restore registers, pop them
+  Now ESP and EBP points to the same address (old EBP) =>
+3.Restore ESP from EBP (now its not base position but head of the stack)
+  mov ebp,esp
+4.Restore EBP
+  pop ebp
+5.After pop , ESP will point to return address so we can return
+  ret
+
+=========================================================================================================
+                              Calling convenrions
+=========================================================================================================
+GCC calling convenrions
+---------------------------------------------------------------------------------------------------------
+Caller is supposed to save registers before call  => ax,cx,dx
+Calle needs to restore value when finished => si,di,bx,bp
+Calle returns result in ax 
+---------------------------------------------------------------------------------------------------------
+cdecl
+---------------------------------------------------------------------------------------------------------
+TODO
+=========================================================================================================
+                                    Endians
+=========================================================================================================
+Big endian => higher order term is the first
+Little endian => higher order term is the last
+TODO
+=========================================================================================================
+                                   CPU modes
+=========================================================================================================
+Real mode (real address mode) => operating mode of all x86 compatible CPUs.
+Has 20-bit segmented memory address space (1MB of addressable memory) and no protection from software
+access to addressalbe memory. Initial state of processor
+
+Protected mode => mode of x86 CPUs that allows system software to use features suck as virtual memory,
+paging and mutli-tasking. Can be startet after real mode initializes one descriptor table (GDT) and enables
+Protection Enable (PE) bit in the control register 0 (CR0)
+
+=========================================================================================================
+                        Omit frame pointer optimization
+=========================================================================================================
+There are two registers pointing on a stack, the stack pointer which points to the top of a stack and can
+be changed during function execution, and frame(base) pointer which points to the start of active frame
+and is usually used with offset to access local varialbes of passed arguments. If are using frame pointer
+to reference varibales, we need to save and restore it during calls, however sometimes there is no variables
+or compiler knows how to use stack pointer instead, then we can ommit frame pointer.
+This way we can skip
+push ebp
+mov ebp, esp
+mov esp, ebp
+pop ebp 
+
+There may be many conditions to use sp without bp like =>
+- function is a leaf (doesnt call other functions)
+- no exceptions used
+- function has no parameters
+- no routins called with result on stack
+
+This option is relevant on 32bit x86 where only 8 registers are
+available or pleanty of little functions are called but not that
+usefull on architectures with more registers
+
+https://stackoverflow.com/questions/14666665/trying-to-understand-gcc-option-fomit-frame-pointer/14666730
+http://www.nynaeve.net/?p=91
+=========================================================================================================

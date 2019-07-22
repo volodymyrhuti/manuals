@@ -1,0 +1,239 @@
+=========================================================================================================
+John R.Levine Linkers & Loaders
+=========================================================================================================
+What do linker and loaders do?
+=========================================================================================================
+Linker and loaders binds more abstract names to more concrete names, which permits programmers to write
+code using the more abstract names. For example it takes a name written by a programmer such as getline
+and binds it to "the location 612 bytes from the beginning of the executable code in module iosys"
+
+On first computers, programmers would write code and calculate offsets to symbols by hand, therefore if
+u wanted to add or remove an instruction, probably it was required to check if other symbols are refered
+by correct offset.  The problem was that the names were bound to addresses too early in the process.
+Assemblers let programmers write programs in terms of symbolic names, with assembler binding the names to
+machine addresses. If the program changed, the programmer had to reassemble it, but the work of assigning
+the addresses is pushed off from the programmer to the computer.
+
+The relocating loader allowrd the authors and users of subprograms to write each subprogram as though it
+would start at location zero and to defer the actual address binding until the subprograms were linked with
+a particular main program.
+
+Before there were no OS each program had entire memory under control and was loaded into at location zero.
+However when OS appered, space was shared between it and loaded program and now we require to know were to
+load program without overwriting OS. Therefore relocating loaders separate from linkers and libraries became
+necessary, linker doing part of the address binding, assigning relative addresses within each program, and
+the loader doing a final relocation step to assign actual addresses.
+
+=========================================================================================================
+Linking vs Loading
+=========================================================================================================
+Program loading => copying a program from secondary storage into main memory so it`s ready to run.
+This may invole alocating storage, setting protection bits, or arranging virtual memory
+
+Relocation => process of assigning load addresses to the various parts of the program and adjusting the
+code and data in the program to reflect the assigned  addresses. Linker will create one program from multiple
+subprograms and crete one linked output program that starts at zero, with subprograms relocated to locations
+within the big program.  When program is loaded the system picks the actual load address and the linked
+program is relocated as a whole to the load address.
+
+Symbol resolution => references from one subprogram to another are made using symbols. A linker resolves
+the symbol by noting the location assigned to symbols and patching the caller`s object code so the call
+instruction refers to that locations
+
+Loader does the program loading; the linker does the symbol resolutin; and either of them can do the relocation
+=========================================================================================================
+Dynamic linking
+=========================================================================================================
+Dynamic linking refers to the linking that is done during load or run-time and not when the execuatble
+is created. This is done with some system api like dlopen which will provide you handle to library
+loaded into memory. Now you want to call some function, to do this we have api which will try to resolve
+function from loaded library by name.
+=========================================================================================================
+Dynamic loading
+=========================================================================================================
+Dynamic loading refers to code loading/relocating at run-time. This is required for shared libries which
+are mapped at non known address and on some old systems require relocation fix-up.
+=========================================================================================================
+
+Linking a two-pass process, firstly it scan input files to find the sizes of the segments and collects the
+definitions and references of all of the symbols. This information is used to create segment list and symbol
+table and assigne numeric locations in the output address space. The second pass uses previous information
+to control the actual linking process. It reads and relocates the object code, substituing numeric addresses
+for symbol references and adjusting memory addresses in code and data to reflect relocated segment addresses,
+and writes the relocated code to the output file. Often linker will generate code/date such as glue used
+to call routines in overlays? or in dynamically linked libraries or an array of pointers to initialization
+routines that need to be called at program startup time (for instace _start method for C).
+
+=========================================================================================================
+Object file format
+=========================================================================================================
+Design of an object format is a compromise driven by the various uses to which an object file will be put.
+A file may be one or combination of following:
+1. Linkable. Used as input by a link editor or linking loader
+2. Executable. Capable of being  loaded into memory and run as a program
+3. Loadable. Capable of being loaded into memory as a library along with a program
+
+
+=========================================================================================================
+Storage Allocation
+=========================================================================================================
+Allocation is the first major task of linker/loaded. Every object or executable file uses a model of the
+target address space. The fundamental issue in a relocating linker.loader is to ensure that all the 
+segments in a program are defined and have addresses, but that addresses don`t overlap where they`re not
+supposed to. Most commonly, all segments of a particular type ,such as executable code, are concatenated
+into a single segment in the output file. For shared libs and language special features, the linker itself
+needs to create some segments and lay them out.
+
+Storage layout is a two-pass process, because the location of each segment can`t be assigned untill the
+sizes of all segments that logically precede it are known.
+
+With some languages, linker is repsonsible for duplicate removal, common block allocation, creating stub
+code for module initialization/deinitialization. For instance, C++ has such features like function overloading,
+templates, vitual tables extern inline function. Template for foo(T) will generate one function for each
+argument type used. The easiest solution is to put all vtables/generated tempalets/inline function into
+each object file and leave it as is on linking stage which results in duplicate code. This can be fixed
+with separate database of all function and pramas providing additional information to compiler. Common
+approach is, compiler generates all function and linker removes duplicates.
+The GNU linker deals with the templates problem by defining a link-once type of section. If linker sees
+segments with names of the form .gnu.linkonce.name, it throws away all but the first such segment with
+identical names. Template names are first expanded and mangled by compiler. Still there is duplication for
+code that uses pointers which have the same internal representation and there can be no sence to make
+two functions separate, unless they perform logically different tasks.
+
+To construct/destruct global variables, linker has separate segment .ini, .fini which are filled with all
+required routines and inserted before/after program entry point. Still there are problems like initialization
+oreder is unpredictable and you can`t be 100% sure that one object will be initialized before another.
+
+=========================================================================================================
+Symbol management
+=========================================================================================================
+The linker reads all of the symbol tables in the input module and extract information used for building the
+link-time symbol tables that will guide the linking process. Output file may have multiple symbol tables,
+like table for dynamic linker, large table for debugger. This is not bad design since separate small table
+for dynmaic linker is faster and easier to use, and dynmaic linking is performed more often the library
+debugging or linking.
+
+Linker has 3 symbol tables, one for listing input files, libraries and perfile information. A seconf table
+handles global symbols that linker has to resolve among input files?. A third may handle debugging information,
+although there can be no full table and debugging symbols are moved from input to output file. In some cases,
+compiler put the debug information directly into files or datavases to ve read by debugger, bypassing the
+linker, so the linker need only add or update information about the relative locations of segments and some
+additional data such as jump tables created by linker itself.
+
+---------------------------------------------------------------------------------------------------------
+Jumptable, in general array of function pointer useful whenever there is the potential for a range of inputs
+to a program that subsequently alters program flow. For instance, you have a keyboard and each ket produces
+uniqe keycode combination that is supposed to be handled differntly. This can be done by mapping keycodes
+to array of function that handles them.
+
+Many C compilers will attempt to convert a switch statement into a jump table, therefore many programmers
+prefer use switch instead of function pointer array. This is fine if we contiguous input where each value
+is associate with a single function call, compiler will almost ceratinly generate a jump table. However if
+input values are non-contiguous and range of values is high. Table will have plenty of null entries, therefore
+compiler will avoide such a waste of memory and genereate if else chain. However now it more dependes on
+system you are working with, if there is plenty of memory, then jump table results in consistent (and fast)
+execution time.
+
+Now the problem is size of a switch, which can be bigger then one screen and you can easily miss some break.
+Function pointer array declaration is more compact, allowing to see the overall picture, but may require
+additional comment. 
+https://barrgroup.com/Embedded-Systems/How-To/C-Function-Pointers
+---------------------------------------------------------------------------------------------------------
+Symbols are kept as an array of entries, using a hash function to locate entries, or as an arrya of pointers
+indexed by a hash function, with all of the entries that has together chained for each header. To find symbol
+linker calculates hash and then traverses need bucket while comaring symbol names. In some languages symbols
+may have the same symbol name but different logical usage. In such cases has value is stored with symbol and
+symbols are not compered unless hash matches hash of wanted symbol. If symbol is not found, it can be added
+to the chain or linker may report an error.
+=========================================================================================================
+References
+=========================================================================================================
+Many object format qualify a reference as weak or strong. A strong reference must be resolved, a weak
+reference may be resolved if there is defenition, but it is not an error if it`s not defined  
+=========================================================================================================
+Relocations
+=========================================================================================================
+Hardware relocation ?
+Hardware relocation means allocation virtuall memory, therefore executable can be loaded at fixed known
+address, which makes program loading easier and prevents programs in one address space from damaging programs
+in other address space. Software relocation combines input files into one that is ready to be loaded into
+the address space provided by hardware relocation, usually without loadtime fixing up.
+=========================================================================================================
+Load-time vs link-time relocation
+=========================================================================================================
+A linker combines a set of input files into a single output file that is ready to loaded in a specific
+address.  If storage at that address isn`t abailable, the loader has to relocate the loaded program to
+reflect the actual load address. At link-time different addresses need to be relocated by different amounts,
+depending on the size and locations of the segments. At load-time you hust adjust program addresses by the
+difference between the nominal and actual load addresses.
+
+=========================================================================================================
+PIC
+=========================================================================================================
+PIC (Position Independent Code) => solution to dilemmna of loading the same program at different addresses.
+This becomes an issue when shared librires are mapped into processes at different location, therefore any
+direct memory access is invalid. The naive solution is to go through each access and patch it up the right
+address, however, this would be too time consuming .The solution is to add another level of indirection:
+the GOT and PLT which are setup by the compilation system + dynamic linker
+
+To support it Elf has next sections
+.got     ## table of of offsets filled in by the linker for external symbols
+.plt     ## stubs that look up the addresses in the .got.plt section, and either jump to the right address or trigger
+         ## the code in the linker to look up the address (if address has not been filled in to .got.plt yet)
+.got.plt ## contains the target addresses (after they have been looked up) or an address back in the .plt to trigger
+         ## the lookup. Classically, this data was part of the .got
+.plt.got ## code that jumps to the first entry of the .got ?
+
+The idea is => separate the code from the data and generate code that won`t change regardless of the
+address at which it`s loaded. This way code can be shared among all processes with only data pages being
+private to each process. Under PIC we cannot use direct data addresses, because those wold be relocatable
+and wouldn`t be PIC. This is overcummed with table of address in data page and keep a pointer to that table
+in register, but there`s still the question of how to get the initial data into register.
+
+Elf uses GOT and PLT method. Firstly, linker creates a GOT (Global offset table) that contains pointers
+to all of the data that the executalbe file addresses, one GOT per shared library and one for executalbe
+even if wasnt compiled with PIC. If a procedure needs to refer to global or static data, it`s up to the
+procedure itself to load up the address of the GOT. Whenever a global variable of a shared lib is accessed
+by your program, the compiler + linker emits instead two memory accesses:
+mov %variable_address, %rax     # move variable address from GOT to register
+mov %rax, %eax                  # indirectly access the variable through the address from register
+
+Thing is more complicated for calling procedures frol shared library. Firstly linker makes us jump to an
+stub in PLT. The first time, PLT code uses offsets stored in the GOT to decide the actual final location
+of the function, then stores this pre-calculated value and jumps there. The next time the function is called,
+the value has already been calculated, so it just jumps there directly.
+
+? Will this address be saved in GDT or PLT
+? If in GDT then what is the logic behind PLT
+? Probable PLT contains addresses of local functions as well
+
+https://systemoverlord.com/2017/03/19/got-and-plt-for-pwning.htmlO
+https://reverseengineering.stackexchange.com/questions/1992/what-is-plt-got
+https://www.quora.com/Systems-Programming/What-is-the-exact-difference-between-dynamic-loading-and-dynamic-linking/answer/Jeff-Darcy
+What relocatable means ?
+=========================================================================================================
+Shared library
+=========================================================================================================
+Each shhared library exports symbols, both code and data, and usually also imports symbols if library depends
+on other libraries. It is possible to link routines together into a shared library in a haphazard order
+but it real libraries have organization therefore there is possibility for small fixes without relinking
+programs that uses that library. For code addresses, rather than exporting the actual address of each
+routine, the library contains a table of jump instructions that jump to all of the routines, with the
+addresses of the jump instructions exported as the addresses of the routines. As far as no entries are
+added/removed in the middle, wanted functions will be called from version to version. This way routines
+will be compatible in the new version even if some function changed size/addresses. It is more complicated
+for exported data since there`s no easy way to add a level of indirection. In practice exported data tend
+to be tables of known size that change rarly, such as the array of FILE structures in C I/O library or
+single word values like errno, tzname. With some mannual effort, developer can collect exported data in
+the from of data section therefore new anonimues resources used by internal routines w`ont change addresses
+of global variables.
+
+Typical structure
+1. File header (a.out/COFF/ELF)
+2. Initialization routine
+3. Jump table
+4. Code
+5. Global data
+6. Private data
+
+=========================================================================================================

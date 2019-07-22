@@ -1,0 +1,482 @@
+                                   Fylesystem
+=========================================================================================================
+                                Storage Devices
+=========================================================================================================
+Computor needs some device where it can save or remember any settings or information. This type of devices
+is called storage devices, also refered as digital storage, storage, storage media/medium. It is an
+hardware device capable of holding information either temporarily or permanently. 
+
+Storages used with computer =>
+1. Primary storage, like RAM
+2. Secondary storage, such as hard drive. It can be removeable, internal or external
+3. Off-line storage. CD-RW, USB and Tape drives...
+4. Tertiary storage
+
+---------------------------------------------------------------------------------------------------------
+                              Storage Technologies
+---------------------------------------------------------------------------------------------------------
+There are three kinds of storage technologies which are
+1. Magnetic Storage. Data is encoded in patterns of positive and negative magnetic polarity on some magnetic
+   medium like organic metal. Devices like floppy disks, tape recorder cassettes and Hard disks are using
+   magnetic storage technology.
+2. Optical Storage. Laser/optical reflection phenomenon is used to read/write data. Two things are required,
+   optical media (circular discs) and optical drives whice have the laser beam source for lightening and
+   the photo diodes generating the voltages patterns when the reflection beam hit on these. There are
+   three tipes of Discs using nowadays: CD (Compact Disc), DVD (Digital versatile Disc), BD (Blue-Ray Disc).
+3. Solid State storage, Nonvolatile (or flash) memory that can retain data when power is off. This technology
+   has no moving parts. Storage is more expensive but is lighter, faster, quiter, and more efficient then
+   previous ones. Most common forms are: USB flash drive, flash memory cards (used in digital cameras,
+   smartphones...), flash hard drives also called solid state drives (SSDs) 
+
+https://medium.com/computing-technology-with-it-fundamentals/storage-technologies-and-their-devices-1594293868f0
+---------------------------------------------------------------------------------------------------------
+
+
+=========================================================================================================
+                                      RAM
+=========================================================================================================
+Random-access memory comes in two varities =>
+1. Static (SRAM). Faster and significantly more expensive than Dynamic RAM. Used for cache memoey, both
+   on and off CPU. Typically a few megabytes per PC.
+2. Dynamic (DRAM). Slower, less expensive. Used for the main memory + frame buffer of a graphics system.
+   Typically hundreds or thousands of megabytes per PC.
+
+                           SRAM    DRAM
+Transistors per bit  ##    6       1
+Relative access time ##    1x      10x
+Persistent           ##    Yes     No
+Sensitive            ##    No      Yes
+Relative cost        ##    100x    1x
+---------------------------------------------------------------------------------------------------------
+                                      SRAM
+---------------------------------------------------------------------------------------------------------
+Each bit is stored into bistable memeory cell, which can stay indefinitely in either of two different
+voltage states. Any other state is considered unstable, circuit will move to one of stable states.
+An SRAM memory cell will retain its value indefinitely, as long as it is kept powered, event when a
+disturbance, such as electrical noice, the circuit will return to a stable value.
+---------------------------------------------------------------------------------------------------------
+                                      DRAM
+---------------------------------------------------------------------------------------------------------
+Each bit is stored as charge on a capacitor. The capacitor is very small, about 30 femtofarads (10^-15).
+DRAM storage can be made very dense - each cell consists of a capacitor and a signle access transistor
+DRAM memory cell is very sensitive to any disturbance.
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+                               NOR vs NAND flash
+=========================================================================================================
+There are two types of flash memory: NOR and NAND.
+
+NOR flash uses no shared components and can connect individual memory cells in parallel, enabling random
+access to data. It is better suited to serial rather than random data access. 
+
+A NAND flash cell is more compact and has fewer bit lines, stringing together floating gate transistors
+to increase storage density.  NOR flash is fast on data reads, but it is typically slower than NAND on
+erases and writes. NAND flash consumes less power than NOR flash for write-intensive applications.
+
+NOR flash is more expensive to produce than NAND flash and tends to be used primarily in consumer and
+embedded devices for boot purposes and read-only applications for code storage. NAND flash is more suitable
+for data storage in consumer devices and enterprise server and storage systems due to its lower cost per
+bit to store data, greater density, and higher programming and erase (P/E) speeds.
+
+The name flash was used after sugestion that erasure process of the memory reminded the flash of a camera.
+https://searchstorage.techtarget.com/definition/flash-memory
+=========================================================================================================
+                                      DOS
+=========================================================================================================
+DOS (Disk Operating System) is an operating system that runs from a hard disk drive, usually is refered
+to MS-DOS (Microsoft Disk Operating System)
+
+=========================================================================================================
+                                      BIOS
+=========================================================================================================
+Basic Input/Output System => non-volatile firmware used to perform hardware initialization during the
+booting process (power on stratup), and to provide runtime services for OS and programs. It`s role is
+- initializing and testing hardware components
+- loading a boot loader from mass memory
+Originally. BIOS firmware was stored in ROM chip on motherboard, but in modern computer systems it is
+stored on flash memory so it can be rewritten without removing chip from the motherboard. This allows
+easy updates but creates a possibility for the hacking.
+
+Bios knows only about disks on your system and you decide which is active. Than bios firmware will looks
+at its start and try to run bootloader, it doesnt know anything else except disks and its start. Real
+booting happens above firmware level.
+
+=========================================================================================================
+                                      UEFI
+=========================================================================================================
+UEFI (Unified Extensible Firmware Interface) => successor to the legacy PC BIOS.
+
+---------------------------------------------------------------------------------------------------------
+                              UEFI native booting 
+---------------------------------------------------------------------------------------------------------
+UEFI provides much more infrastructure at the firmware level for handling system boot.  We require the
+firmware layer to be capable of reading some specific types of filesystem (FAT12, FAT16 and FAT32 variants
+of the FAT format) An 'EFI system partition' is really just any partition formatted with one of the UEFI
+spec-defined variants of FAT and given a specific GPT partition type to help formware find it. This way we
+don`t rely on 'magic' space at the start of an MBR disk, we can just create,format and mount partitions in
+widely understood format and put bootloader code and anything else that they might want the firmware to
+read there. Thereis still open question, how we choose which target bootloader execute and how to
+configure them
+
+---------------------------------------------------------------------------------------------------------
+                               UEFI boot manager
+---------------------------------------------------------------------------------------------------------
+“The UEFI boot manager is a firmware policy engine that can be configured by modifying architecturally
+defined global NVRAM variables. The boot manager will attempt to load UEFI drivers and UEFI applications
+(including UEFI OS boot loaders) in an order defined by the global NVRAM variables.”
+BIOS firmware has no boot menu, disks connected to your system is your boot menu.
+UEFI  provides a confguration mechanism => you can add and remove entries from the "boot menu" using 'efibootmgr'
+
+All entries in `efibootmgr -v` just tells devices to be booted and their order but doesn`t tell how. The
+firmware will look through each EFI  system partition on the disk in the order they exist on the disk.
+It will look for a file with a specific name and location, like \EFI\BOOT\BOOT{arch}.EFI. From this point,
+file contains instructions for booting process.  This mechanism is designed for booting hotpluggable devices.
+
+# TODO note that uefi can be runned in BIOS style
+https://cromwell-intl.com/open-source/linux-boot.html
+https://www.happyassassin.net/2014/01/25/uefi-boot-how-does-that-actually-work-then/
+=========================================================================================================
+                   Chain loading
+Chain loading => method used by computer programs to replace the currently executing program with a new
+program, using a 'common data area' to pass information from the current program to the new program.
+
+=========================================================================================================
+                                  Boot sector
+=========================================================================================================
+Boot sector => region of a hard/floppy/optical disk or other data storage device that contains machine code
+to be loaded into RAM by computer built-in firmware. It is a physical sector or section on hard drive that
+includes information about how to start the boot process in order to load an OS
+
+On IBM PC compatible machine, the BIOS selects a boot device, then copies the first sector from the device
+(MBV/VBR or any executable code), into physical memory at address 0x7C00
+
+Exmaple of boot sector =>
+- Master Boot Record (MBR)
+- Volume Boot Record (VBR)
+=========================================================================================================
+                                   Partitions
+=========================================================================================================
+A partition is a logically independent division on a HDD. There are next types of partitions:
+1. Primary partition. Any of four possible first-level partitions into which a hard disk drive on
+IBM-compatible personal computer can be divided. This is an artifact of DOS (Disk Opearting system)
+2. Logical partition (extended partition). Sub-partitons of primary partition
+
+Active partition => one that contains the OS that computer attempts to load into memory by default when
+it is started ir restarted. Only primary partition, and only one that is not used as the logical partition?
+can be designated as the active partition.
+
+There are two main types of partition table available. Master Boot Record (MBR) and GUID Partition Table (GPT).
+
+Master Boot Record (MBR) => the first 512 bytes of a storage device, containing OS bootloader and the
+storage device`s partition table. Table holds information where partitions start and begin, which are
+bootable. Usually this 512 bytes holds instructions to load larger boot loader (maybe from another
+partition on a drive?). If it is overwritten, your OS won`t boot. On Linux, MBR will typically hold the
+GRUB boot loader. Its limitations =>
+- works with disks up tp 2 TB in size but no more
+- supporst up to 4 primary partitions
+Its inconvinients =>
+- you need special utilities to write the MBR and the only way to find out what`s in one to dd the contents
+  out and examine them
+- thereis not enough place for moderm bootloaders, they will install a small part of themselfves to the
+  MBR and rest to the empty space on the disk between the MBR`s end and start of the first partition
+  (note that there is no rule that partition can not be started after MBR).
+- no layer / mechanism for selecting boot targets other than disks
+- boot behaviour cannot be configured above firmware 
+
+It is looking for a device starting with a 512-byte block which ends with the boot signature 0x55AA. The
+first 446 bytes of the boot block hold the boot loader, followed by 64 bytes for the partition table, then
+those final two bytes of the boot signature. 
+
+GUID partition table (GPT) => standart for doing partition tables - the information at the start of a disk
+that defines what partitions that disk contains.
+
+... TODO note that GPT is backward capable to MBR
+=========================================================================================================
+Adapter => hardware device / software component that converts data from one presentation form to another.
+Almost every peripheral device uses an adapter to communicate with system bus =>
+- Display adapter => used to transmit signal to monitor
+- USB adapters for printers, keyboards and mice, among others
+- Network adapter required to attach to any network
+
+=========================================================================================================
+                           USB(Universal Serial Bus)
+=========================================================================================================
+USB Host => host system, resposible for controling the communication with USB devices
+Host computer contains two layers:
+- USB host controller hardware layer
+- USB host controller software layer (device drivers)
+ 
+
+USB Host Controller => hardware inside computer that provides an interface for transferring streams of
+data between the host computer and the USB devices. It is a card that easily installs into any available
+slot in the motherboard or PCI card.?
+The back-facing plate of the controller provides two or more hi-speed USB ports
+It is DMA capable
+
+USB (Universal Serial Bus) is host controlled, there can only be one host per bus.
+
+HCI (Host Controller Interface) => register-level interface that enables a host controller for USB to
+communicate with a host controller driver in software. There are next types of HCI
+- UHCI (Universal Host Controller Interface)
+- EHCI (Enhanced Host Controller Intreface)
+- XHCI (Extensible Host Controller Intreface)
+- VHCI (Virtual Host Controller Intreface)
+
+USB is a host controlled bus where all data transfers are initiated and controlled by the host on a scheduled
+basis. All USB peripherals are slaves responding to host commands with the only exception of "remote wakeup"
+command which USB device can issue to make the suspended host active.
+
+Formating a drive, means to prepare the chosen partition on the drive to be used by an operating system
+by deleting all of the data and setting up a file system
+
+What `bus` in name means? is this interface connection to controller is a bus. 
+Are USB controller and USB host the same thing ? probably yes
+http://www.usblyzer.com/usb-system-architecture-components.html
+=========================================================================================================
+                                     Sysfs
+=========================================================================================================
+Pseudo file system provided by the Linux kernel that exports information about kernel subsystems, hardware
+devices, and associated device drivers from the kernel`s device model to user space through virtual files.
+Virual files are computed on request or are a mapping into a different file system used as backing store.
+
+A file system consists of two or three layers, which are explicitly separated, and sometimes the functions
+are combined. Example of layers =>
+- Logica file system => responsible for interaction with the user applicatiob. It provides the API
+  for file operations OPEN, CLOSE, READ ... and passes the requested operation to the layer below it
+  for processing. The logical file system manages open file table entries and per-process file descriptors
+  The layer provides file acess, directory operations, security and protection
+- Virtual files system => interface that allows support for multiple concurrent instances of physical
+  file systems
+- Physical file system => this layer is concerned with the physical operation of yhe storage device
+
+Hot plugging (hot swapping) => the ability to add and remove devices to a computer system while the computor
+is running and have the OS automatically recognize the change
+
+https://cromwell-intl.com/open-source/sysfs.html
+---------------------------------------------------------------------------------------------------------
+                           Sysfs device path example
+---------------------------------------------------------------------------------------------------------
+/sys is an in-memory file system, meaning that kernel data structures appear to the user as a tree of
+directories, files, and symbolic links. Since filesystem resides in RAM, there is no physical disk access
+and files have no size (there is an exception). 
+
+Understaing device path
+/sys/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.4/3-3.4:1.2/0003:2965:5023.0006/input/input7
+/sys/ => mountpint of the sysfs filesystem
+/devices/ => contains a filesystem representation of the device tree
+/pci0000:00/ => PCI domain (0000) and the bus number (00)
+/0000:00:14.0/ => domain + bus repeated, along with slot (14) and function (0)
+/usb3/  => USB controller attached to bus number 3
+/3-3/3-3.4/3-3.4:1.2/ => redundant info, the last /3-3.4:1.2/ means we are referring to the USB controller
+                         attached to bus 3, port 3, port 4, configuration number 1 and interface number 2
+/0003:2965:5023.0006/ => device is attached to bus 0003, has a vendor ID of 2965 and a product ID of 5023
+
+https://cromwell-intl.com/open-source/sysfs.html
+http://www.linux-usb.org/FAQ.html#i6
+=========================================================================================================
+                                  Device files
+=========================================================================================================
+On Unix and Unix-like systems, hardware devices are accessed through special files (also called device
+files or nodes) located in the /dev directory. These files are read from and written to just like normal
+files, but instead of writing and reading data on a disk, they communicate directly with a kernel driver
+which then communicates with the hardware.
+In ls -l /dev 'b' in rights means that this is block device, another possible value is 'c' for character
+device (like sound card). Numbers after group means minor and major device number. Major indicates which
+kernel module has detected the devices (is associated with that device) while the minoe number indicates
+which specific device it is (kernel returns pointer to device or you can find it by its number in device
+table, kernel doesn`t know anything about minor numbers beyond the fact that they refer to devices
+implemented by your driver)
+brw-rw----    1 root     root        8,   0 Jan  1 01:00 /dev/sda
+Your own device node can be created with 'mknod name <type c/d> <min> <maj>'
+/dev is automatically filled by utils like 'udev' that just monitors device events and calls 'mknod / rm'
+Some of what you find in /dev are pseudo-devices not coresponding to hardware. These provide functions
+provided by the kernel, for instance /dev/zero, an endless source of all-zero bytes.
+
+https://cromwell-intl.com/open-source/sysfs.html
+=========================================================================================================
+                                     Mount
+=========================================================================================================
+Filesystem => in this context, hierarchy of directories that is located on a single partition (physical?)
+or other devices like DVD, CDROM ... and has a single filesystem type (method for organizing data)
+
+UUID (Universally Unique IDentifier) => 128 bit identifier used in Linux to identify disk in the /etc/fstab
+file. It was created as more flexiable solution to mount names like sda,sdb,... . If you wanted to add
+partion as sdb, when one is alredy defined, you would need to change fstab which involved many issues?
+It can be used to give persistant namings for devices, just configure it in fstab
+
+GUID (Globally Unique IDentifier) => is an Microsoft`s implementation of UUID
+
+Root partition => start of filesystem denoted with '/'
+All partitions of a system can be found in /etc/mtab
+
+Mounting/Unmounting can be seen in kernel logs `dmesg`
+---------------------------------------------------------------------------------------------------------
+                                   Swap space
+---------------------------------------------------------------------------------------------------------
+Swap space => it is a space used to substitute disk space for RAM when real RAM fills up and more space is
+needed. The memory management program swaps infrequently used pages of memory out to a special partition
+deisgnated for paging or swapping. The total amount of memory in a Linux is the RAM plus swap space and is
+referred to as virtual memory Linux provides two types of swap space. The first, and the most common one
+is swap partion. The second is swap file, regular file that is created and preallocated to a spefied size.
+This solution can be used if it is not optinal to make additional partiotion and should avoided unless
+absolutely necessary. To make file or partition become a swap space, issue `mkswap` on it?.Size of swapspace
+depends on RAM size and for devices with 2-8GB of RAM, same size swap is enough.
+
+Trashing => state when virtual memory become nearly full and CPU spends more time on swapping pages then
+doing real work
+
+Mounting means ... `TODO`
+To mount disk issue `mount [-t fstype] <disk> <mountpoint>`, filesystem type is optional. To unmount call
+`umount` with <disk> or <mountpoint> as argument. To let process finish, on unmounter filesystem use
+option -l (lazy), which will clean all references to the filesystem as soon as it is not busy anymore.
+umount -a -t cifs -l
+
+? Unmouting disk will remove both device and mount ?
+? Unmounting mount point will only remove mount point without device?
+
+Disks that are mounted on boot are saved in /etc/fstab, it can be edited for your custom devices. Now you
+are left to remount all disks from file with `mount -a`
+
+---------------------------------------------------------------------------------------------------------
+                         LVM (Logical Volume Managment)
+---------------------------------------------------------------------------------------------------------
+                                      TODO
+---------------------------------------------------------------------------------------------------------
+                            Consistent device naming
+---------------------------------------------------------------------------------------------------------
+Devices names are abbreviation of fullname + device order + partition number
+For instance => [fd, sd, hd][a. b. c. d][1..]
+- hd refers to an IDE-type drive
+- sd refers to a SCSI drive in general, for SATA drives and CD/DVD
+- fd is floppy disk
+
+=========================================================================================================
+                           MIME(Internet Media Types)
+=========================================================================================================
+There are couple ways to identify type of a file. Two main are file extensions used on Windows and
+MIME types used on Linux/Max OS. If there is no file extension, Windows will give you an error or provide
+window to choose application to read such files. Linux doesn`t relay on file extensionts, yet, they are
+often preset for better readability as well as DE may associate default applications to extensions.
+DE has database of associations between file extension to MIME type ( /etc/mime.types ) and MIME to
+application (/etc/mailcap).
+Linux doesnt needs extension to run executable but it needs it to find application that knows how to
+open the data.
+
+Utility like `file` determines file type over 3 ways:
+1. Filesystem tests. stat family system call are called on file to determine unix file type, e.g. link,
+   directory, char/block device, pipe or a socket. Depending on that, the magic tests are made
+2. Magic tests. File type is guessed by a database of patterns called the magic file. If the file type
+   can`t be found over magic tests, it is considered to be a text file.
+3. Language tests. The file is searched for particular string to find out which language it contains.
+   Some scripts can be identified over the hashbang in the first line of the script.
+It doesn`t matter how many tests are performed, it`s always just a good guess.
+
+MIME is also used within browser transactions to understand type of the file it is working with (if html
+then render if another then download ...).
+https://unix.stackexchange.com/questions/207276/how-are-file-types-known-if-not-from-file-suffix/207290#207290
+https://unix.stackexchange.com/questions/266999/why-does-linux-use-file-extension-to-decide-the-default-program-for-opening-a-fi
+=========================================================================================================
+                           Simulating usb plug/unplug
+=========================================================================================================
+
+Get id of usb device with dmesg, or from udev/mdev logs
+To unbind => echo #id > /sys/bus/usb/drivers/usb/unbind
+To bind => echo #id > /sys/bus/usb/drivers/usb/bind
+https://raspberrypi.stackexchange.com/questions/6782/commands-to-simulate-removing-and-re-inserting-a-usb-peripheral
+https://lwn.net/Articles/143397/
+
+This will power-off the device and detach it from the system.
+It won`t be detected again till it is disconnected and re-attached
+echo 'offline' > /sys/block/sdb/device/state
+echo '1' > /sys/block/sdb/device/delete
+https://unix.stackexchange.com/questions/35508/eject-usb-drives-eject-command
+
+
+=========================================================================================================
+                                      UBI
+=========================================================================================================
+UBI (Usorted Block Images) => volume managment sysem for raw flash devices which manages multiple logical
+volumes on a single physical flash device and spreads the I/O load across whole flash chip.
+
+An UBI volume is a set of consecutive logical eraseblocks (LEBs). Each logical eraseblock may be mapped
+to any physical eraseblock (PEB). This mapping is managed by UBI
+
+=========================================================================================================
+                              Initrd and Initramfs
+=========================================================================================================
+There are complicated boot setups, for instance multiple filesystems were detected, /usr with different
+tools and drivers is saved on another partition and cannot be used without mounting (what if it contains
+tools needed to access itself), or root filesystem is encrypted and kernel cannot find init executable.
+To solve this issue, initrd (initial root disk) was created. Initrd is block device named ramdev that
+holds all needed tools and scripts for mounting needed systems before givinig control to init. Kernel
+executes configuration script 'linuxrc'(or something like this) on this disk, which prepares system, then
+switches to real filesystem and calls init.  There are some disadvantages =>
+- ramdev is amulated hard disk that uses memory instead of physical disks that requires driver to
+  communicate, meaning that kernel should have compiled-in driver 
+- Data is duplicated from some another filesystem
+- Block device fills cache with used files
+To reduce memory usage, initramfs was created
+Initrams => base filesystem in RAM, based on tmpfs (light filesystem with changable size) which doesnt use
+block device. Its content (scripts, utilities, libraries, configs) is archived into cpio, then archive in
+gziped and saved with kernel. Bootloader will forward it to kernel  Kernel will create tmpfs file system,
+unzip archive to there and start init script
+
+http://linuxdevices.org/introducing-initramfs-a-new-model-for-initial-ram-disks-a/
+https://stackoverflow.com/questions/15444917/initrd-ramdisk-initramfs-uclinux
+=========================================================================================================
+                              Filesystem commands
+=========================================================================================================
+cat /proc/mounts                # list mounts
+mount -v
+stat -f --format=%T /path       # detect filesystem by path
+
+---------------------------------------------------------------------------------------------------------
+fsck                            # file system check
+                                # Note, there is usually separate fsck for each fs type
+     -A                         # all filesystems from /etc/fstab
+     -C                         # display progress bar
+     -l                         # lock device
+     -N                         # show what would be done without changing
+     -P                         # run in parallel
+     -R                         # skip root, used with -A
+     -t                         # types of fs to be checked
+
+---------------------------------------------------------------------------------------------------------
+lsof
+     +D <path>                  # list open fds and applications using it
+     -p <pid>                   # files used by pid
+
+---------------------------------------------------------------------------------------------------------
+df                              # disk filesystem
+     -h                         # human readable, sizer in power 1024
+     -T                         # print file systems
+
+df <path>                       # determines fylesystem of <path>
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+Some questions
+---------------------------------------------------------------------------------------------------------
+                               Moving vs copying
+---------------------------------------------------------------------------------------------------------
+If a directory is moved within the same filesystem (the same partition), then all that is needed is to
+rename the file path of the directory. No data apart from the directory entry for the directory itself
+has to be altered.
+rename("hello1.txt", "hello2.txt")         = 0
+
+When you mv a file across file systems, it has the same effect as cp + rm: no speed gain (apart from the
+fact that you only run one command, and consistency is guaranteed: you don't have to check if cp succeeded
+to perform the rm)
+
+When copying directories, the data for each and every file needs to be duplicated. This involves reading
+all the source data and writing it at the destination.a
+open("hello1.txt", O_RDONLY)               = 3
+open("hello2.txt", O_WRONLY|O_CREAT, 0644) = 4
+read(3, "Hello, world!\n", 4096)           = 14
+write(4, "Hello, world!\n", 14)            = 14
+close(3)                                   = 0
+close(4)                                   = 0
+
+https://unix.stackexchange.com/questions/454318/why-is-mv-so-much-faster-than-cp-how-do-i-recover-from-an-incorrect-mv-command
+https://serverfault.com/questions/360905/whats-faster-for-copying-files-from-one-drive-to-another
+---------------------------------------------------------------------------------------------------------

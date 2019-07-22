@@ -1,0 +1,63 @@
+=========================================================================================================
+                                      HDL
+=========================================================================================================
+HDL (Hardware Description Language)
+VHDL => Very High Speed Integreted Circuit HDL
+
+=========================================================================================================
+                                  Design units
+=========================================================================================================
+There are 5 desing units used in VHDL
+1. Entity => template of the design, let`s you define input and output ports, and their type.
+    There is only one entity, but it may have multiple architectures.Wanted one is specified
+    in configuration file.
+2. Architecture => specifies behaviour of circuit (entity)
+3. Configuration
+4. Package Declation
+5. Package Body
+
+To specify an architecture, there is 3 styles of modeling
+1. Structural/Dataflow => internal connectuins are clear & straight forward
+   used for smaller designs
+3. Behavioral => used to specify behaviour of architure so compiler knows
+   which architecture is better, used in big designs
+
+=========================================================================================================
+                                   Data types
+=========================================================================================================
+Valid data types =>
+1.Bit => 0/1
+2.std_logic => 
+
+=========================================================================================================
+                            Synthesis vs Simulation
+=========================================================================================================
+Simulation is the process of using a simulation software (simulator) to verify the functional correctness
+of a digital design that is modeled using a HDL (hardware description language) like Verilog.
+Simulation is the process of applying stimulus to the input pins (or internal nets) of a design and
+recordingthe response on the output pins.
+
+Synthesis is a process in which a design behavior that is modeled using a HDL is translated into an implementation
+consisting of logic gates. This is done by a synthesis tool which is another software program.
+Synthesis is the process of converting behavioral RTL code to structural RTL code mapped to either an abstract gate
+library or to a technology specific gate library.
+
+One main difference in terms of modelling using a language like Verilog is that for synthesis ,
+the design behavior should be modeled at an RTL (Register Transfer Level) abstraction. This means modelling
+in terms of the flow of digital signals between hardware registers (flip-flops) and the logical operations
+(combinational logic) performed on those signals. Hence if a Verilog design model is intended for synthesis,
+then only synthesizable constructs should be used, while for simulation there are no such restrictions.
+
+=========================================================================================================
+                              Waveform generation
+=========================================================================================================
+First you need to analise *vhdl file, otherwise it won`t be possible to unify them
+ghdl -a *vhdl
+ghdl -a -Wa,--32 *vhdl  # if push sufix error present
+Then we need to elaborate them 
+ghdl -e <entity>
+ghdl -e -Wa,--32 -Wl,-m32 <entity> # if errors present
+Then run it and save output to wave file
+ghdl -r <entity> --vcd=<name>.vcd
+Output can be openede with gtkwave
+

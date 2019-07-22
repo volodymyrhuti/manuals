@@ -1,0 +1,67 @@
+=========================================================================================================
+               ARM (Acorn RISC Machine or Advanced RISC Machine)
+=========================================================================================================
+RISC (Reduced Instruction Set Computer)
+ARM is a Load-Store architecture, where data processing operations are only between registers and does not
+involve any memory operations. It is mostly 32 bit processors but there are 16 bit and 8 bit variants
+called THUMB and Jazelle architecture
+
+Features =>
+- good speed/power consuption ratio and high code density
+- has barrel shifter in the data path, which can maximize the hardware usage available on the chip
+- has auto increment/decrement addressing modes to optimize program loops (not common for RISC)
+- supports Load and Store of multiple data elements through a single instruction
+- 'conditional execution' => instruction gets executed only when a condition is being met
+
+CPSR (Current Program Status Register) holds flags like zero, negative, carry, THUMB and 4 bit permission
+mode. This 4 bits are used to define 7 possible privileged/non-privileged modes.  There is only one
+non-privileged mode, it is an user mode.
+
+Modes =>
+- User mode => used by user space programs (no access to CPSR)
+- Abort mode => entered on memory access failure
+- Fast interrupt request => interrups are hanlded in this mode
+- Interrupt request => interrups are hanlded in this mode
+- Supervisor mdoe => used when the processor goes in for a reset or a restart
+- System mode => user mode but with access to CPSR
+- Undefined moed => entered on execution of undefined instruction
+
+
+=========================================================================================================
+                                    Assembly
+=========================================================================================================
+bl. branch with link, address of the next instruction after the branch is loaded into the link register lr.
+Once the routine we are calling has been executed, lr can be copied back to pc, which will continue
+execution after bl instruction.
+
+---------------------------------------------------------------------------------------------------------
+                                      ABI
+---------------------------------------------------------------------------------------------------------
+Registers
+r0-r3,r12 ## scratch registers
+r0-3         used to pass parameters 
+r12          intra-procedure scratch, will be overwritten by subroutines
+r4-r11    ## must be preserved between function calls and the called function is responsible
+             for that preservation.
+r13'sp'   ## stack pointer
+r14'lr'   ## link register, set by BL or BLX on entry of routube, overwritten by further use
+r15'pc'   ## Program Counter
+
+The first four 32bit values are passed in the register r0-r3, if one of the parameters is 64bits then
+either r0 and r1 or r2 and r3 will be used - but not r1 and r2. Addition parameter are saved to stack 
+Results are return in r0, or r0 and r1 if required
+
+https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/how-to-call-a-function-from-arm-assembler
+---------------------------------------------------------------------------------------------------------
+                                   Constants
+---------------------------------------------------------------------------------------------------------
+There are situations when you need a constant which cannot be expressed as an Operand 2 immediate.
+The constant has to be moved into register before use, traditional solution is load the constant
+from memory. Pointer need to be held in a register, therefore extra register is needed. However
+pc can be used as any other register to be base pointer for a load operation. This allows you to
+store the constant relative to the instruction loading it. Loading constant will look like
+    ldr     r0,[pc, #offset]
+
+=========================================================================================================
+Branch Prediction ?
+Return Stack Prediction ?

@@ -1,0 +1,159 @@
+=========================================================================================================
+                                      TTYs
+=========================================================================================================
+The terminal(physical) displays the characters that it receives on one of the wires. The point of a terminal
+emulator is to emulate the physical terminals of old TTY(terminal/teletype) => usually is refered to PTY,
+which are text input/output environments. But in real life this were serial ports of a computer to which
+terminal were attached
+PTY(pseudoteletype) => software simulation of physical terminal which is attached t program like a terminal 
+and transfers input and output to another program. It is a device enty that acts like a terminal to the
+process reading and writing there, but is managed by something else.
+
+PTM => Pseudo Terminal Master, replacement of the TX/RX wires
+PTS => Pseudo Terminal Slave
+
+PTMX (pseudo terminal master part) => device  file name used to create a pseudoterminal master part.
+When ptmx is opened, received file descriptor is PTM and PTS is created in the /dev/pts (can be found with
+call to ptsname(PTM))
+
+
+Usual use case flow =>
+# User types something and it becomes an input to TTY driver.
+# TTY driver communicates with line discipline
+## Line discipline responsibility
+= Allow to manipalate cursore, change/erase text, issue redraw of window
+= Job Control by send signals (^Z/^C/^S/^Q)
+= Can be turned off for interactive aplications which control this by themself
+# Line discipline sends text to
+- UART in case of physical terminal
+- Terminal emulator otherwise
+# Terminal emulator holds buffers and state machine for receving events from keyboard
+and writing picture to display
+
+
+=========================================================================================================
+                               Control characters
+=========================================================================================================
+Control character or non-printing character (NPC) is code point in a character set, that does not represent
+a written symbol. Entries of ASCII table below code 32 (technically the C0 control code set) are of this
+kind, including CR and LF used to separate lines of text. Extended ASCII sets (ISO 8859) added the codes
+128 through 159 as control characters, therfore if character had high bit stripted, it was not
+missinterpreted as print character. This second set is called the C1 set.
+
+=========================================================================================================
+                                      TERM
+=========================================================================================================
+The value of the environment variable TERM is used by the server to control how input is recognized by the
+system, and what capabilities exist for output.Some terminal types are similar enough that they can be
+interchanged while still remaining usefull, while others could make the system unusable until you open a
+new connection with a supported value for TERM. For example, from one Linux system to another, you would
+probably experience very little difference between vt100, vt220, and xterm settings. Most of the differences
+would be in how output is displayed, and whether colors or bold fonts are available to that type of terminal.
+
+tput smkx;cat -v;tput rmkx  # test escape codes within tmux
+xkbset -m                   # stop movement of mouse on keyboard usage
+showkey -s                  # list scan codes for keyboard
+cat >/dev/null              # displays escape sequence
+xev                         # list keysyms
+
+setxkbmap -option           # restore keycodes
+
+Or you can press SHIFT+NUMLOCK
+/usr/share/X11/xkb/compat/complete) and commenting out mousekeys & accessx(full):
+
+
+=========================================================================================================
+                              Terminfo && termcap
+=========================================================================================================
+infocmp             # list of termcaps and escape codes
+
+urxvt       # sends escape codes to program (like shell readline)
+  |         # can be configured in xresources
+  |
+readLine    # lookups key in termcap (not sure about terminfo)
+  |         # and forwards to terminal ?
+  |
+terminal
+
+=========================================================================================================
+                Changing terminfo database
+
+infocmp $TERM > terminfo.src
+change escape code
+tic terminfo.src
+??? export TERMINFO=~/.terminfo
+
+
+=========================================================================================================
+
+terminal = tty = text input/output environment
+console  = physical terminal
+shell    = command line interpreter
+
+=========================================================================================================
+
+terminal emulator
+       ||          # connected to
+       \/
+virtual terminal   # identified by tty
+       ||          # runs
+       \/
+     shell
+
+=========================================================================================================
+
+??Control Codes => first 32 bytes of ascii
+
+Scan code => record of key pressed. is transmited within dev/input/eventXXX, value can be different from
+one transmitted by hardware (kernel may translate hardware dependent value to common). Kernel won`t
+retransmit unknown scancodes. Than kernel sends keycodes to X server which maps these to keysyms with table.
+X reads scancode as keycode and maintains translation table from keycodes (numeric 8bit unsigned integer)
+to keysyms(name A,F1,KP_Add,Contol_L). Keysym may differ depening on which modifier keys are pressed
+(shift,ctrl...)
+
+Mapping keycodes to keysyms
+xmodmap ## traditional mechanism
+XKB     ## more powerful and complex
+
+Keysym can be seen by xev
+Scancode => Keycode => Keysym
+
+Raw keyboard codes => represent physical location on a keyboard (+128 on release)
+Control Sequence => sequence of escape character followed by printable.
+It is generated by terminal and sent to shell which converts this into function
+    Left => \e[D => backward-char
+
+Escape Sequences => key pressed that correspond to function or printable character and prefixed with Ctrl
+or Alt.
+
+Control character => characters that makes terminal move the cursor, change color, redraw picture ...
+A few keys or key combination have a control character corresponding to them n ASCII.
+
+lnext (literal-next) ^V         # suppress interpretation of the next char
+
+=========================================================================================================
+                             Bash escape sequences
+=========================================================================================================
+Vi mode
+set show-mode-in-prompt on
+set vi-cmd-mode-string "\1\e[1 q\2"set vi-ins-mode-string "\1\e[5 q\2"
+
+# [0 - blinking block.
+# [1 - blinking block (default).
+# [2 - steady block.
+# [3 - blinking underline.
+# [4 - steady underline.
+# [5 - blinking bar (xterm).
+# [6 - steady bar (xterm).
+
+=========================================================================================================
+                                     Links
+=========================================================================================================
+https://unix.stackexchange.com/questions/183485/ctrl-arrow-does-not-work-anymore-after-installing-prezto
+https://unix.stackexchange.com/questions/117981/what-are-the-responsibilities-of-each-pseudo-terminal-pty-component-software
+https://unix.stackexchange.com/questions/21280/difference-between-pts-and-tty
+https://stackoverflow.com/questions/4426280/what-do-pty-and-tty-mean
+http://www.linusakesson.net/programming/tty/    # tty demystified
+# How keyboard input/output works
+https://unix.stackexchange.com/questions/116629/how-do-keyboard-input-and-text-output-work
+https://unix.stackexchange.com/questions/12510/relationship-of-keyboard-layout-and-xmodmap/12518#12518

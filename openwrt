@@ -1,0 +1,139 @@
+=========================================================================================================
+                                  Build system
+=========================================================================================================
+Target => applies only when ur compiling a toolchain (machine that gcc? will provide binary for)
+Build  => architecture of the build machine applies only when building compiler (machine u build on)
+Host   => architecture u want file to run on (machine u build for)
+
+Native Compilation   => Build = Host = Target
+Cross Compilation    => Build = Host =! Target
+Canadian Compilation => Build =! Host =! Target
+
+Host-x-host / Crossed native / Cross-built Compilation => Build =! Host = Target
+ => you are using cross compiler to build a native for a different system
+
+sdk -> openwrt world build openwrt/target/sdk/files/Makefile
+=========================================================================================================
+                                  Config flags
+=========================================================================================================
+Options of .config may take next values
+ y => compiled and included to firmware
+ m => compiled and not included to firmware
+ n => not compiled
+
+=========================================================================================================
+                                     Feeds
+=========================================================================================================
+Feed => addtitional predefined package build recopes, where each feed resides on a remote host and are
+downloaded (git,svn...)
+
+Scipts used for feeds manipulations are defined within scripts/feeds
+scripts/feeds/
+update -a  => fetch from remote
+install -a => make visible for menuconfig
+
+=========================================================================================================
+                                  Make options
+=========================================================================================================
+    *menuconfig             # gui configuration
+      press y sets <*>      # package will be compiled and included in the image
+      press m sets <M>      # package will be compiled but not included
+      press n sets < >      # sources will not be processed
+    *defconfig              # set default config for build system and device
+    *download               # download all dependency sources
+    *clean                  # delets /bin and /build_dir but doesn`t touch toolchaine/targets
+    *dirclean               # clean + /staging dear , /toolchain, /tmp ,/logs 
+    *distclean              # dirclean + /feeds, /packages 
+
+
+Shortcuts
+make target/linux/clean         # clean linux object
+make package/base-files/clean   # clean package base-files object
+
+When you save your configurations (menuconfig) ,file .config will be generated
+
+If you find your package doesn't show up in menuconfig, try the following command to see if you get the
+correct description:
+  TOPDIR=$PWD make -C package/<name> DUMP=1 V=99
+
+If you're just having trouble getting your package to compile, there's a few shortcuts you can take. 
+Instead of waiting for make to get to your package, you can run one of the following:
+  make package/<name>-clean V=99
+  make package/<name>-install V=99
+
+=========================================================================================================
+                              BuildRoot / RootDir
+=========================================================================================================
+
+<ROOT>
+   \-> staging_dir
+   |        \----->Host--,   | Target independent tools and toolchain
+   |        \----->Toolchain | + target system variables (architecture, sub-architecture, c compiler, c library...)
+   |             |
+   |             \----bin| links to executables in your system + real executables that should be added tp PATH
+   |                 | export PATH=/home/buildbot/source/staging_dir/host/bin:$PATH
+   |
+   \-> feeds.conf | Indicates the package feeds that will be made available during the firmware configuration stage.
+   |          | Package shouldbe included here to be visible. Is not created by default
+   |          | src-<link|git|forge> <package> <path/url>
+   |          | File be checked during scripts/feeds update package => makes packages available for config menu
+   |          |                        scripts/feeds install -a -p package      ?? not sure what this does
+   |          |
+   |
+   |
+   \-> .config    | Specifies which utilities and options include to image 
+   \dl          # User-space package tarball are downloaded here
+   \scripts
+   |\--------feeds   update -a      | refresh package lists, dowload feeds from git     
+   |             install <package>  | load package and its dependecies into SDK
+   |
+   \tools       | automake, autoconf, sed, cmake
+   \toolchain   | compiler, c library, cmon tools to build firmware image. The result is toolchain_build_<arch>
+   |            | and staging_dir_<arch> where result toolchain is installed.
+   |\binutils   | as, ld
+   |\gcc
+   |
+   \target
+   |\linux  | is broken down by platform and contains kernel config and patches to it. modules?
+   |?\image | firmware image filegeneration
+   |
+   \package
+   |\<name>
+   | \Makefile
+   | \Patch
+
+
+=========================================================================================================
+                               Makefile structure
+=========================================================================================================
+define Package                          # where to look in menuconfig
+define Package/name/description         # more verbose description of what package is doing
+define Build/Prepare                    # preparation instructions                                    
+                                          Create build directory
+                                          Unzip file
+                                          Copy src files
+                                          Apply patch 
+define Build/Compile                    # invoke target specific compiler and linker
+define Package/name/install             # pakage installation instructions
+                                          Create dir to hold exec
+                                          Copy exec to dir
+
+$(eval $(call BuildPackage,helloworld))     # used definitions and variables to build package
+                                             ?BuildPackage is defined in 'include $(TOPDIR)/rules.mk'
+
+PKG_NAME           # The name of the package, as seen via menuconfig and ipkg
+PKG_VERSION        # The upstream version number that we're downloading
+PKG_RELEASE        # The version of this package Makefile
+PKG_BUILD_DIR      # Where to compile the package
+PKG_SOURCE         # The filename of the original sources
+PKG_SOURCE_URL     # Where to download the sources from
+PKG_MD5SUM         # A checksum to validate the download
+PKG_CAT            # How to decompress the sources (zcat, bzcat, unzip)
+
+
+=========================================================================================================
+                                   Some flags
+=========================================================================================================
+
+IGNORE_ERRORS=1 make <make options>         # keep building on failure
+dl/bcm963xx-linux.4.1-scos-5688b-bouygues/tools/testing/ktest/ktest.pl:284:    "IGNORE_ERRORS"		=> \$ignore_errors,

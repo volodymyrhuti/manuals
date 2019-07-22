@@ -1,0 +1,520 @@
+=========================================================================================================
+                                     Linux
+=========================================================================================================
+                                 Unix vs Linux
+=========================================================================================================
+Initially all computers were designed for one task and not time-sharing. This means that there was one
+computer for salary calculations, one for word processing and user couldn`t perform multiple tasks
+simultaneously, like do word processing and listen music. To overcome those issues the Multics OS was
+developed as collaborative project between MIT, General Electronics and Bell Labs. Multics wat time
+sharing OS meaning that many programs can share hardware resources and switch on finite time intervals.
+Due to the very small intervals there is an illusion that multiple programs are running concurrently.
+
+https://www.youtube.com/watch?v=jowCUo_UGts
+https://thishosting.rocks/unix-vs-linux/
+https://www.quora.com/What-are-the-similarities-and-differences-between-UNIX-and-Linux
+https://www.guru99.com/difference-unix-vs-linux.html
+=========================================================================================================
+                                Windows vs Linux
+=========================================================================================================
+
+https://www.guru99.com/linux-differences.html
+https://www.howtogeek.com/137096/6-ways-the-linux-file-system-is-different-from-the-windows-file-system/
+---------------------------------------------------------------------------------------------------------
+                               Line endings issue
+---------------------------------------------------------------------------------------------------------
+DOS inherited CR-LF line endings (\r\n in ascii) fro, CP/M. CR-LF was used so that the teletype machines
+would return the print head to the left margin (CR = Carriage return), and then mov to the next line
+(LF = line feed).
+On Unix it is handled in the device driver, and when necessary translated LF to CR-LF on output to devices
+that needed it.
+Mac OS X before version 10 used CR for new line and versions 10+ use LF.
+
+Vim will display CRLF as ^M. To remove it, start search and replace, and when entering search part
+pres C-v + C-m to get need character. Another option is ":%s/\r/\r/g" or just clear file with dos2unix
+shell utility
+dos2unix <file.txt>
+
+http://vimdoc.sourceforge.net/htmldoc/digraph.html#digraph-table
+https://stackoverflow.com/questions/5843495/what-does-m-character-mean-in-vim
+https://stackoverflow.com/questions/419291/historical-reason-behind-different-line-ending-at-different-platforms
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                              User/Group managment
+=========================================================================================================
+There are multiple way to manage user under linux: using GUI, cli tools or just editing configuration files.
+Local user database is saved under /etc/passwd, where user are save in form like
+mysql:x:126:135:MySQL Server,,,:/nonexistent:/bin/false
+where each column denotes 
+user :?:userid:primary group id:description    :home directory:login shell
+mysql:x:126   :135             :MySQL Server,,,:/nonexistent  :/bin/false
+
+To manage user from cli you have two sets of tools, user{add,del,mod} and {add,del}user where latter are
+frontend scripts in perl for first set. I will describe useradd here. You need to create user and set
+password for him with following commands
+useradd -m -d <path> -c <name> <name> 
+        -m           # create home
+        -d  <path>   # home directory
+        -c  <name>   # comment, used as the field for the user`s full name
+        -D           # display defaults for user
+        -D <options> # change defaults for user
+        -k <path>    # skeleton dir copied to users $HOME
+        -G <name>    # list of groups user will be added to
+
+passwd <name>        # set password
+
+Group manipulation
+addgroup <name>               # create group
+adduser  <user> <group>       # add user to group
+usermode -aG <group> <user>
+
+Default behavious can be specified within /etc/default/useradd or /etc/adduser.conf
+---------------------------------------------------------------------------------------------------------
+                                  Permissions
+---------------------------------------------------------------------------------------------------------
+Every file on a GNU/Linux system is owned by a user and a group. In addition, there are three types of
+access permissions: read, write, and execute. Different access permissions can be applied to a file's
+owning user, owning group, and others (those without ownership). One can determine a file's owners and
+permissions by viewing the long listing format of the ls or stat command:
+ls -l <path>
+rights     | |user|user group |      |      |     | name
+drwxrwxr-x  3 vova volodymyr     4096 jun 21  2018 books
+
+Access permissions are displayed in three groups of characters, representing the permissions of the owning
+user, owning group, and others, respectively. To find all files owned by group or user, issue
+find / -group groupname
+find / -group groupnumber
+
+find / -user user
+Rights have next form
+type      | user  |groups |others
+d / -     |rw(x|s)|rw(x|s)| rwx
+and can be changed using chmod or chown
+
+---------------------------------------------------------------------------------------------------------
+                               SUID (Set User ID)
+---------------------------------------------------------------------------------------------------------
+Run command as owner of the file
+
+chmod (1|2|4)777
+---------------------------------------------------------------------------------------------------------
+                              SGID (Set Group ID)
+---------------------------------------------------------------------------------------------------------
+The SGID bit on a directory means that any files created in that directory will be owned by group that
+owns the directory, regardless of who created them. It is marked as an `s` in place of `x` where group
+permission go.
+chmod g+s <dir/file>
+On files causes files to be executed with group owner permissions.
+On directories makes all new files to be created with the same group id as directory.
+
+---------------------------------------------------------------------------------------------------------
+                                      UID
+---------------------------------------------------------------------------------------------------------
+UIDs below 1000 are typically reserved for system accounts.  Root has always UID 0 and conventially
+UID 65534 is nobody. UID ranges allocation can be found in `/etc/login.defs`
+
+https://stackoverflow.com/questions/1013516/what-are-the-well-known-uids
+
+Debin related rules
+https://unix.stackexchange.com/questions/254245/what-is-an-appropriate-uid-and-gid-for-a-debian-package-file-owner
+---------------------------------------------------------------------------------------------------------
+                               Adduser vs Useradd
+---------------------------------------------------------------------------------------------------------
+useradd is native binary compiled with the system. while adduser is a perl script which uses useradd binary
+in back-end. adduser is more user friendly and interactive. It should be used by administrator since it
+by default chooses Debian policy conformant UID and GID values, creates home directory with skeletal
+configuration and other features. If you writing some low level scripts ,that should be portable, useradd
+is prefered. 
+
+https://askubuntu.com/questions/345974/what-is-the-difference-between-adduser-and-useradd
+---------------------------------------------------------------------------------------------------------
+                            Chown vs Chmod vs Chgrp
+---------------------------------------------------------------------------------------------------------
+chmod => change mode, allows changing permissions of files/folders (also known as `modes` in UNIX).
+chown => change owner, allows changing owner od files/folders.
+chgrp => change group, allows changing file group
+
+The chmod can be used in couple different ways, with permissios set by numbers or letters
+chmod [-R][ugo][+-=][rwx/421] <file>
++ to increase permissions
+- to cancell permissions
+= to save?
+
+chmod
+    -C      # display file whose permitions have changed
+    -F      # don`t dissplay error messages
+    -V      # show details of permission changes
+
+# all permissions for owner and rx for others
+chmod 755 <file>
+chmod u+rwx,go+rx <file>
+
+chown [-R]<user>[:<group>] <path> # makes <user> from group <group> owner of file <path>
+chown <user> <file>
+chown <user:group> <file>
+
+chgrp <group> <file>
+
+---------------------------------------------------------------------------------------------------------
+
+chown -R <user>:<group> <directory>
+
+/etc/group          : list of all groups 
+/etc/passwords      : password for all users 
+    can change home directory for user
+    can change shell path 
+    no passwords are saved here (encrypted) , are in file /etc/shadow but encrypted
+
+Set default permissions for directory
+setfacl -d -m #(g|u|o)::rwx #dir
+getfacl #dir
+
+https://askubuntu.com/questions/971836/at-what-point-is-the-bashrc-file-created
+=========================================================================================================
+                                Network manager
+=========================================================================================================
+Only devices that are not listed in /etc/network/interfaces or which have been configured "auto" and "dhcp"
+(with no other options) are managed by NM.  To disable managment of interface by NM
+1.Put next to /etc/NetworkManager.conf
+[main]
+plugins=keyfile
+[keyfile]
+unmanaged-devices=mac:xx:xx:xx:xx:xx:xx,
+                  interface-name:name...
+
+Then restart networking and manager services
+sudo /etc/init.d/networking restart
+sudo service network-manager restart
+
+2. Change 'managed' under config to false, then interfaces configured from /etc/network/interfaces won`t
+   be managed by NM
+
+https://stackoverflow.com/questions/5321380/disable-network-manager-for-a-particular-interface
+=========================================================================================================
+                                   Systemctl
+=========================================================================================================
+systemctl --type=service           # list system services
+
+=========================================================================================================
+                                  Tar/Zip/Rar
+=========================================================================================================
+tar (Tape ARchive) is used for archiving, therefore don`t expect to see compression.
+To compress archive you can use gzip/bzip2/xz. For conviniece tar has flag to compress archive
+automatically for you. Type of compression is determined by file extensiom
+
+tar
+    -z            # working with .tgz, .tar.fz
+    -j            # working with bzip2
+    -x            # extract files from archive
+    -v            # verbose
+    -f            # archive file to be extracted
+    -C            # change directory were archive will be extracted
+    -c            # create archive
+    -A            # append files to archive
+    -d            # diff between two archives
+
+tar -zxvf file                      #uncompress file .tgz or .tar.gz
+tar xvjf file.tar.bz2               #uncompress .tbz / .bz2
+tar xvf file.tar                    #to uncompressed tar file (.tar) 
+tar xvC /var/tmp -f file.tar        #to uncompress tar file (.tar) to another directory 
+tar -czv -f test.tar.gz /www/*      #compress directory
+
+=========================================================================================================
+                                  Linux Files
+=========================================================================================================
+/etc/services      # The services translation 
+/proc/net/dev      # Device network stats
+/etc/hosts         # maps ip to domain name : is checked before dns lookup
+/etc/resolv.cond   # saves ip of dns servers
+/etc/services      # contains ports with services
+/etc/protocols     # ports?
+
+
+/dev     : device dir
+/proc    : proces dir
+/sys    : system dir
+
+/lost+find         # directory constructed by fsck (file system check) to 
+                   # it holds things that were found in memory and looks like file
+                   # but there is no name/inode... so they can be restored
+                   # Can contain result of system halt , kernel panic, power failure ...
+=========================================================================================================
+                                   File links
+=========================================================================================================
+Hard link - pointed to data
+Soft link - pointer to name referencing data
+
+ln -s /source/file /target/symlink    ## create a new symlink (fails if symlink exists already)
+ln -sf /source/file /target/symlink   ## create or update a symlink
+ls -l /source/file /target/symlink    ## checking for validity
+=========================================================================================================
+                        Hardware
+
+use lshw to lookup info about hardware
+lspci
+lsusb
+=========================================================================================================
+                                     Distro
+=========================================================================================================
+
+lsb_release -a : ubuntu info
+uname -a       : kernel info
+
+=========================================================================================================
+                                      SCP
+=========================================================================================================
+me/remote => hostname@ip/domain
+
+scp username@hostname:file      # copy to me
+scp file username@hostname      # copy to remote
+scp -r dir username@hostname    # copy dir to remote
+scp -r username@hostname:path . # copy folder from remote
+scp me1@file me2@file   # cp from one user to another
+
+# SCP will break if init script does echo
+=========================================================================================================
+                                     Mount
+=========================================================================================================
+To list filesystems issue on of the following
+mount -v
+cat /proc/mounts
+cat /proc/mtd
+cat /etc/mtab       # old variant of fstab that may not support some advanced Linux features like containers?
+cat /etc/fstab      # mounted on boot
+
+If you want to override options used when mounting, use following, options will be appended, last option
+wins when ambiguous
+mount <dir|device> -o <new_options> 
+By default, only root user can mount filesystems, unless it has noauto,user options under fstab.
+To remount filesystem issue
+mount -o remount,<rw/ro> <dev> <path>     # ignores configuration files
+mount -o remount,<rw/ro> <path>           # merges options from configuration file
+
+To make all filesystems readony, can be used to prevent any changes before reboot
+echo u > /proc/sysrq-trigger
+If the filesystem is backed by a block device, you can make the block device read-only
+echo 1 > /sys/block/dm-4/ro
+echo 1 > /sys/block/sda/sda2/ro
+There may be option to force mount/remount filesystem but mostly likely it won`t help either, please
+check man to find correct option, since on one system it can be -f but on another, this may mean `fake`.
+
+/dev/disk/by-{label,uuid,partuuid,partlabel}
+---------------------------------------------------------------------------------------------------------
+                               Mounting USB drive
+---------------------------------------------------------------------------------------------------------
+lsblk                          # detect usb harddrive based on its size and filesystem
+df -h
+sudo blkid
+sudo fdisk -l
+dmesg | grep -ie 'sd\|usb'
+sudo lshw
+udisksctl                      # disc scanner from package
+mkdir /media/usb               # create mount point
+mount /dev/<usb> /media/usb    # mount 
+
+? How to detect drives on system of different type hdd ssd flash
+=========================================================================================================
+                                     Patch
+=========================================================================================================
+Patch => compact representation of the differences between two files, intended for use with line-oriented
+text files.
+
+When patch fails to apply a patch segment to the original file, it saves the temporary original file copy
+out as *.orig, dumps the rejected segments to *.rej, and continues trying to apply patch segments. The
+idea is that you can open the *.rej file and complete the patch process manually by copying bits and pieces
+over to the patched file. If patch was applied but some offsets were changes, patch will save .orig file.
+
+patch
+      -b         # create backup (for cases when you applie patch not to git, and wont have option to
+                   checkout file after bad patch)
+      -i <patch> # read from file instead of stdin
+      -p <n>     # strip n slashes from the filepath to the filename
+                 # if not present, file name /path../../file_name is stripped to file_name
+                 # -p0 gives path with leading /a/b or without? TODO test
+      -R         # revert patch
+   --merge=merge # default, like git merge?
+           diff3 # has additional section with original content
+                   <<<<<<<
+                   lines from the original file
+                   |||||||
+                   original lines from the patch
+                   =======
+                   new lines from the patch
+                   >>>>>>>
+
+diff 
+      -u[n]      # unified diff (one that is expected by ), n specifies number of lines of context
+                   by default 3.
+      -N         # treat  absent files as being emptya
+
+---------------------------------------------------------------------------------------------------------
+                              Breaking an example
+---------------------------------------------------------------------------------------------------------
+diff --git a/foo.c b/foo.c
+Suggests the notion of a Git-specific diff in Unix command style.  a/foo.c and b/foo.c are the files being
+compared, with added leading directory names a and b to distinguish them in case they are the same (as
+they are here; this patch shows the changes from one version to another of the same file)
+There are in fact no directories named a and b in the repository; they are just convention.
+
+index 30cfd169..8de130c2 100644
+This line gives information from the Git index regarding this file: 30cfd169 and 8de130c2 are the blob
+IDs of the A and B versions of the file contents being compared, and 100644 are the “mode bits,” indicating
+that this is a regular file: not executable and not a symbolic link
+There may be more lines describing if file name or modes were changed...
+If those blobs are in the object database, then Git can use them to perform a three-way merge with those
+two versions and the working copy, to help you resolve the conflicts.
+Utility like patch can still use such diff but it may ignore usefull git specific information
+
+--- a/foo.c
++++ b/foo.c
+This is the traditional “unified diff” header, again showing the files being compared and the direction
+of the changes
+
+@@ -1,5 +1,5 @@
+... Some code prefixed with '+- '
+This is a difference section, or “hunk”. Lines starting with space are context
+
+https://www.git-tower.com/learn/git/ebook/en/command-line/advanced-topics/diffs
+https://www.oreilly.com/library/view/git-pocket-guide/9781449327507/ch11.html
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+                                      Mem
+=========================================================================================================
+du 
+    -h      # human readable
+    -s      # single directory size
+    -a      # filesystem pass
+
+df          # partition stats
+   -h       # more readable
+
+du ~/go | sort -n -r | less  #sort files by size
+ncdu    # nice cli scanner
+
+=========================================================================================================
+                        /proc of interest
+
+malloc                  # malloc debugging
+meminfo                 #
+
+
+[pid]
+    /attr               # security
+    /exe                # symlink to the executable
+    /comm               # executable name
+    /cmdline            # passed arguments
+    /cwd
+    /map_files          # files responding to mmap
+    /maps               # currently mapped memory regions and their permissions
+    /root               # root mounted for process
+    /smaps              # mem consumptions for each of process mappings
+                        # see pmap(1)
+    /statm              # memory usage, measured in pages
+    /status             # stat + statm mostly in more readable format
+    /timers             # list of proc timers
+
+ /stack              # kernell stack?
+
+
+=========================================================================================================
+                        Job managment
+
+coproc <name> cmd <redirections>    # starts a cmd as a background job, setting up pipes connected 
+                                    # to both its stdin and stdout so you can interact with it bidirectionally
+jobs -l                             # list background process + its pid
+
+=========================================================================================================
+                            TOP
+RSS (Resident Set Size) => how much memory is allocated to the process and in in RAM,
+Doesn`t include memory that is swapped out. It does include memory from shared libraries
+whose pages are in memory. Includes all stack and heap memory.
+Since part of the memory is shared, many processes may use it, so if you add up all of
+the RSS values you can easily end up with more space than your system has.
+
+VSZ (Virtual Memory Size) => all memory process can access, including memory that is
+swapped out, that is allocated but not used and memory from shared libraries.
+
+
+
+The memory that is allocated also may not be in RSS until it is actually used by the program.
+So if your program allocated a bunch of memory up front, then uses it over time, you could see
+RSS going up and VSZ staying the same.
+
+
+https://stackoverflow.com/questions/7880784/what-is-rss-and-vsz-in-linux-memory-management
+=========================================================================================================
+                                       PS
+=========================================================================================================
+Codes:
+D 	Uninterruptible sleep (usually IO)
+R 	Running or runnable (on run queue)
+S 	Interruptible sleep (waiting for an event to complete)
+T 	Stopped, either by a job control signal or because it is being traced.
+X 	dead (should never be seen)
+Z 	Defunct ("zombie") process, terminated but not reaped by its parent.
+
+Brackets aroung process means that it was not possible to detect command line arguments. Mostly, it is
+kernel threads and some system services. Setting argv[0] to empty string may result in the same output?
+
+To find parent of proccess pid, issue
+ps -o ppid=$pid
+ps -f $pid
+pstree -aps $pid    # for tree like outout
+pstree -hp $pid     # straight tree
+cat /proc/$pid/status | grep PPid:
+cat /proc/$pid/stat # 4th parameter
+=========================================================================================================
+                              Boot troubleshooting
+=========================================================================================================
+To enter grub menu, press quickly left Shift? during boot
+
+To boot system into shell, start from grup menu, choose boot img and issue `e`, this will open configuration
+file. Here find line starting with `linux` and append `init=/bin/sh` to it. There is option to specify boot
+level from here (any usefull purpose?). Common option that you will find on the same line are
+# remove splashcreen (start login input screen)
+# nomodeset to disable most of drivers
+# no quite  to display status on screen
+
+You can interrupt boot process to gain root shell by providing break=init etc. to the kernel boot parameter.
+See /init source for more. 
+---------------------------------------------------------------------------------------------------------
+                                 Splash screen
+---------------------------------------------------------------------------------------------------------
+Splash screen is image displayed during system initialization after loggin, it is displayed while common
+services are started from init scripts. This may hide an issue, when some crucial service failed to start
+and instead of console with error you see splash screen picture, but probably it will try to display last?
+error unless system is in critical state.
+To remove initialization picture, remove splash from init line. To see logs, remove quite from init line.
+
+To switch from splash screen to terminal issue `alt` + `F1` or `F2`
+https://askubuntu.com/questions/248/how-can-i-show-or-hide-boot-messages-when-ubuntu-starts
+---------------------------------------------------------------------------------------------------------
+
+To make changes permament, change file /etc/default/grub and issue `sudo update-grub`.
+
+
+=========================================================================================================
+                                     Bridge
+=========================================================================================================
+brctl showmacs <intf>       # list of learned macs
+      show                  # list interfaces in bridge
+=========================================================================================================
+htt://github.com/0xAX/linux-insides/blob/master/Booting/linux-bootstrap-1.md
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/
+https://github.com/torvalds/linux/blob/v4.16/Documentation/x86/boot.txt
+https://github.com/shellphish/how2heap
+https://github.com/dylanaraps/pure-bash-bible
+https://github.com/s-matyukevich/raspberry-pi-os
+https://www.tldp.org/HOWTO/text/Linux-Init-HOWTO
+https://0xax.github.io/stack_layout_x86_64/
+
+https://kernelnewbies.org/WikiWikiWeb
+https://elixir.bootlin.com/linux/latest/source
+https://www.kernel.org/doc/html/v4.10/process/howto.html
+https://wiki.osdev.org/Introduction
+
+
+https://www.tldp.org/HOWTO/text/Linux-Init-HOWTO
+
+https://vincent.bernat.ch/en/blog/2017-ipv4-route-lookup-linux

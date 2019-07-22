@@ -1,0 +1,272 @@
+=========================================================================================================
+                        Networking
+---------------------------------------------------------------------------------------------------------
+                        Vlan
+---------------------------------------------------------------------------------------------------------
+
+sudo modprobe 8021q | load kernel module
+vconfig add eno1 10 | add interface
+vconfig rem eno1.10 | rem interface
+sudo su -c 'echo "8021q" >> /etc/modules' | add startup module 
+
+To make interface available on boot use /etc/network/interfaces
+auto eno1.10
+iface eno1.10 inet dhcp
+    vlan-raw-device eno1
+
+DON`T FORGET to turn on/off proxy
+
+---------------------------------------------------------------------------------------------------------
+                    Interface cofiguration
+---------------------------------------------------------------------------------------------------------
+To check if interface is up issue one of next
+ethtool <intf>                          # Link detected
+cat /sys/class/net/<intf>/operstate
+
+---------------------------------------------------------------------------------------------------------
+                        Proxy
+---------------------------------------------------------------------------------------------------------
+echo $no_proxy
+echo $http_proxy
+echo $https_proxy
+cat /etc/hosts
+
+Configure proxy host-ignore with dconf
+dconf write /system/proxy/ignore-hosts  "[localhost, 127.0.0.1, 8.8.8.8 ]"
+
+Bash cmd require proxy to be specified as variable
+export https_proxy=<ip>
+export http_proxy=<ip>
+
+---------------------------------------------------------------------------------------------------------
+                        Tcpdump
+---------------------------------------------------------------------------------------------------------
+tcpdump
+-s 0/65535          # packet size , 0 stands for default (65535)
+-n                  # numeric, dont translate ip to domain name
+-q                  # quite, less protocol information
+-t                  # don`t print time stamp
+-A                  # print packet in ASCII
+-X                  # content in HEX and ASCII
+-XX                 # -X + ethernet header
+-D                  # list available interfaces
+-i <name/any>       # interface, any means all, even those yet not created
+-w <file_name>      # save results to file
+ip/ip6              # to choose ip version
+host <ip>           # filter by ip
+src/dst <ip>
+port <port>         # filter by port
+src/dst <port>
+port-range <start>-<end>
+
+
+
+tcpdump -i any -vvvv ip6 -s 65535 -w dump6.pcap &
+tcpdump -i any -vvvv ip -s 65535 -w dump4.pcap &
+---------------------------------------------------------------------------------------------------------
+                        DNS
+---------------------------------------------------------------------------------------------------------
+/etc/nsswitch.conf   # dictate what name services are used (DNS, LDAP, etc) and order
+/etc/resolv.conf     # dns server used for resolving
+
+To configure default dns server for interface, you can specify it in /etc/interfaces
+dns-nameserver <ip1> <ip2> ...
+search <domain_name>    # if you try to resolve path without dots, this domain_name will be added
+                        # helpful if you are part of a LAN env that has its own DNS server
+
+---------------------------------------------------------------------------------------------------------
+                        DHCP
+---------------------------------------------------------------------------------------------------------
+dhclient -4/6 -r <intf>              # release lease
+dhclient -4/6 <intf>                 # acquire lease
+
+ipconfig /release
+ipconfig /renew
+---------------------------------------------------------------------------------------------------------
+                        ARP
+---------------------------------------------------------------------------------------------------------
+arp -n                          # view cache
+ip neight show                  # to see reachable neigh
+ip -s -s neigh flush all        # flush arp table
+ip link set dev #dev arp off    # suppress arp
+
+
+brctl show
+brctl showmacs <intf>
+brctl stp <intf> on
+brct showstp <intf>
+---------------------------------------------------------------------------------------------------------
+                        Wireless
+---------------------------------------------------------------------------------------------------------
+iwlist <wl_intf> scan              # find active access points
+
+# Making hotspot from device connected to internet
+nmcli dev wifi hotspot ifname <wl_interface> ssid <user_ssid> password <used_pwd>
+sudo iptables -t nat -A POSTROUTING -o <internet_intf>  -j MASQUERADE
+sudo iptables -A FORWARD -i <internet_intf> -o <wl_intf> -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i <wl_intf> -o <internet_intf> -j ACCEPT
+sudo ifconfig <wl_interface> down
+sudo ifconfig <wl_interface> up
+
+---------------------------------------------------------------------------------------------------------
+                        Iptables
+---------------------------------------------------------------------------------------------------------
+
+iptables
+Chain managment
+   -I/A/D <chain>     # insert/append/delete to chain
+   -E                 # rename user defined name
+   -F <chain>         # flush(remove) all rules from chain, all chains if none is specified
+   -N                 # create new chain
+   -P                 # sets default policy
+   -R                 # replace rule
+   -X                 # delete user chain
+   -Z                 # reset counters
+
+Rule construction
+   -s <source/mask>   # source
+   -d <destin/mask>   # destination
+   -j <targer>        # jump target DROP/ACCEPT/FORWARD/QUEUE/LOG/MARK/REJECT or to user defined chain
+                        target can be not specified, then rule will be skiped and counter increased
+   -g <uset_chain>    # continue on user chain
+   -i <in_interface>  # interface from which received
+                        can be inverted with ! and wildcarded with +, like eth+
+                        all interfaces if used without argument
+   -o <out_ibterface> # interface from which packet is being sent
+                        same rules as for -i
+   -f <fragment>      # rule applied to second and subsequent fragments,
+                        following ! means only unfragment packets match
+   -p <protocol>      # ip protocol affected by rule, can be icmp/tcp/udp/all
+                        can be a numeric value representing one of these or different peotocol
+                        any protocol listed in the /etc/protocols
+                        no argument == all
+   -c                 # initial counter
+   
+
+
+To insert rule at specific position use
+iptables -I <chain> #number
+
+
+DROP => drop the connection and act like it never happaned Source won`t realize that your system exists
+Reject => don`t allow connection ,but send error back.
+
+# Flush
+sudo iptables -F INPUT
+sudo iptables -F OUTPUT
+sudo iptables -F FORWARD
+sudo iptables -F
+# Accept trafic by default
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+# Allowing ping
+iptables -I INPUT -p icmp --icmp-type any -j ACCEPT
+iptables -I OUTPUT -p icmp --icmp-type any -j ACCEPT
+iptables -I FORWARD -p icmp --icmp-type any -j ACCEPT
+
+---------------------------------------------------------------------------------------------------------
+                        nmap/netstat
+---------------------------------------------------------------------------------------------------------
+
+nmap
+    -Pn <ip>        # skip host discovery
+    -p  <port>      # port
+    -e  <intf>      # used interface
+
+nmap -p 22 -v -Pn -e eno1.100 192.168.151.17  # scaning port ssh 22 on device 192.168.151.17
+
+netstat
+    -n, --numeric       don't resolve service names
+    -l, --listening     display listening sockets
+    -t, --tcp           display only TCP sockets
+    -u, --udp           display only UDP sockets
+    -p,                 resolve service names
+
+netstat -tapln      :lists ports and program that opened them
+
+=========================================================================================================
+                            Iperf
+=========================================================================================================
+Note that there are three version of iperf, iperf3 works using client-server approach and requires tcp
+connection before starting, therefore you may have problems with firewall. 
+iperf3
+    -t <sec>         # time to transmit for (10 sec default)
+    -c <server_ip>   # connect as client to server
+    -n <num>[KM/Kb]  # num of bytes to transmit per send
+    -B <intf>        # bind to specific interface
+
+iptables -P OUTPUT ACCEPT
+iptables -P INPUT ACCEPT
+iperf3 -s &                         # server
+iperf3 -n 900Kb -c 192.168.151.14   # client
+
+=========================================================================================================
+                            SCP
+=========================================================================================================
+me/remote => hostname@ip/domain
+
+scp username@hostname:file      # copy to me
+scp file username@hostname      # copy to remote
+scp -r dir username@hostname    # copy folder to remote
+scp -r username@hostname:path . # copy folder from remote
+scp me1@file me2@file   # cp from one user to another
+
+scp g564220@192.168.1.9:/home/tree.tar
+
+SCP will break if init script prints something, for instace echo from bashprofile
+To exit ssh session on lost connection press ~.
+https://unix.stackexchange.com/questions/196701/terminal-hang-when-lost-connection-and-ssh-is-on
+=========================================================================================================
+                            Netcat
+=========================================================================================================
+netcat -l -p <port>         # server
+netcat <ip> <port> < <msg>  # client, send msg to server
+
+=========================================================================================================
+                            Wireshark
+=========================================================================================================
+udp.port == 67 || udp.port == 68     ## dhcp filter using ports
+tcp contains SOAP                    ## check packet content for word
+
+=========================================================================================================
+                            Scappy
+=========================================================================================================
+Resend packet from previous capture
+---------------------------------------------------------------------------------------------------------
+p=rdpcap("/capture.pcap")
+srp1(p[1],iface="enxd46e0e089703")    # waits for response
+sendp(p[1],iface="enxd46e0e089703")   # send without response
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                            Random
+=========================================================================================================
+Use canonical? names for interfaces 
+---------------------------------------------------------------------------------------------------------
+Edit your /etc/default/grub
+GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
+sudo update-grub
+sudo reboot
+=========================================================================================================
+                        Some troubleshooting
+=========================================================================================================
+RTNETLINK permission denied	:
+Edit /etc/sysctl.conf
+
+net.ipv6.conf.all.disable_ipv6 = 0 
+net.ipv6.conf.default.disable_ipv6 = 0 
+net.ipv6.conf.lo.disable_ipv6 = 0
+
+sysctl -p
+---------------------------------------------------------------------------------------------------------
+ping: sendmsg: Operation not permitted
+
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+
+ip6tables -P INPUT ACCEPT
+ip6tables -P OUTPUT ACCEPT
+ip6tables -P FORWARD ACCEPT
+
+=========================================================================================================

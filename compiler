@@ -1,0 +1,288 @@
+=========================================================================================================
+                                   Languages
+=========================================================================================================
+Semantics => study of meaning; linguistic and philosophical study of meaning in language. It is concerned
+with relation between signifiers like words, phrases, signs, and symbols and what they stand for in reality,
+their denotation. 
+
+Programming language => a formal language designed for expressing computation. Programming languages are
+designed to avoid ambiguity in oposite to natural languages. It is designed to specify computations - to
+record the sequence of actions that perform task or produce some results.
+
+Mathematically, language is a set, usually infinite, of strings defined by some finite set of rules, called
+a grammar. Programming language grammars usually refer to words based on their parts of speech, sometimes
+called syntactic categories. Basing the grammar rules on parts of speech lets a single rule describe many
+sentences. For example, in English, many sentences have the form
+Sentence => Subject verb Object endmark
+where verb and endmark are parts of speech and Sentence, Subject and Object are syntactic variables.
+
+Formal language consists of 
+
+Context-free grammars are those grammars in which the left-hand side of each production rule consists
+of only a single nonterminal symbol. Such languages are the theoretical basis for the syntax of most
+programming languages. Note that there are hardly any real-world programming languages that are context-free.
+CFG are only used to roughly specify the syntax of language. If program is syntactically correct, that
+doesn`t mean it will compile. For instance, we can define some structure for mechanism like for loop
+for < counter : condition : step > { statement }
+If all fields are present then it is syntactically correct but symantically it is not valid if used
+fields are not previously defined. It is convinient to use CFG only for rough syntax defition since there
+is no easy way to define that things are supposed to be defined/allocated before.
+Syntactic features that are not possible to express with CFG:
+- Indentation and whitespace-sensitive languages liek Python
+- Typedef parsing problem
+- Macro/Template based languages
+
+Context-sensitive language is a language that can be defined by a context-sensitive grammar
+Context-sensitive grammar is a formal grammar in which the left-hand sides and righ-hand sides of any
+production rules may be surrounded by a context of terminal and nonterminal symobols.
+
+ML TODO
+
+https://stackoverflow.com/questions/898489/what-programming-languages-are-context-free
+https://cs.stackexchange.com/questions/7716/can-someone-give-a-simple-but-non-toy-example-of-a-context-sensitive-grammar
+=========================================================================================================
+                            Language classifications
+=========================================================================================================
+Programing languages can be divided into =>
+1. Imperative. You instruct computer how to do a task  (Describe each step, C/C++/Java)
+- Procedural. (C, Assembly)
+- Object-oriented 
+2. Declarative. You tell computer what to do (SQL, Prolog)
+- Functional. Program is constructed by composing functions (Haskel)
+- Logic. Program is constructed through a set of logica connections (Prolog)
+
+By typing:
+1. Static. Types are checked prior to runtime (typically during compile phase)
+2. Dynamic. Type checking is defered to runtime,
+3. Untyped. (Js)
+
+By typing discipline:
+1. Weak. Supports imlicit type conversions
+2. Strong. Prohibits implicit type conversions. 
+
+https://softwareengineering.stackexchange.com/questions/17976/how-many-types-of-programming-languages-are-there
+=========================================================================================================
+       Compiled vs. interpreted w. Build-Process vs. Interpreted/Console:
+=========================================================================================================
+TODO
+=========================================================================================================
+     Scoping schemes
+=========================================================================================================
+TODO
+=========================================================================================================
+A context-free grammar has four components
+1. Terminals    ## elementary symbols of the language defined by the grammar
+2. Nonterminals ## (syntactic variables) are replaced by groups of terminal symbols according to the
+                   production rules.
+3. Production 	## sequence of terminals/nonterminals
+4. Start symbol ## designation of one of the nonterminals
+
+<digit>   ::= 0 | 1 | 2 ...
+<integer> ::= <digit>+
+Here digits 0,1,2 are terminals (cannot be replaced further) and <intger> is nonterminal (will be replaced
+with series of digits)
+
+Lexic analyzer reads the input one character at a time and produces stream of tokens which consists of
+terminal symbol with associated data. Example of associated data is idenetifier in <id."name"> where id
+is terminal, token will hold poiter to symbol table where "name" is saved. The translator uses the symbol
+table to keep track of reserved words and identifiers that have already been seen.
+
+Parsing (syntax analysis ) is the problem of figuring out how a string of terminals can be derived from
+the start symbol of the grammar by repatedly replacing a nonterminal by the body of one of its productions.
+
+Predictive parser => parser that uses top down aproach. it has a procedure for each nonterminal ?
+
+https://angdepositaryo.fandom.com/tl/wiki/Terminal_and_Nonterminal_Symbols
+=========================================================================================================
+                                Lexical analisys
+=========================================================================================================
+
+Some times lexical analyzer is divided into a cascade of two processes =>
+- scanning and doing simple operations that doesn`t require tokenization like compaction of consecutive
+  whitespaces into one or removing comments
+- proper lexical analysis where scanner produces the sequence of tokens as output
+
+Reasons to divide compiler analysis portion into lexical and syntax analysis =>
+1. Simplicity of design. For exmaple, a parser that had to deal with comments and whitespace as syntatic
+   units would be considerably more complex than onde that can assume comments and whitespace have already
+   been removed by the lexiacal analyzer.
+2. Compiler efficiency is improved. A separate lexical analyzer allows us to apply specialized techinques
+   that serve only the lexical task, not the job of parsing
+3. Compiler portability is enhanced. Input-device-specific peculiarities can be restricted to the lexical
+   analyzer
+
+Token -> pair of token name and optional attribute value =>
+- token.name => abstract symbol representing a kind of lexical unit
+  e.g particular keyword, sequence of chars denoting an identifier.
+  e.g name can be like "comparison" for <= == operators or
+                       "literal" for arbitrary string "qweqwe"
+- lexeme => is a sequence of chars that matches the pattern for a token and is identified by the lexical
+  analyzer as an instance of that token
+- pattern => is a descripption of the form that the lexemes of a token may take form that defines valid
+  keywords and identifiers
+
+Sentinel character => during lexical analysis we need to check if current buffer has not ended and which
+character we read, which is two branches. We can combine them into one with speciall character named sential
+in the end of a buffer, that cannot be a part of the source program, natural choice is the eof.
+This would look next way
+switch (*forward++) {
+    case eof:
+        if (forward at end of first buffer) {
+            reload second buffer
+            forward = beginning of second buffer
+        }
+        else if (forward at end of seconf buffer) {
+            reload first buffer
+            forward = beginning of first buffer
+        }
+        else /*eof marking end of the input*/
+            terminate lexical analysis;
+        break;
+}
+
+
+Regular set => a language that can be defined by a regular expression
+
+=========================================================================================================
+                                Finite Automata
+=========================================================================================================
+Finite Automata => recognizers that say "yes" or "no" about each possible input string. They come in
+two flavours =>
+- Nondeterministic finite automata (NDA) => have no restrictions on the labels of their edges. A symbol
+  can label several edges out of the same state and empty string is a possible label
+- Deterministic finite automata (DFA) => for each state and for each symbol of its input alphabet exactly
+  one edge with that symbol leaving that state
+
+---------------------------------------------------------------------------------------------------------
+                             Converting NFA to DFA
+---------------------------------------------------------------------------------------------------------
+
+
+=========================================================================================================
+                                    Parsing
+=========================================================================================================
+Recovery methods =>
+- Panic-Mode => parser discards input symbols untill synchronizing token is found.
+  The synchronizing token is usually delimiters such as semicolon or }
+
+
+
+
+
+
+
+=========================================================================================================
+                          JIT Just In Time compilation
+=========================================================================================================
+JIT => whenever a program, while running, creates and runs some new executable code which was not
+part of the program when it was stored on disk.
+
+
+=========================================================================================================
+                                     Linker
+=========================================================================================================
+The compiler compiles a single high-level language file into a single object module file.
+The linker can only work with object modules to link them together, they are the smallest unit that
+linker works with.
+
+Declaration of function or a variable is a promise to the C compiler that somewhere else in the program
+is a defintion for that function or variable and that linker will find and fille the reference.
+If linker cannot find a definiton for a symbol to join to references to that symbol, then it will
+give an error message. In case of multiple definitions, it depends on language, but common case
+is to forbid such case or if its global uninitialized variable, use one and ignore other.
+
+As the linkert goes through collection of object files to be joined together, it builds a list of the
+symbols it hasn`t been able to resolve yet. When all of the explicetly specified objects are done with,
+the linker now has another place to lool for the symbols that are left on this unresolved list - in
+the library, If the unresolved symbol is define in one of the object in the library, then that object
+is added in, and link continues.
+
+Note, if some particular symbol`s definition is needed, the whole object that contains that symbol`s
+definition is included. This means, that the newly added object may resolve one undefined reference, but
+it may well come with a whole collection of new undefined references of its own for the linker to resolve.
+
+Another important detail is the order of events, arguments to linker are processed from left to right and
+in case your dependency tree is not like that (circular dependencies) linkage will fail. It is valid
+to duplicate libs for linkage in complicated cases. For instance `g++ -o myApp -lfoo -lbar -lfoo`, however
+there is no guarantee that two passes are enough. More readable solution which shows the relationship
+between the libraries is using --start-group ..., --end-group like in
+g++ -o myApp -Wl,--start-group -lfoo -lbar -Wl,--end-group
+
+What about shared libraries. When linker finds that the definition for a symbol is in a shared library,
+then id doens`t include the definition of that symbol in the final executable. Instead, the linker
+records the name of symbol and which library it is supposed to come from in the executable file intead.
+
+Before the main function is run, "just in time" linking is performed by a smaller version of the linker
+(called ld.so), which goes through library notes and does pulling in the code of the library.
+
+
+https://stackoverflow.com/questions/9380363/resolving-circular-dependencies-by-linking-the-same-library-twice
+https://www.lurklurk.org/linkers/linkers.html#cfilelisting
+
+=========================================================================================================
+                             Compiler vs Translator
+=========================================================================================================
+Complier that target programming languages rather than the instruction set of a computer are often called
+source-to-source translators.
+Interpreter takes as input an executable specification and produces as output the result of executing the
+specification. Languages like Perl, Scheme, APL, are more often implemented with interpreters than with
+compilers.
+Some languages adopt translation schemes that include both compilation and interpretation. Java is compiled
+from source code into a f rom called bytecode, a compact representation intended to decrease download time
+for Java application. Java applications execute by running bytecode on the corresponding JVM, an interpreter
+for bytecode.
+
+=========================================================================================================
+                                Bootstraping
+=========================================================================================================
+Bootstraping =>
+1.Get (oneself or something) into or out of a situation using existing resources;
+2.The technique of starting with existing resources to create something more complex and effective.
+3.A technique of loading a program into a computer by means of a few initial instructions which enable
+  the introduction of the rest of the program from an input device.
+Phrase commig after `Pull yourself up by your bootstraps.` meaning - to succeed or elevate yourself
+without any outside help.
+
+It is famouse problem in computing. For instance you have some high level language like C++ or Java
+that were written in some low layer language is C and Assembly, but what is the first language, how it
+is created and how it works? 
+
+We needed to create the first compilers (actually, "assemblers") which would allow programmers to write
+native machine code in a textual format. Before you could write 6502 assembly language, someone first had
+to write a 6502 compiler in pure machine language, or do the translation from assembler to machine code
+by hand. Of course it's even possible that the first 6502 compiler was written on a Z80 or any other
+existing architecture. Once the 6502 compiler existed, it could then be improved, writing the next version
+using that initial hand-compiled version. 
+
+---------------------------------------------------------------------------------------------------------
+You don't need an assembler to hand assemble assembly language code into machine code. Just as you don't
+need an editor to write assembly language code.
+
+The first assemblers were probably written in assembly language and then hand assembled into machine code.
+Even if the processor had no official 'assembly language' then programmers probably did most of the job
+of programming using some kind of pseudo code before translating that code into machine instructions.
+Even in the earliest days of computing, programmers wrote programs in a kind of symbolic notation and
+translated them into machine code before feeding it into their computer
+
+---------------------------------------------------------------------------------------------------------
+How do you know that new version is valid, what if you find some critical bug ?
+I suppose, to be sure that it is valid, you perform following steps
+1. Build new version 2 os assembler with version 1
+2. Compare them, maybe with diff, it there seems to be nothing wrong perform next step, otherwise fix
+   and return to step 1
+3. Build version 2 by itself, compare
+
+---------------------------------------------------------------------------------------------------------
+
+This issue is not that common, any more, since there are plenty of smart toolchains that knows how
+to compile code for specified architectures, unless you create totally new architecure.
+Today, when a brand new CPU architecture comes out, we use what is known as a Cross-Compiler,
+which is a compiler that produces machine code not for the architecture on which it is running, but for
+a different architecture. 
+
+However, we may get similiar experience within another fields, like building 3D printers that make new
+3D printers, robots that construct newer and better robots, tools that allow us to make better tools.
+
+https://softwareengineering.stackexchange.com/questions/129123/were-the-first-assemblers-written-in-machine-code
+https://www.youtube.com/watch?v=nslY1s0U9_c
+=========================================================================================================
