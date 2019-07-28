@@ -53,6 +53,14 @@ git branch --set-upstream my_branch origin/origin_branch    # set upstream branc
             -m <newname>                                    # rename current branch
             -m <oldname> <newname>                          # rename any branch
 =========================================================================================================
+                               Renaming detection
+=========================================================================================================
+You should commit any changes, perform rename and then stage you renamed file? Git will recognize the
+file from contents, rather than seeing it as a new untracked file, and keep the changed history.
+
+? How does git compare file content, calculates and compares hash ?
+
+=========================================================================================================
                                 Fetching
 =========================================================================================================
 To fetch one branch from remote, use
@@ -132,6 +140,35 @@ git show-ref --tags | grep -v -F "$(git ls-remote --tags <remote name> | grep -v
 git push --tags --dry-run           # -n can be used instead of --dry-run (requires to have permisions
                                       for remote)
 
+=========================================================================================================
+                                     Status
+=========================================================================================================
+git status
+         -u\--untracked-files=[all,no,normal]  # filter untracked files in status
+                          normal               # doesnt show files of untracked directories
+                          all                  # show files within untracked directories
+                                               # status.showuntrackedfiles for configuration purpose
+                                               # Note, value should stick to short version, -u[all/no...]
+
+
+git ls-tree -r <HEAD|Branch> --full-tree  --name-only     # list tracked files on that branch
+
+List ever existed, tracked files
+git log --pretty=format: --name-only --diff-filter=A | sort - | sed '/^$/d'
+
+To force colorfull output to files and pipes, you can define color.status variable as following
+git -c color.status=always status 
+The same for diff/show/log
+git -c color.ui=always diff
+
+https://unix.stackexchange.com/questions/44266/how-to-colorize-output-of-git
+=========================================================================================================
+                                     Ignore
+=========================================================================================================
+$ git ls-files . --ignored --exclude-standard --others  # list ignored files
+$ git ls-files . --exclude-standard --others            # list untracked files
+
+https://stackoverflow.com/questions/3538144/how-do-you-git-show-untracked-files-that-do-not-exist-in-gitignore
 =========================================================================================================
                                       Logs
 =========================================================================================================
@@ -391,6 +428,21 @@ https://unix.stackexchange.com/questions/233327/is-it-possible-to-clone-only-par
 ---------------------------------------------------------------------------------------------------------
 https://stackoverflow.com/questions/42906152/git-clone-by-default-shallow-or-not
 =========================================================================================================
+                                     Links
+=========================================================================================================
+Git won`t cross symbolic linked directories. There are a couple of workarounds,
+1. You can mv wanted directory to git, and create link at original position (won`t help if you want link
+directory into multiple git repos)
+2. There is a GitBLSR repo, which provides reworked logic for symlinck check mechanism, you just prelod
+it with LD_PRELOAD
+alias git="LD_PRELOAD=/path/to/gitbslr.so git"
+3. You can use bind mount
+4. Change git working tree for the specific actions. (Not sure how it works or supposed to work?)
+git --work-tree=/home/project/ add /home/static/
+git --work-tree=/home/project/ commit /home/static/
+
+https://superuser.com/questions/174833/how-can-i-make-git-commit-files-in-a-symlinked-folder
+=========================================================================================================
 Special characters
 =========================================================================================================
 HEAD => points to last commit in repo
@@ -425,8 +477,9 @@ curl -LJO                                                           #
 =========================================================================================================
 To change commit msg or merge currently staged objects to your last local commit, from directory with
 repository issue (commit window will popup)
-  git commit --amend
-  git commot --amend --no-edit     # if you don`t want to change commit message
+git commit --amend
+git commit --amend --no-edit     # if you don`t want to change commit message
+git commit --amend -c <hash>     # ammend specific commit
 =========================================================================================================
 Index
 =========================================================================================================

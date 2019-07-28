@@ -193,23 +193,40 @@ ${P?WORD}
 =========================================================================================================
                       Redirection
 =========================================================================================================
-# File descriptors
-0 => standart input
-1 => standart output
-2 => standart error
+When you redirect some file, bash opens a couple file descriptors, you can think of them as file ports that
+are connected to some another port like user terminal. This connection can be use to read data in and
+return data out. When file is opened it has three associated fds(file descriptors) by default. These are
+0  ====\                    ## standart input 
+1  ====== /dev/tty0         ## standart output
+2  ====/                    ## standart error
+By default, stdin(0) is user input, probably from some terminal like window; stdout(1) and stderr(2) is
+where data is printed, as well probably your terminal. You can reassing there ports on process start,
+therefore data can be read like as user typed it in or you can save output to file. 
+There are even more advanced associations, like redirecting input to process or output from process.
+
+This default behaviour is an effect of fork process wich makes child process inherit fds. In general it
+works next way: user opens some terminal emulator which is responsible for starting default shell and
+configuting its file descriptors to point where it wants (probably output to slave part and input to master?)
+Then you execute some command, for which, shell forks subprocess whose fds are inherited from shell and
+point to terminal. If user provided some other redirections, they are applied with `exec`.
+Child process is free to change fds as it wants, or allowed.
 
 Redirection of the form `echo 123 > file` is equal to `echo 123 1>file` which will assign stdout of echo
 to file. There is no such alias for stderr therefore we need to explicitly redirect `echo 123 2>file` .If
 u provide descriptor greater then 2, it will open new file descriptor which can be configured by user.
 
-Duplicating => making multiple file descriptors point to one file, for instance ls 123 2>&1 | vim
+Duplicating => making multiple file descriptors point to one file, for instance `ls 123 2>&1 | vim`
 This duplication can be read as, make stderr point to thing pointed by stdin This is not named aliasing
 since we change files, and after change of stderr we can change stdout so they will point to different files
 ls exist not_exist 2>&1 1>log               # will print err to stdout and !err to log file
 
 Ordering => redirections are set up from left to right
-cmd 2>&1 > file  # will redirect stdout to file but not stderr
-cmd >file 2>&1   # will redirected stoout to file and then stderr to file pointed by stdout
+cmd 2>&1 > file  # redirect stderr to user and stdout to file
+cmd >file 2>&1   # redirect stdout to file and make stderr point to file
+Following examples has the same result
+$ echo hello >/tmp/example
+$ echo >/tmp/example hello
+$ >/tmp/example echo hello
 
 Typycal error during redirection is file truncating. Stdout redirection '>' will truncate file before
 command is executed, there it is not a good idea to use file as argument and redirct to it sametime
@@ -219,20 +236,23 @@ To modifie file descriptors of the current shell use 'exec'
 exec 2>file
 
 Using additional fds can be used during usage of nested shells, for instance
-while read -r line;do echo "$line"; read -p "Press any key" -n 1;done < file
+$ while read -r line;do echo "$line"; read -p "Press any key" -n 1;done < file
 Here read for pressed key will get input from file. We can fix this by involving additional fd
-exec 3<file
-while read -u 3 line;do echo "$line"; read -p "Press any key" -n 1;done
+$ exec 3<file
+$ while read -u 3 line;do echo "$line"; read -p "Press any key" -n 1;done
 
-To close a file descriptor, point it to '-'
-ls 1>&-
-If you try to write to closed fd, error will be returned
+To close a file descriptor, point it to '-', if you try to write to closed fd, error will be returned
+$ ls 1>&-
 
-Non standart extensions
+---------------------------------------------------------------------------------------------------------
+                            Non standart extensions
+---------------------------------------------------------------------------------------------------------
 There is '>& / >>&' and '&> / &>>' which redirect both stdout and stderr. Diffence between them is next
 '&>' came from bash and '>&' came from csh. Both variants shouldnt be used for portable sh scripts
 
-Multiline input (Here Doucuments)
+---------------------------------------------------------------------------------------------------------
+                       Multiline input (Here Doucuments)
+---------------------------------------------------------------------------------------------------------
 There is option for multiline input, which can be done in next way
 command << DELIMITER
    ...
@@ -260,30 +280,79 @@ But there is one more readable form
 sed 's/a/A' <<< $foo
 read a b c <<< "$params"
 ---------------------------------------------------------------------------------------------------------
-                                     Pipes
+                     Pipe (collaboration but not chaining)
 ---------------------------------------------------------------------------------------------------------
+Pipe is a shell builtin mechanism that allows connect STDIN of one command with STDOUT of another and
+run them simultaneously, therefore command like `sleep 3 | sleep 3 | sleep 3` takes only 3 seconds, or
+`ps | grep ps`  will output `grep ps` as one of the results.
+Note that the pipe is a unidirectional communication channel. Thus, data can only flow in one direction
+
 Pipe connects standart output of one process to standart input of another therefore commands like
 `ls | echo` woun`t work since echo takes command line arguments and not stdin. There is workaround for
 such cases, like
 ls | xargs echo
 echo $(ls)
 
+There are three types of pipes
+1. Named, also called FIFO. They have name and they exist on filesystem untill mannually removed.
+   They don`t depent on process running therefore can be reused for multiple purposes.
+   Created with mknode() and removed with `rm` or unlink
+2. Unnamed.  Any command of type `cmd | cmd` creates unnamed pipe, since it is no more needed after
+   executiong and can be cleaned. It is created using `int pipe(int fd[2])` and closed using `close()`
+3. Annonymous named
+
+Chile processes inherit open file descriptors. This is why pipes work. To prevent an fd from being
+inherited, close it.
+
+Pipe commands are oppened in a subshell, therefore variables used inside pipes are not defined after pipe
+    echo "hello" | read first
+    echo "world" | read second | echo $second # nothing
+    echo $second $first # nothing
+
+Workaround for this can be additional scope
+    echo "hello world" | {
+        read first second
+        echo $second $first # world hello
+    }
+If u want variable to be in a subshell, user hear-string
+read first second <<< "hello world"
+
 Shell can be configured to not overwrite file on > redirection, in this case u need manually clean file
 or use ">| file" redirection.
 
+Named pipes can be used for multiple purposes, one interesting is work around of pipe unideriction
+(data can go only from left to right ??? TODO clarify)
+# using netcat as a proxy
+mkfifo backpipe
+nc -l 12345  0<backpipe | nc www.google.com 80 1>backpipe
+
+https://stackoverflow.com/questions/6893714/why-does-ps-o-p-list-the-grep-process-after-the-pipe
+https://stackoverflow.com/questions/9834086/what-is-a-simple-explanation-for-how-pipes-work-in-bash
+http://www.cs.fredonia.edu/~zubairi/s2k2/csit431/pipes.html
 ---------------------------------------------------------------------------------------------------------
                               Process redirection
 ---------------------------------------------------------------------------------------------------------
-You can pipe or redirect result of one program to another, but what is you want
-to redirected result of multiple commands to one. In this case use process redirection
-diff -u <(ps) <(ps -e)
-There is aswell stdin redirection, so output of your command will be redirected to
-another command which is commonly used for filtering
+You can pipe or redirect result of one program to another, but what if you want to redirected result of
+multiple commands to one. In this case use process redirection. This looks like `diff -u <(ps) <(ps -e)`
+where `<(ps)` creates an anonymous named pipe, and connects stdout of the process to the write part of
+the named pipe. Then bash executes the process, and it replaces the whole process substitution expression
+with the filename of the anonymous named pipe. Special file  When bash sees `<(ps it opens a special file
+`/dev/fd/n`, where n is a free file descriptor, then runs `ps` with its stdout connected to /dev/fd/n
+and replaces `<(ps)` with /dev/fd/n so the command effectively becomes:
+$ diff -u /dev/fd/n1 /dev/fd/n2
+
+
+
+There is aswell stdin redirection, so output of your command will be redirected to another command which
+is commonly used for filtering
 ps -ef | tee >(awk '$1=="tom"' >toms-procs.txt) \
                >(awk '$1=="root"' >roots-procs.txt) \
                >(awk '$1!="httpd"' >not-apache-procs.txt) \
                >(awk 'NR>1{print $1}' >pids-only.txt)
 
+---------------------------------------------------------------------------------------------------------
+                          File descriptor redirections
+---------------------------------------------------------------------------------------------------------
 &>          # redirect both 1 and 2
 M>N         # M by def is 1(fd) N is file name
 M>&N        # N is fd
@@ -295,18 +364,6 @@ n<&-        # close input fd n
 n>&-        # close output fd n
 1>&-,>&-    # close stdout
 
-Child processes inherit open file descriptors. This is why pipes work. To prevent an fd from being
-inherited, close it.
-Pipe commands are oppened in a subshell, therefore variables used inside pipes are not defiend after pipe
-    echo "hello world" | read first second
-    echo $second $first # nothing
-Workaround for this can be braces
-    echo "hello world" | {
-        read first second
-        echo $second $first # world hello
-    }
-If u want variable to be in a subshell, user hear-string
-read first second <<< "hello world"
 
 
 [n]<>filename   #open file <filename> for r/w and assign n fd to it used to write at a specified place in a file
@@ -315,6 +372,39 @@ exec 3<> File             # Open "File" and assign fd 3 to it.
 read -n 4 <&3             # Read only 4 characters.
 echo -n . >&3             # Write a decimal point there.
 exec 3>&-                 # Close fd 3.
+
+https://catonmat.net/bash-one-liners-explained-part-three
+https://catonmat.net/bash-one-liners-explained-part-one
+---------------------------------------------------------------------------------------------------------
+                                    Examples
+---------------------------------------------------------------------------------------------------------
+Reading file line by line
+---------------------------------------------------------------------------------------------------------
+while read -r line; do
+    # do something with $line
+done < file
+Note, leading and traling spaces are tuncated by IFS, to avoid this, reset IFS before reding like
+while IFS= read -r line; do
+...
+
+Another way, instead of redirecting you can pipe
+cat file | while IFS= read -r line; do
+    # do something with $line
+done
+
+read -r random_line < <(shuf file)
+
+Send the output from multiple commands to a file
+(command1; command2) >file
+
+
+Open two shells. In shell 1 do this:
+mkfifo fifo
+exec < fifo
+In shell 2 do this:
+exec 3> fifo;
+echo 'echo test' >&3
+
 
 =========================================================================================================
                                    Functions

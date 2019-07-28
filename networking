@@ -4,10 +4,10 @@
                         Vlan
 ---------------------------------------------------------------------------------------------------------
 
-sudo modprobe 8021q | load kernel module
-vconfig add eno1 10 | add interface
-vconfig rem eno1.10 | rem interface
-sudo su -c 'echo "8021q" >> /etc/modules' | add startup module 
+sudo modprobe 8021q                       # load kernel module
+vconfig add eno1 10                       # add interface
+vconfig rem eno1.10                       # rem interface
+sudo su -c 'echo "8021q" >> /etc/modules' # add module initialization on boot
 
 To make interface available on boot use /etc/network/interfaces
 auto eno1.10
@@ -59,6 +59,8 @@ port <port>         # filter by port
 src/dst <port>
 port-range <start>-<end>
 
+Display interface name in case of `-i any`
+https://serverfault.com/questions/224698/how-to-display-interface-in-tcpdump-output-flow
 
 
 tcpdump -i any -vvvv ip6 -s 65535 -w dump6.pcap &

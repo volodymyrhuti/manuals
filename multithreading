@@ -1,4 +1,25 @@
 =========================================================================================================
+                              Producer-consumer problem
+=========================================================================================================
+Producer–consumer problem (also known as the bounded-buffer problem) is a classic example of a multi-process
+synchronization problem. The producer's job is to generate data, put it into the buffer, and start again.
+At the same time, the consumer is consuming the data (i.e., removing it from the buffer), one piece at a
+time. The problem is to make sure that the producer won't try to add data into the buffer if it's full and
+that the consumer won't try to remove data from an empty buffer.
+
+---------------------------------------------------------------------------------------------------------
+                                Double buffering 
+---------------------------------------------------------------------------------------------------------
+
+https://www.codeproject.com/Articles/27703/Producer-Consumer-Using-Double-Queues
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                               Deadlock detection
+=========================================================================================================
+Resource allocation graph
+Wait-for graph
+
+=========================================================================================================
                                Mutex vs Semaphore
 =========================================================================================================
 Mutex and semaphore are kernel resources that provide synchronization services (also called as synchronization

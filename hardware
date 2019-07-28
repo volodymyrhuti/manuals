@@ -20,7 +20,99 @@ TODO Herz
 www.armadeus.org/wiki/index.php?title=Serial_ports_usage_on_Linux
 https://www.microchip.com/forums/m105451.aspx
 =========================================================================================================
+                                  Cable Types
+=========================================================================================================
+There are plenty of cable type used with modern computers, each having uniq pins, by its usage and structure.
+VGA           # Also known as D-sub cable, analog video cable, is one of the oldest computer monitor cable
+                types. Can be identified by 15 pins arranged in 3 rows with 5 on each row.
+DVI           # Digital Visual Interface, succeeded VGA in the 2000s as video technology moved from analog
+                to digital. 
+HDMI          # High-Definition Multimedia Interface
+              # capable of transmiting both display and sound so you can not only use your TV screen as a
+                monitor, but also make use of your TV speakers to play PC audio.
+                was designed to replace VGA and DVI
+PS/2          # purple used for keyboards and green for mouse
+Kettle Plug   # 
+ThunderBolt   # Mostly seen on laptops and Apple Macs these cables are high speed and are capable of
+USB-C         # carrying Data, video and other information.
+Display port  # has better quality over HDMI, use if you require a fast, high-resolution image.
+                was designed to replace VGA and DVI
+IDE           # Integrated Drive Electronics. Was used to connect storage devices to a motherboard
+SATA          # Serial Advanced Technology Attachment, was designed to succeed IDE, provides higher data
+                transfer speeds
+eSATA         # External SATA, an extension of, or improvement on, the SATA, makes technology available
+                in an external form. Isn’t much different than SATA, but it allows connections to devices
+                like external hard drives and external optical drives. However, eSATA has fallen out of
+                popularity due to advancements in USB speeds.
 
+https://www.makeuseof.com/tag/computer-cable-types-user/
+=========================================================================================================
+                      GPIO (General Purpose Input Output)
+=========================================================================================================
+General Purpose Input Output and are pins on various processors that aren’t dedicated to anything and all
+processors have at least a few. They’re designed for you to do input or output single bits. A GPIO Pin is
+a single bit either input or output.  In the digital world, we have a signal above about 2.5 volts, it’s
+a 1 one is below 2.5 volts is 0, so I’m just going to call them  0’s and 1’s even though they’re different.
+
+When you actually use an input on a GPIO, sometimes you have an output device that will only pull it down.
+It’s called an Open Drain and it’ll only pull something down. But it lets the input float if the device
+isn’t turned on. Well, you have to deal with that because if you let it float, you don’t know whether it’s
+going to end up being a 1 or a 0.
+
+The simplest thing you might do  a hardware “Hello World”, you make an led blink on and off. You do that
+by setting your pin to 1, 0, 1, 0. So you can turn it on and off, that’s using output. What about an input?
+You can hook up a switch out there that has that nasty little pull up to 5 volts or  3.3 volts. 
+
+They’re making the computers do something out in the real world. Whether it’s turning off a switch, whether
+it’s turning on an LED. All these things can be done with your little computer driving those GPIO Inputs
+and Outputs.
+
+Serial Devices only use one Input, but you transmit sequences that are timed so you try 1, 0, 1, 0, 1, 0,
+and you do that in a certain way you know it’s a byte of data. You need to know when the bytes start, not
+so much with the bytes quit, but we need to know when the bytes start. That’s called Framing 
+
+In case your device has not enough pins, you can use GPIO Extender.
+
+https://www.switchdoc.com/2018/02/gpio-pins-general-purpose-input-output/
+=========================================================================================================
+                                 Semiconductor
+=========================================================================================================
+
+=========================================================================================================
+                             IC Intergrated circuit
+=========================================================================================================
+Integrated circuit or monolithic integrated circuit (or IC, chip, microchip) is a set of electronic
+circuits on one small flat piece (or 'chip') of semiconductor material that is normally silicon.
+
+=========================================================================================================
+                           PCB Printer Circuit Board
+=========================================================================================================
+PCB (printed circuit board) => mechanically supports and electrically connects electronic/electrical
+components using conductive tracks, pads and other features etched from one or more sheet layers of copper
+laminated onto and/or betweeb sheet layers oa non-conductibe substrate. Components are both mechanically
+and electrically connected to PCB. It is used for everythin except the simplest electronic products.
+This about it as plastick sheet covered with elements and paths that interconnect them. Alternatives wire
+wrap and point to point construction.
+
+Wire wrap => electronic components mounted on insulating board are interconnected by lenghs of insulated
+wire run between their terminals, with the connections made by wrapping several turns of uninsulated sections
+of the wire around a component lead or a socket pin. It is old techology used for telephone switches and
+later used for prototyping since it can be well automated and easily fixed by hand.
+
+=========================================================================================================
+                                  CPU sockets
+=========================================================================================================
+A CPU socket (or slot) is a single connector between a microprocessor and motherboard. It is a distinct
+mount used only for the CPU on the motherboard to ensure correct circuit chip insertion. It facilitates
+CPU access and prevents damage when a unit is inserted or removed. A CPU socket also has a lock to prevent
+CPU movement, and its design helps secure heat sink placement above the CPU.
+
+Modern CPU sockets and processors are based on a pin grid array (PGA) architecture. PGA is a type of
+packaging used for integrated circuits (IC), such as a microprocessor. It is basically a square with pins
+that are organized below the packaging. Pins are spaced approximately 0.1 inches (2.54 mm) apart to cover
+a portion or entire underside of the package.
+
+=========================================================================================================
 CPU => Central Processing Unit
 MPU => Micro Processing Unti
 MCU => Micro Computer Unit or micro controller, is non general purpose 'computer' used
@@ -56,21 +148,6 @@ allows you to test pins of multiple chips interconnected
 BSDL (Boundary Scan Description Language) => variant of VHDL used for describing
 JTAG scheme by manufacturer, needed to run boundary scan
 
-PCB (printed circuit board) => mechanically supports and electrically connects electronic/electrical
-components using conductive tracks, pads and other features etched from one or more sheet layers
-of copper laminated onto and/or betweeb sheet layers oa non-conductibe substrate. Components are both
-mechanically and electrically connected to PCB. It is used for everythin except the simplest electronic
-products. This about it as plastick sheet covered with elements and paths that interconnect them.
-Alternatives wire wrap and point to point construction.
-
-Wire wrap => electronic components mounted on insulating board are interconnected by lenghs of
-insulated wire run between their terminals, with the connections made by wrapping several turns of
-uninsulated sections of the wire around a component lead or a socket pin. It is old techology
-used for telephone switches and later used for prototyping since it can be well automated and
-easily fixed by hand.
-
-IC => integrated circuit or monolithic integrated circuit (or IC, chip, microchip) is a set of electronic
-circuits on one small flat piece (or 'chip') of semiconductor material that is normally silicon.
 
 SMT (Surface-mount technology) => is a methid for producing electronic circuits in which the components
 are mounted or placed directly on the surface of PCB.

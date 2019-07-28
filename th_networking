@@ -1555,13 +1555,113 @@ WMN (Wireless Mesh Network) => network made up of radio nodes organized in a mes
 =========================================================================================================
 Max frame size => 1518 bytes (including 4byte CRC and 14byte header)
 Inter Frame Gap => 12 bytes send between frames to avoid collisions
+---------------------------------------------------------------------------------------------------------
+                      Ethernet Technology Characteristics
+---------------------------------------------------------------------------------------------------------
+The major reason for the success of Ethernet in industry was the adoption of the Ethernet standard
+(IEEE 802.3), allowing for interoperability between different vendor’s products (Carrier Sense Multiple
+Access with Collision Detection CSMA/CD, Access Method and Physical Layer Specifications). This
+specification allowed many different vendors to produce network interfaces and media that supported
+Ethernet.
 
+Ethernet is a very flexible system because interfaces operating at different transmission rates can be
+connected to the same LAN.
+
+There are three elements in Ethernet:
+1. Physical media segments, which are used to interconnect systems
+2. The Media Access Control (MAC) rules that implement access to Ethernet channels
+3. A frame that organizes data to be transmitted in a standard way
+
+When transmitting data, a station must wait for the channel to be free of data before sending a packet
+formatted as a frame. The mechanism for preventing packet collision is the Carrier Sense Multiple Access
+with Collision Detection (CSMA/CD) method specified by the IEEE standard. Prior to data being transmitted,
+a station must enter Carrier Sense (CS) mode. If no data is detected on the channel, all stations have an
+equal opportunity to transmit a frame, a condition known as Multiple Access (MA). If two or more stations
+begin transmitting frames and detect that they are transmitting at the same time, a state known as Collision
+Detection (CD), then the stations halt transmission, enter the CS mode and wait for the next MA. When a
+collision occurs, the frames must be re-sent by their respective parties, delay between retransmission
+is randomized for each network interface.
+
+? How does station know that some one else starte sending data at the same moment?
+
+Ethernet has a logical topology, or tree-like structure, that is distinct from the set of physical interfaces
+that are interconnected using networking cable. One of the implications of this tree-like structure is that
+individual branches can be segmented in order to logically isolate structural groups. This structure also
+allows a large number of unrelated networks to be connected to each other 
+Individual network branches can be linked together by using a repeater of some kind, such as a hub or a switch.
+http://etutorials.org/Misc/solaris+exam+guide/Part+III+Solaris+9+Operating+Environment+Objectives/Chapter+33+Ethernet/Ethernet+Characteristics/
+---------------------------------------------------------------------------------------------------------
+                             Ethernet frame format
+---------------------------------------------------------------------------------------------------------
+Through ethernet development there was many additions to ethernet frame structure
+The first type of ethernet frame was ethernet II
+Preamble - 8bytes, identifies start of ethernet frame
+DA       - 6bytes, destination mac address, can unicast,multicast or brodcast
+SA       - 6bytes, source mac address, unicast only
+E-Type   - 2bytes, l3 protocol identifier IP4,IP6
+PAYLOAD  - 46 through 1500 bytes
+FCS      - 4bytes, CRC frame check sequence
+
+Ethernet 802.3/802.2 (802.3 with LLC header)
+E-Type was replaced with Length wich identified count of bytes after this field
+SSAP(Source service access point) and DSAP (Destination service access point) byte fields were added
+to identify l3 protocol used.
+Control byte field was added
+
+Next evoultion will be 802.3 with SNAP header
+
+https://habr.com/ru/post/227729/
+---------------------------------------------------------------------------------------------------------
+                               10Base-T Standart
+---------------------------------------------------------------------------------------------------------
+10Base-T is the Ethernet wiring standard for 10 Mbps (megabits per second) for a maximum distance of
+approximately 100 meters per segment over unshielded twisted pair cables terminated with RJ-45 connectors.
+The name 10Base-T is derived from several aspects of the physical medium. The 10 refers to the transmission
+speed of 10 Mbps. The base is short for baseband, which means that only one Ethernet signal is present on the
+send and/or receive pair (i.e., there is no multiplexing as with broadband transmissions). The T comes
+from twisted pair.  10Base-T does not specify the exact type of wiring to be used. 
+10Base-T was the first vendor-independent standard implementation of Ethernet on twisted pair wiring
+http://www.linfo.org/10baset.html
+---------------------------------------------------------------------------------------------------------
+                               10Base F standart
+---------------------------------------------------------------------------------------------------------
+10BASE-F is a generic term for the family of 10 Mbit/s Ethernet standards using fiber optic cable. In
+10BASE-F, the 10 represents a maximum throughput of 10 Mbit/s, BASE indicates its use of baseband
+transmission, and F indicates that it relies on medium of fiber-optic cable. One strand is used for data
+transmission while the other is used for reception, making 10BASE-F a full-duplex technology. There a three
+different variants of 10BASE-F: 10BASE-FL, 10BASE-FB and 10BASE-FP. Of these only 10BASE-FL experienced
+widespread use.
+---------------------------------------------------------------------------------------------------------
+                                 Fast Ethernet
+---------------------------------------------------------------------------------------------------------
+Fast Ethernet is an extension of the 10 megabit Ethernet standard. It runs on twisted pair or optical
+fiber cable in a star wired bus topology.Of the Fast Ethernet physical layers, 100BASE-TX is by far the
+most common. The "100" in the media type designation refers to the transmission speed of 100 Mbit/s, while
+the "BASE" refers to baseband signalling. The letter following the dash ("T" or "F") refers to the physical
+medium that carries the signal (twisted pair or fiber, respectively), while the last character
+("X", "4", etc.) refers to the line code method used.
+
+---------------------------------------------------------------------------------------------------------
+                                      Leds
+---------------------------------------------------------------------------------------------------------
+Ethernet ports usually have 2 leds, one represents the connection state (fixed light) and the other
+represents activity. Usually the connection state is green or yellow/orange where green means higher
+speed and yellow/orange means lower speed. (Available speeds are 10/100/1000 megabits/sec). Speed is
+negotiated at connection, then is fixed. The activity led is usually green and blinks when data is sensed
+thru the port 
+
+On cheap switches there is usually a single green led per port indicating connection, which blinks when
+data is seen passing. Advanced switches can have different meanings for lights depending on user action
+or configuration.
+
+https://www.quora.com/What-do-the-different-colors-of-lights-in-an-Ethernet-port-mean
 =========================================================================================================
                                       STP
 =========================================================================================================
 Often for network stability concerns we redundant links. Idea is next, if one link goes down, we can use
-another. However now we face problem of loops in network. For instance, switch1 broadcast ARP on its interface,
-which will be received by switch2 and it will resend it to switch1 again.
+another. However now we face problem of loops in network. For instance, switch1 broadcast ARP for PC2 on
+its interface, which will be received by switch2 and if it doesn`t know about PC2 (maybe it doesn`t
+respond at the moment) will resend it to switch1 again. This is called a broadcast storm.
                  //==========> PC1
 Router ======> Switch1
                ||   ||
@@ -1572,7 +1672,7 @@ Router ======> Switch1
 PC2 =============//
 
 Main aim of STP is to avoid L2 loops in network, it`s done with STA (Spanning Tree Algorithm) which
-result in connected graph with no loops.   
+result in connected graph with no loops.
 
 Switches communicate with special packets called BPDU (Bridge Protocol Data Units). There are two types
 of BPDU. Configuration BPDU and toplogy change notification BPDU (TCN). First one is used by root switch
@@ -1584,6 +1684,7 @@ to create topology. Couple important fields of Configuration BPDU =>
 This message is sent from each port for multicast mac address 01:80:C2:00:00:00 (by default every 2 second)
 which are received by switches with eneabled STP. 
 
+https://computer.howstuffworks.com/lan-switch13.htm
 ---------------------------------------------------------------------------------------------------------
                       How to create topology without loop
 ---------------------------------------------------------------------------------------------------------
@@ -1603,7 +1704,7 @@ When root bridge is choosen, each switch is supposed to choose one port which wi
 2. Receiving switch looks at speed of link and add cost according to table (802.1d)
 10 Mbps  => 100
 100 Mbps => 19
-1 Gbps	 => 4
+1 Gbps   => 4
 10 Gbps  => 2
 3. Received switch resends it to next one and so on.
 If there are multiple ports with equal path price, port with the smallest number is choosen.
@@ -1624,6 +1725,7 @@ port Designated. Now all other ports are block therefore removing loop
       ||
       PC
 
+After this, we determine ports that has the highest path cost to root and block them.
 ---------------------------------------------------------------------------------------------------------
                             States of port on bridge 
 ---------------------------------------------------------------------------------------------------------
@@ -1639,6 +1741,37 @@ State of port is changes 1-4 after initialization, which makes some delay but th
 nothing will be broken. Client may think that there is no DHCP in network and self configure during this
 timeout. There is option `portfast` which makes prot start in state forwarding for end nodes to avoid such
 problems
+
+---------------------------------------------------------------------------------------------------------
+                                Port attributes
+---------------------------------------------------------------------------------------------------------
+Port Priority. Each port of a Switch has a Spanning Tree Port Priority value associated with it, which is
+equal to 128 by default and can be changed with `brctl setportprio  <bridge> <port> <prio>`
+
+Port ID. Spanning Tree Port ID is formed by adding the 4-bit port priority value (the default value of 128)
+to 12-bit interface identifier (total 16 bits). Normally, a Port ID is denoted in Hexadecimals similar as
+0x8015, which is equivalant to 128.21 in decimals, where the first part is the default Port Priority number
+and second part is the switch interface identifier.
+
+Forwarding delay. Forwarding delay time is the time spent in each of the Listening and Learning states
+before the Forwarding state is entered. This delay is so that when a new bridge comes onto a busy network
+it looks at some traffic before participating.
+
+Hello time. Periodically, a hello packet is sent out by the Root Bridge and the Designated Bridges. Hello
+packets are used to communicate information about the topology throughout the entire Bridged Local Area Network.
+
+Max age. If a another bridge in the spanning tree does not send out a hello packet for a long period of
+time, it is assumed to be dead. This timeout is set with:
+
+http://williamherry.blogspot.com/2012/05/bridge-by-linux-foundation.html
+---------------------------------------------------------------------------------------------------------
+                        Connecting switch to it self
+---------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------
+To check that stp is working, issue `tcpdump -vvv -p -n -i <intf> stp`, it is expected that every n seconds
+(2 by default), your device will send BPDUs to detect another that`s also transmitting BPDUs
 
 TODO FIB (Forwarding information base)
 =========================================================================================================

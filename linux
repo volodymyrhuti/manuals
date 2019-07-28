@@ -285,7 +285,7 @@ cat /etc/fstab      # mounted on boot
 If you want to override options used when mounting, use following, options will be appended, last option
 wins when ambiguous
 mount <dir|device> -o <new_options> 
-By default, only root user can mount filesystems, unless it has noauto,user options under fstab.
+By default, only root user can mount filesystems, unless it has `noauto,user` options under fstab.
 To remount filesystem issue
 mount -o remount,<rw/ro> <dev> <path>     # ignores configuration files
 mount -o remount,<rw/ro> <path>           # merges options from configuration file
@@ -393,7 +393,8 @@ du ~/go | sort -n -r | less  #sort files by size
 ncdu    # nice cli scanner
 
 =========================================================================================================
-                        /proc of interest
+                               /proc of interest
+=========================================================================================================
 
 malloc                  # malloc debugging
 meminfo                 #
@@ -425,22 +426,19 @@ coproc <name> cmd <redirections>    # starts a cmd as a background job, setting 
 jobs -l                             # list background process + its pid
 
 =========================================================================================================
-                            TOP
-RSS (Resident Set Size) => how much memory is allocated to the process and in in RAM,
-Doesn`t include memory that is swapped out. It does include memory from shared libraries
-whose pages are in memory. Includes all stack and heap memory.
-Since part of the memory is shared, many processes may use it, so if you add up all of
-the RSS values you can easily end up with more space than your system has.
+                                      TOP
+=========================================================================================================
+RSS (Resident Set Size) => how much memory is allocated to the process and in in RAM. Doesn`t include memory
+that is swapped out. It does include memory from shared libraries whose pages are in memory. Includes all
+stack and heap memory. Since part of the memory is shared, many processes may use it, so if you add up all
+of the RSS values you can easily end up with more space than your system has.
 
-VSZ (Virtual Memory Size) => all memory process can access, including memory that is
-swapped out, that is allocated but not used and memory from shared libraries.
+VSZ (Virtual Memory Size) => all memory process can access, including memory that is swapped out, that is
+allocated but not used and memory from shared libraries.
 
-
-
-The memory that is allocated also may not be in RSS until it is actually used by the program.
-So if your program allocated a bunch of memory up front, then uses it over time, you could see
-RSS going up and VSZ staying the same.
-
+The memory that is allocated also may not be in RSS until it is actually used by the program. So if your
+program allocated a bunch of memory up front, then uses it over time, you could see RSS going up and VSZ
+staying the same.
 
 https://stackoverflow.com/questions/7880784/what-is-rss-and-vsz-in-linux-memory-management
 =========================================================================================================

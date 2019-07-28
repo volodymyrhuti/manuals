@@ -116,7 +116,10 @@ Use start version of commands if you dont wont latex to number your section nor 
 To increase gap between paragraphs use package called 'parskip'
 \baselinkeskip => line height
 \topskip => vertical spacing of the first line of a page
+
 \parindent => identifies indent of all paragpraphs except the first one
+\setlength{\parindent}{0pt}       % remove natural indentation for paragraphs
+
 
 To position elemnt in the center, it can be wrapped into environment like
 \begin{center} ... element ...  \end{center}
@@ -232,23 +235,31 @@ line 1      ==\   line1
             ==/   line2
 line 2
 
-\textbf{This text will be bold}        % bold text
-{\bfseries ... }
-\textit{This is italic}                % italic
-\enph{This is emphatic}                % emphatic, by default italic but can be redefined
+\textbf{This text will be bold}        % bold text, to undo \textmd
+{\bfseries ... }                                            \mdseries
+\textit{This is italic}                % italic, use \textup{text} to undo
+{\itshare  ...}                        % ?     , use {\upshare...} to undo
+\emph{This is emphatic}                % emphatic, by default italic but can be redefined
+                                         nest once more to undo
 \underline{This is undeline}           % underline
 ``Proper quotation''                   % smart quotes
                                          `Proper quotation'
 \paragraph                             % paragraph
 \noindent                              % start without indent, works for one paragraph
+\rm{Word}                              % roman (deprecated version?)
+\textrm{Word}                          % roman, use it for mathematical expressions, otherwise they are
+                                         printed in italic (it is more optimal for math formulas)
+
+If you want to reset style for test in some scope use `{\normalfont wanted text}` or `\textnormal{}`
+
 
 Sizing tiny => small => large => Large => huge => Huge
-
 ---------------------------------------------------------------------------------------------------------
 To justify test, you can use one of the following environments: center, flushleft, flushright, or if you
 are already within some environment, you can switch justification with \raggedright \raggedleft
 Another solution is to fill free space, like "Left word\hspace*{\fill}Right word"
-
+---------------------------------------------------------------------------------------------------------
+https://tex.stackexchange.com/questions/225267/how-to-set-not-italic-or-not-bold
 =========================================================================================================
                                      Lists
 =========================================================================================================
@@ -382,33 +393,20 @@ And tag
 =========================================================================================================
                                       Math
 =========================================================================================================
-To enter math mode during sentence use $$
+To enter math mode during sentence use $...$ or  $$..$$ to start expression from new line
 supersciprts: $2x^3$
-or to start expression from new line $$..$$
-
-Opearions like exponent takes only one symbol after ^, if you need more,
-wrap all symbols into {}
+Opearions like exponent takes only one symbol after ^, if you need more, wrap all symbols into {}
 x^{123}
 
-greek letters =>
-\pi
+\pi                     % greek letters
 \alfa
-...
-
-Trig functions =>
-\sin{x}
-...
-
-Log functions =>
-\log{x}
+\sin{x}                 % trig functions
+\log{x}                 % log functions
 \log_2{x}
 \ln{x}
-
-Square root =>
-\sqrt{value}
+\sqrt{value}            % square root
 \sqrt[root]{value}
-
-Fraction => \frac{enum}{denom}
+\frac{enum}{denom}      % fraction
 To expand parenthesis/brackets/curly braces  around fractions, use left and right
 \left(\frac{2}{5}\right)
 Note \left expects \right next to it, otherwise u will get an error. Workadround for this is dot

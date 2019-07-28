@@ -425,6 +425,28 @@ unzip archive to there and start init script
 http://linuxdevices.org/introducing-initramfs-a-new-model-for-initial-ram-disks-a/
 https://stackoverflow.com/questions/15444917/initrd-ramdisk-initramfs-uclinux
 =========================================================================================================
+                             Data buferizing
+=========================================================================================================
+Most of data on system is buffered at some point, and you may lose it by kill process maintaining this
+buffer. There are couple of ways to forcefully flush resources:
+1. Try shell sync command without parameters to flush all caches, or with file path, to flush only it.
+2. Attach to process with gdb and `call fsync(1)`, it should return 0, then `detach`
+3. Override default fopen() from C library with user defined (link with description below)
+.  There are already packaged solutions, like `stdbuf -oL`
+
+The write-back cache on a storage device can come in many different flavors. There is the volatile write-back
+cache. Such a cache is lost upon power failure. However, most storage devices can be configured to run in
+either a cache-less mode, or in a write-through caching mode. Each of these modes will not return success
+for a write request until the request is on stable storage.
+It is best to assume a volatile cache, and program defensively
+Some file systems provide mount options to control cache flushing behavior, eg -o barrier=0,1
+
+
+https://lwn.net/Articles/457667/
+https://superuser.com/questions/1288890/will-buffer-be-automatically-flushed-to-disk-when-a-process-exits
+https://serverfault.com/questions/464323/how-do-you-force-a-process-to-flush-the-data-written-to-an-open-file-descriptor
+https://superuser.com/questions/764479/force-output-buffer-flush-in-running-program
+=========================================================================================================
                               Filesystem commands
 =========================================================================================================
 cat /proc/mounts                # list mounts
