@@ -1,6 +1,6 @@
 =========================================================================================================
                      General
----------------------------------------------------------------------------------------------------------
+=========================================================================================================
 Hub              ## device that receives information at one port and duplicates to other
 Unmanaged switch ## device that knows topology of the network and sends only to requested devices, however
                     you cannot configure it
@@ -375,7 +375,8 @@ IP destination is the actual box you want to communicate with).
 Note that bridge itself can gen an IP address and may work as a standart Ethernet device. The host can
 communicate via this address with other guests to the bridge.
 
-
+Bridge virtual file system can be found under
+/sys/devices/virtual/net/<br_name>
 
 https://en.wikibooks.org/wiki/Switches,_Routers,_Bridges_and_LANs/Bridges
 https://linux-blog.anracom.com/tag/linux-bridge-linking/
@@ -480,10 +481,6 @@ https://upload.wikimedia.org/wikipedia/commons/3/37/Netfilter-packet-flow.svg
 https://wiki.debian.org/BridgeNetworkConnections
 http://ebtables.netfilter.org/documentation/docs.html
 http://ebtables.netfilter.org/br_fw_ia/br_fw_ia.html
----------------------------------------------------------------------------------------------------------
-                                 Bridge tables
----------------------------------------------------------------------------------------------------------
-
 =========================================================================================================
                               Routing vs Bridging
 =========================================================================================================
@@ -534,7 +531,7 @@ VLAN adds 4byte 802.1Q tag to ethernet frames. The first 16bits of this field co
 
 There are 2 types of ports used for VLAN:
 Access port => end nodes connects to it. Trafic between port and end node is not tagged. This port is
-attached to some VLAN, sometines this VLAN parameter is called PVID. Traffic passing through this port
+attached to some VLAN, sometimes this VLAN parameter is called PVID. Traffic passing through this port
 from client is getting tagged. Traffic passing to client is not tagged.
 
 Trunk port => port/interface that is allowed to receive and send packet frames for multiple VLANs.
@@ -795,10 +792,18 @@ FF02::A             all-EIGRP
 FF02::1:FFxx:xxxx   solicited-node for reso;ution process 
         ?+ used instead of v4 arp to find gateway with multicast solicitation
 =========================================================================================================
-                Broadcasting 
+                                  Broadcasting
+=========================================================================================================
+roadcast frames are forwarded out all switch ports except the original ingress port. This ensures that
+all devices in a broadcast domain are able to receive the frame. If there is more than one path through
+which the frame can be forwarded, an endless loop can result. When a loop occurs, it is possible for the
+MAC address table on a switch to constantly change with the updates from the broadcast frames, which
+results in MAC database instability.
+
 Ethernet Multicast address => 01:00:00:00:00:00
 Ethernet Broadcast address => ff:ff:ff:ff:ff:ff
 
+http://www.ciscopress.com/articles/article.asp?p=2832407&seqNum=4
 =========================================================================================================
                                   Multicasting
 =========================================================================================================
@@ -1546,9 +1551,100 @@ http://wifinigel.blogspot.com/2018/05/the-5ghz-problem-for-wi-fi-networks-dfs.ht
 https://en.wikipedia.org/wiki/List_of_WLAN_channels
 https://netbeez.net/blog/dfs-channels-wifi/
 ---------------------------------------------------------------------------------------------------------
+                                  Beamforming
+---------------------------------------------------------------------------------------------------------
+A common feature for high-end 802.11ac wireless routers. There’s no downside to getting beamforming, aside
+from the money you may have to spend to get a more expensive router with this feature. Note that your
+device is supposed to support 802.11ac, othrewise this feature can`t be used.
+
+---------------------------------------------------------------------------------------------------------
                                       Mesh
 ---------------------------------------------------------------------------------------------------------
 WMN (Wireless Mesh Network) => network made up of radio nodes organized in a mesh topology. 
+
+=========================================================================================================
+          WPS (Wi-Fi Protected Setup, originally Wi-Fi Simple Configuration)
+=========================================================================================================
+WPS is a network security standard to create a secure wireless home network;
+is a method of connecting to gateway without knowing its password. This is commonly used for first
+time logging, therefore client can reconfigure password. This is done via an external or internal
+registrar. These methods include:
+1. Push Button (PBC), external registrar. User has to push a button, either an actual or virtual one, on
+   both the access point and the new wireless client device. On most devices, this discovery mode turns
+   itself off as soon as a connection is established or after a delay (typically 2 minutes or less),
+   whichever comes first, thereby minimizing its vulnerability.
+   Method is optional.
+2. PIN entry. A unique PIN  will be required for each device to join the network. A fixed PIN label or
+   sticker may be placed on a device, or a dynamic PIN can be generated and shown on the device's display
+   (e.g., a TV screen or monitor). PIN is used to make sure the intended device is added to the network
+   being set up and will help to avoid accidental or malicious attempts to add unintended devices to the
+   network. Method is required to be implemented.
+3. Near Field Communication (NFC). Usually not used nor is required to be implemented.
+
+Wi-Fi Simple Configuration defines new 802.11 information elements (IE) that are included in beacons,
+probe requests and probe responses. The purpose of these IEs is to advertise the presence of devices that
+are capable of performing Wi-Fi Simple Configuration operations.
+
+Definitions used in architecture:
+1. Domain. A set of 1+  devices controlled by a common authority for the purpose of gaining access to 1+ WLANs.
+2. Enrollee. A device seeking to join a WLAN Domain. Once an Enrollee obtains a valid credential, it
+   becomes a Member.
+3. In-band. Data transfer using the WLAN communication channel
+4. Out-of-band. Data transfer using a communication channel other than the WLAN
+5. Registration Protocol. A Registration Protocol is a (logically) three party in-band protocol to assign
+   a Credential to the Enrollee. The protocol operates between the Enrollee and the Registrar and may
+   receive support through a proxy.
+6. Registrar. An entity with the authority to issue and revoke Domain Credentials. A Registrar may be
+   integrated into an AP (internal Registrar), or it may be separate from the AP (external Registrar).
+   A Registrar may not have WLAN capability.  A given Domain may have multiple Registrars.
+7. External Registrar. A Registrar for an AP’s Domain that runs on a device separate from the AP
+8. PushButton Configuration (PBC). A configuration method triggered by pressing a physical or
+   logical button on the Enrollee and on the Registrar.
+
+Some wireless access points have a dual-function WPS button, and holding this button down for a shorter
+or longer time may have other functions, such as factory-reset or toggling WiFi.
+
+http://junyelee.blogspot.com/2014/11/wi-fi-protected-setup_4.html
+https://kb.netgear.com/19824/How-do-NETGEAR-Home-routers-defend-WiFi-Protected-Setup-PIN-against-brute-force-vulnerability
+---------------------------------------------------------------------------------------------------------
+                               Managment packets
+---------------------------------------------------------------------------------------------------------
+The Wi Fi Beacon management frame is a sent out by the access point every 100ms (can be configured).
+Beacon frames are used to advertise that the existence of a wireless access point is available and contains
+all the required information required to connect to the network. It contains follwing information:
+1. Beacon Interval. Interface at which beacons are transmitted by AP, needed by devices in power save mode
+   so they wake only when needed.
+2. Timestamp. This details the local time of the access point so all local device can use this information
+   to synchronize their time.
+3. SSID. This field details the network name associated with the access point. If the network is hidden
+   then there will be no information in this field. A client will need to know the SSID in its probe
+   request, if it wants to connect to this access point.
+4. Supported rates. This determines the supported data rates by the access points
+5. Parameter sets. This describes the supported signaling rates i.e frequency hopping spread spectrum etc
+6. Capability information. This field defines the capabilities that the client will need to support in
+   order to connect with the access point.
+7. Traffic Indication Map (TIM). An access point periodically sends the TIM within a beacon to identify
+   which stations using power saving mode have data frames waiting for them in the access point’s buffer.
+8. Fixed Parameter contains information like if wep is being supported being used and what type of
+   modulation is being used.
+There are also fields that hold  extra parameters, that has been added to the Wi FI spec since its first
+initial standard. This information can be found under tagged parameters.
+
+
+https://networksystemsblog.wordpress.com/2014/04/21/wi-fi-management-packets-explained-part-1-wi-fi-beacon-frames/
+=========================================================================================================
+                                 WiFi standarts
+=========================================================================================================
+                                    802.11ac
+=========================================================================================================
+                           VHT (Very High Throughput)
+---------------------------------------------------------------------------------------------------------
+Also known as Very High Throughput (VHT), 802.11ac is positioned as the successor to 802.11n, known as High Throughput (HT)
+
+=========================================================================================================
+                                Data Offloading
+=========================================================================================================
+
 
 =========================================================================================================
                                     Ethernet
@@ -1642,8 +1738,14 @@ medium that carries the signal (twisted pair or fiber, respectively), while the 
 ("X", "4", etc.) refers to the line code method used.
 
 ---------------------------------------------------------------------------------------------------------
-                                      Leds
+                                      Ports + leds
 ---------------------------------------------------------------------------------------------------------
+Switch ports are layer 2 interfaces which are used to carry layer 2 traffic. A single switch port can
+carry single VLAN traffic whether it is an access port or trunk port.
+
+Ports can be classified by its usage :
+1. Access port. 
+
 Ethernet ports usually have 2 leds, one represents the connection state (fixed light) and the other
 represents activity. Usually the connection state is green or yellow/orange where green means higher
 speed and yellow/orange means lower speed. (Available speeds are 10/100/1000 megabits/sec). Speed is
@@ -1658,10 +1760,11 @@ https://www.quora.com/What-do-the-different-colors-of-lights-in-an-Ethernet-port
 =========================================================================================================
                                       STP
 =========================================================================================================
-Often for network stability concerns we redundant links. Idea is next, if one link goes down, we can use
-another. However now we face problem of loops in network. For instance, switch1 broadcast ARP for PC2 on
-its interface, which will be received by switch2 and if it doesn`t know about PC2 (maybe it doesn`t
-respond at the moment) will resend it to switch1 again. This is called a broadcast storm.
+Often for network stability concerns we use redundant links. Idea is next, if one link goes down, we can
+use another, maybe it goes up atimatically. However now we face problem of loops in network. For instance,
+a switch broadcasts ARP for PC2 on its interface, which will be received by switch2 and if it doesn`t know
+about a PC2 (maybe it doesn`t respond at the moment) will resend it to switch1 again. This is called a
+broadcast storm.
                  //==========> PC1
 Router ======> Switch1
                ||   ||
@@ -1671,48 +1774,89 @@ Router ======> Switch1
                Switch2 <======== Router
 PC2 =============//
 
+Logical Layer 2 loops may occur due to the natural operation of switches—specifically the learning and
+forwarding process. When multiple paths exist between two devices on a network, and there is no spanning
+tree implementation on the switches, a Layer 2 loop occurs. A Layer 2 loop can result in three primary issues:
+1. MAC database instability. Instability in the content of the MAC address table results from copies of
+   the same frame being received on different ports of the switch. Data forwarding can be impaired when
+   the switch consumes the resources that are coping with instability in the MAC address table.
+2. Broadcast storm—Without some loop-avoidance process, each switch may flood broadcasts endlessly. This
+   situation is commonly called a broadcast storm.
+3. Multiple-frame transmission—Multiple copies of unicast frames may be delivered to destination stations.
+   Many protocols expect to receive only a single copy of each transmission. Multiple copies of the same
+   frame can cause unrecoverable errors.
+
+Ethernet frames do not have a time to live (TTL) attribute. As a result, if there is no mechanism enabled
+to block continued propagation of these frames on a switched network, they continue to propagate between
+switches endlessly, or until a link is disrupted and breaks the loop.
+
 Main aim of STP is to avoid L2 loops in network, it`s done with STA (Spanning Tree Algorithm) which
 result in connected graph with no loops.
 
-Switches communicate with special packets called BPDU (Bridge Protocol Data Units). There are two types
-of BPDU. Configuration BPDU and toplogy change notification BPDU (TCN). First one is used by root switch
-to create topology. Couple important fields of Configuration BPDU =>
-1. Sender identifier (Bridge ID)
-2. Root switch identifier (Root Bridge ID)
-3. Sending port identifier (Port ID)
-4. Path to root switch cost (Root Path Cost) 
-This message is sent from each port for multicast mac address 01:80:C2:00:00:00 (by default every 2 second)
-which are received by switches with eneabled STP. 
+Note, that 802.1D is quite old/slow and now is commonly replaced with RSTP. For instance, most modern Cisco
+switches default to a protocol called Per-VLAN RSTP. It automatically operates a separate spanning tree
+domain with a separate root bridge on every VLAN. In practice, it’s common to make the same switch the root
+bridge on all or most of the VLANs, though.
 
 https://computer.howstuffworks.com/lan-switch13.htm
 ---------------------------------------------------------------------------------------------------------
                       How to create topology without loop
 ---------------------------------------------------------------------------------------------------------
-Firstly we need to root bridge/switch, device that is considered to be center or root node of STP.
-It is choosen by Bridge ID, 8bytes identifier which consists of Bridge Priority (0-65535, by default
-32768 + vlan id) and MAC address of device. Initially each switch consideres itself to be root until
-when it receives BPDU with smaller Bridge ID. Device with smallest bridge ID is the root.
-Note that, small  MAC means old device which may impact network characteristics, therefore it is prefered
-to configure priority manually.
+Firstly, we need to root bridge/switch, device that is considered to be center or root node of STP and
+a reference point for all path calculations. It is choosen by Bridge ID, 8bytes identifier which consists
+of 2byte Bridge Priority (0-65535, by default 32768 + vlan id) and 6 byte MAC address of device.
+Bridge Priority is probably vendor specific, it is one value that will be used by default of all vendor
+devices, like 32768. Each sent BPDU will contain 2 bridge ids, the first one is sender bridge id and the
+second it the bridge id that senders consider to be root. Initially each switch consideres itself to be
+root until it receives BPDU with smaller Bridge ID. Therefore, if switch hasn`t received any BPDUs yet,
+it consideres itself to be root, and use its id both for sender and root id. When switch receives
+such BPDU, if receiver`s id is lower, it continues to consider itself as root, and will overwrite this
+value within packet, before forwarding further.
 
----------------------------------------------------------------------------------------------------------
-                                   Port role
----------------------------------------------------------------------------------------------------------
-When root bridge is choosen, each switch is supposed to choose one port which will point to root switch,
-(Root port). Root port is choosen by root path price. It is callculated from count of links and its speed.
+          Bridge ID
+    2bytes         6bytes
+Bridge Priority |   Mac
+Priority can be configured with `brctl setbridgeprio <bridge> <prio>`
+If you don`t want some old switch to be root of your network, configure prefered switch to have maximal
+priotrity and backup one to be a bit smaller.
+
+When root bridge is choosen, each non-root switch is supposed to choose one port which will point to the
+root switch (Root port). Root port is choosen by root path price. It is callculated from count of links
+and its bandwidth.  There can be only one root port per non-root switch, otherwise there is loop.
 1. Root port sends BPDU with Root Path Cost = 0
 2. Receiving switch looks at speed of link and add cost according to table (802.1d)
-10 Mbps  => 100
-100 Mbps => 19
-1 Gbps   => 4
-10 Gbps  => 2
+10 Mbps  => 100 # 100 Mbps => 19 # 1 Gbps   => 4 # 10 Gbps  => 2
 3. Received switch resends it to next one and so on.
 If there are multiple ports with equal path price, port with the smallest number is choosen.
+It can be configured with `brctl setpathcost <bridge> <port> <cost>`
 
-Now we need to choose Designated port. There is only one path to root switch in each network segment
-otherwise there is loop. Designated port is the one in segment with best price, Root switch has all
-port Designated. Now all other ports are block therefore removing loop
-         Root Port                    Designed Port
+Now we need to choose Designated ports which are allowed to forward traffic. Designated ports are selected
+on a per-segment basis, based on the cost of each port on either side of the segment and the total cost
+calculated by STP for that port to get back to the root bridge. In case the two or more ports have the
+same Root Path Cost, the switch with the lower Sender Bridge ID wins and its corresponding port is selected
+as the segment's Designated Port.
+If one end of a segment is a root port, then the other end is a designated port.
+All ports on the root bridge are designated ports. It is usually not expected that designated ports are
+blocked, except when you connect two ports of the same root switch. In such case, they will use default
+STP mechanism to determine who get`s designated status and who gets blocked, resulting into
+-> Lowest Root Bridge ID = tied
+-> Lowest Root path cost = tied
+-> BPDU that was sent from the switch with the Lowest Bridge ID = tied
+-> Lowest Port number = which cannot be a tie.
+Therefore, port with lower id stays alive and another gets blocked. 
+(https://www.experts-exchange.com/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html?redirect=/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html&offering=3035)
+
+Now we want to remove reduntant links to prevent loop. Any port that is not root nor designated gets
+blocked.
+
+Alternate port and backup port—An alternate port and a backup port are in a blocking state (or discarding
+state) to prevent loops. Alternate ports are selected only on links where neither end is a root port.
+Only one end of the segment is blocked, while the other end remains in forwarding state, allowing for a
+faster transition to the forwarding state when necessary.
+
+Disabled ports—A disabled port is a switch port that is shut down.
+
+Root Port                    Designed Port
     Router   ==============================   Root Switch
     Designed Port                        Designed Port
       ||                                        ||
@@ -1725,7 +1869,43 @@ port Designated. Now all other ports are block therefore removing loop
       ||
       PC
 
-After this, we determine ports that has the highest path cost to root and block them.
+https://www.experts-exchange.com/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html?redirect=/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html&offering=3035
+---------------------------------------------------------------------------------------------------------
+                                   Messaging
+---------------------------------------------------------------------------------------------------------
+Switches communicate with special packets called BPDU (Bridge Protocol Data Units). This message is sent
+from each port for multicast mac address 01:80:C2:00:00:00, by default every 2 seconds and is listened by
+another switches with eneabled STP.
+
+There are two types of BPDU. Configuration BPDU and toplogy change notification BPDU (TCN). Configuration
+BPDUs are originated only by the root bridge (not a case for RSTP?), but a TCN BPDU will be generated by
+any switch in the network when one of two things happen:
+A port has gone into Forwarding mode
+A port has gone from Forwarding or Learning mode into Blocking mode
+
+Couple important fields of Configuration BPDU =>
+1. Sender identifier (Bridge ID)
+2. Root switch identifier (Root Bridge ID)
+3. Sending port identifier (Port ID)
+4. Path to root switch cost (Root Path Cost) 
+
+---------------------------------------------------------------------------------------------------------
+                                    Timings
+---------------------------------------------------------------------------------------------------------
+Usually, when topology changes, it takes about 50 seconds before STP is finished and packets are again
+forwarded. There are some common ways to decrease this time.
+Access ports (e.g. ports to which clients are connected and not switches?) should have STP disabled. To
+do this, you should set them as portfast (they skip blocking/learning state and are always forwarding) and
+also enable bpdufilter on those ports, so they do not participate in STP.
+
+The rapid feature or RSTP is what you’ll probably find most useful. This allows the network to recover
+from most failures in times on the order of 1 to 2 seconds.
+---------------------------------------------------------------------------------------------------------
+                                 Loop Detection
+---------------------------------------------------------------------------------------------------------
+If switch receives its own BPDU, receiving port is getting blocked.
+
+https://www.experts-exchange.com/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html
 ---------------------------------------------------------------------------------------------------------
                             States of port on bridge 
 ---------------------------------------------------------------------------------------------------------
@@ -1756,24 +1936,67 @@ and second part is the switch interface identifier.
 Forwarding delay. Forwarding delay time is the time spent in each of the Listening and Learning states
 before the Forwarding state is entered. This delay is so that when a new bridge comes onto a busy network
 it looks at some traffic before participating.
+brctl setfd <bridge> <time>
 
 Hello time. Periodically, a hello packet is sent out by the Root Bridge and the Designated Bridges. Hello
 packets are used to communicate information about the topology throughout the entire Bridged Local Area Network.
+brctl sethello <bridge> <time>
 
 Max age. If a another bridge in the spanning tree does not send out a hello packet for a long period of
 time, it is assumed to be dead. This timeout is set with:
+brctl maxage  <bridge> <time>
+
+Aging time. How long MAC is saved to FIB after receiving packet with such MAC.
+brctl setageing <bridge> <time>
 
 http://williamherry.blogspot.com/2012/05/bridge-by-linux-foundation.html
+---------------------------------------------------------------------------------------------------------
+                             Configuration example
+---------------------------------------------------------------------------------------------------------
+Usually you would do following to set up unmanaged bridge
+ifconfig eth0 0.0.0.0
+ifconfig eth1 0.0.0.0
+brctl addbr mybridge
+brctl addif mybridge eth0
+brctl addif mybridge eth1 
+ifconfig mybridge up
+
+If you want to set up managed bridge (with IP), replace `ifconfig up` for dhclient, or
+how do you obtain IP
+
 ---------------------------------------------------------------------------------------------------------
                         Connecting switch to it self
 ---------------------------------------------------------------------------------------------------------
 
 
 ---------------------------------------------------------------------------------------------------------
+                         BPDU filter vs guard, PortFast
+---------------------------------------------------------------------------------------------------------
+BPDU is short for the phrase Bridge Protocol Data Unit, which is part of the STP that help describe and
+identify attributes of a switch port. BPDUs allow for switches to obtain information about each other.
+Some devices and local stacks running on systems/workstations are capable of generating potential STP BPDUs
+that cause Denial of Service (DOS) attacks. PortFast and BPDU Guard features provide stability and security
+for network topologies to prevent such attacks.
+
+PortFast. Enabling the PortFast feature causes a switch or a trunk port to enter the STP forwarding-state
+immediately or upon a linkup event, thus bypassing the listening and learning states. Though PortFast is
+enabled the port still participates in STP. If the port happens to be part of topology that could form a
+loop, the port eventually transitions into STP blocking mode. PortFast is usually configured on an edge
+port, which means the port should not receive any STP BPDUs. If the port receives any STP BPDU, it moves
+back to normal/regular mode and will participate in the listening and learning states.
+
+BPDU filter will prevent inbound and outbound BPDU but will remove portfast state on a port if a BPDU is
+received. Enabling BPDU filtering on an interface is the same as disabling spanning tree on it and can
+cause spanning-tree loops.
+
+BPDU Guard looks for any BPDU’s entering the interfaces that are enabled this feature. The port will
+disable as soon as the first BPDU is received, by shutting the port down.
+
+https://medium.com/ken-m-lai/bpdu-filter-vs-bpdu-guard-a112f967798b
+---------------------------------------------------------------------------------------------------------
 To check that stp is working, issue `tcpdump -vvv -p -n -i <intf> stp`, it is expected that every n seconds
 (2 by default), your device will send BPDUs to detect another that`s also transmitting BPDUs
 
-TODO FIB (Forwarding information base)
 =========================================================================================================
                                       ARP
 =========================================================================================================
@@ -1799,6 +2022,21 @@ and all other sillently drop the frame. The target forms arp reply of form `X.X.
 and send it as unicast response. 
 
 ARP probe and announcment are part of DAD (Duplicate Address Detection)
+---------------------------------------------------------------------------------------------------------
+         FIB (Forwarding Information Base) / FDB (Forwarding Data Base)
+---------------------------------------------------------------------------------------------------------
+FDB is used on Layer 2 (switching/bridging) to associate MAC addresses that have been learned and which
+ports that MAC address was learned on. When a Ethernet frame arrives at a Layer 2 device, the Layer 2
+device will inspect the destination MAC address of the frame and look to its FDB table for information
+on where to send that specific Ethernet frame. If the FDB table doesn’t have any information on that
+specific MAC address it will flood the Ethernet frame out to all ports in the broadcast domain.
+
+It is implemented in terms of CAM (Content-addressable memory) which efficently associates packet 
+(it`s mac?) with port.
+
+https://blog.michaelfmcnamara.com/2008/02/what-are-the-arp-and-fdb-tables/
+---------------------------------------------------------------------------------------------------------
+
 https://erg.abdn.ac.uk/users/gorry/course/inet-pages/arp.html
 https://www.practicalnetworking.net/series/arp/arp-probe-arp-announcement/
 =========================================================================================================
@@ -1941,11 +2179,23 @@ https://www.samlogic.net/articles/mail-server.htm
 =========================================================================================================
                                      Docsis
 =========================================================================================================
+DOCSIS (Data Over Cable System Interface Specification)
+RG (Radio Guide) used to specify Coaxial cables.
+
 CMTS (Cable Modem Termination System) => component that exchanges digital signals with cable modems on a
 cable network. It is usually locate at local office of a cable television company. When a CMTS receives
 signals from a cable modem, it converts these signals into IP packets which are then sent to an IP router
 for transmission across the Internet. Before sending signal to a cable modem, it modulates signal for
 receiving cable modem.
+
+CM (Cable Modem).
+
+=========================================================================================================
+                  EMTA (Embedded Multimedia Terminal Adapter)
+=========================================================================================================
+Combination of cable modem and telephone adapter.
+
+?Telephone adapter means that it converts digital signals to analog and vice versa, for VOIP?
 
 =========================================================================================================
                       MPLS (MultiProtocol Label Switching)
@@ -2183,9 +2433,17 @@ traffic.
 =========================================================================================================
                        SDN (Software Defined Networking)
 =========================================================================================================
-                                      ...
-=========================================================================================================
 
+=========================================================================================================
+                               Network simulators
+=========================================================================================================
+EVE NG (Emulated Virtual Environment)  http://www.eve-ng.net/
+Looks cool but requires separate VM, as result, can be used on any OS
+https://www.brianlinkletter.com/how-to-set-up-the-eve-ng-network-emulator-on-a-linux-system/.
+---------------------------------------------------------------------------------------------------------
+
+
+http://www.brianlinkletter.com/open-source-network-simulators/
 =========================================================================================================
                                      Random
 =========================================================================================================
