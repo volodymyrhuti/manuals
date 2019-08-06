@@ -113,6 +113,40 @@ that are organized below the packaging. Pins are spaced approximately 0.1 inches
 a portion or entire underside of the package.
 
 =========================================================================================================
+                                  Peripherals
+=========================================================================================================
+PCI (Peripheral Component Interconnect) => common connection interface for attaching computer peripherals
+to a PC`s motherboard. This interface was popular between 1995 and 2005 and now is changed for PCIe, some
+PCI can be present on motherboard for backward compatibility, but the devices that used to be attached as
+PCI expansion cards are now either integrated onto motherboards or attached by other connectors like PCIe.
+=========================================================================================================
+                                     Busses
+=========================================================================================================
+The relation of the different busses is roughly as follows:
+                                              / SATA
+CPU => Northbridge => PCI Bus => Southbridge => IDE
+                                              \ USB
+
+Northbridge and Southbridge are two main controller chips inside a PC.  They are bridges because USB/IDE/...
+packets are forwarded through them to CPU. Packet like USB are encapsulated into PCI packets and sent do CPU.
+
+IDE and SATA perform the same job but through differebt physical media, they are fore attaching hard drives etc.
+
+IDE ("Integrated Device Electronics") => also known as "ATA" or "ATAPI"(ATA Peripheral Intreface)
+Parallel bus used primarily inside computers to communicate with disk drives.
+
+SATA (Serial ATA) => the same ATA protocol but serial instead of parallel It is high speed serial replacement
+for IDE, uses a lot fewer wires
+
+USB is a serial communications bus which can communicate with any number of devices, not just hard drives
+and other storage devices. It speaks a completely different protocol to the ATA family.
+
+PCI (and the derivatives PCIe, etc) are much closer to the CPU and generally provides much more direct
+access to the CPU.
+
+https://stackoverflow.com/questions/1723481/relation-between-usb-and-pci
+https://electronics.stackexchange.com/questions/24077/difference-between-busses
+=========================================================================================================
 CPU => Central Processing Unit
 MPU => Micro Processing Unti
 MCU => Micro Computer Unit or micro controller, is non general purpose 'computer' used

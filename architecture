@@ -128,6 +128,15 @@ during a startup.
 
 https://stackoverflow.com/questions/22394750/what-is-meant-by-data-cache-and-instruction-cache
 =========================================================================================================
+
+
+
+
+
+=========================================================================================================
+Not filtered
+=========================================================================================================
+
 Translation => techic code creation, traslating L1(hight abstract) to L0(low abstract) 
 (L1 is needed to be translated but afterwards is not used)
 

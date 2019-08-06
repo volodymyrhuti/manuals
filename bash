@@ -28,6 +28,16 @@ Array handling
 array=(This is a text)
 ${array[0]:2:2} # is (first word)
 ${array[@]:1:2} # is a
+---------------------------------------------------------------------------------------------------------
+There are multiple way to find if there is substring is string
+[[ "str1" != "${str1/str/}" ]]
+[[ "$LIST" == *"$SOURCE"* ]]
+[[ "$LIST" =~ *"$SOURCE"* ]]
+
+if grep -q "$SOURCE" <<< "$LIST" ; then
+    ...
+fi
+
 
 =========================================================================================================
                                      Arrays
@@ -109,19 +119,36 @@ If shell supports, expand with !
 echo ${!var}
 
 =========================================================================================================
-                                 Traps Signals
+                                   Functions
 =========================================================================================================
-when a script is terminated by a signal, exist status will be the result of 128 + the signal number
-trap -l     # display signals with their numbers
-kill -l     # same  
-trap -p     # display list of set traps
+To hide global varible withing scope of your function, declare this variable as local. this will prevent
+you from changing global one. Notice, local variables are seen by children functions
+local global_var
 
-Pseudo signals
-EXIT        # executed on shell exit
-DEBUG       # executed before every simple command
-RETURN      # executed when a shell function or a sourced code finishes executing
-ERR         # executed each time a command's failure would cause the shell to exit 
-            # when the ''-e'' option (''errexit'') is enabled 
+Sometimes u want to generate command in runtime, for instance by creating string of command and its arguments.
+This command wount work as expected if it contains redirections and pipes since they will be passed as
+arguements instead of doing redirection. To get expected behaviour we need to run it in subshell using
+command `eval` 
+
+To list sourced functions, use `declare -f`, which will provide name and definition of a function. If you
+don`t want definiton, use `declare -F`
+
+If you want to find where function was defined issue next
+shopt -s extdebug 
+declare -F <function>
+shopt -u extdebug
+
+---------------------------------------------------------------------------------------------------------
+                             Function substitution
+---------------------------------------------------------------------------------------------------------
+There are cases when you want to save a result of your command or call it in place, as parameter to another
+function. This can be done with '$(cmd)' or ' `cmd` '. This syntax will expand command, call it and return
+results. Difference between two syntaxes is next,`` is older version of $(), but `` needs to be escaped
+when nested , like `cmd | \`cmd \` `. And $() applies to POSIX conformant shells, and can be not supported
+by some old shels, this form is more easy to use when nesting '$( echo $(echo 123))', but is less readable
+'Random string then $(cmd) then string ...'. There are hoax that $() is more resource heavy and faster but
+this requires profiling to be sure.
+
 
 =========================================================================================================
                                    Debugging
@@ -160,6 +187,9 @@ ${P#PATTERN}    # from beggining shortest match
 ${P##PATTERN}   #        longest
 ${P%PATTERN}    # from end   shortest
 ${P%%PATTERN}   #        longest
+
+The `#` and `%` operators have a convenient mnemonic if you use the US keyboard. The `#` key is on the
+left side of the `$` key and operates from the left, while `%` is to right of `$` key. 
 
 Search and replace (works for arrays)
 ${P/PATTERN/STR}    # replace first occur
@@ -407,37 +437,6 @@ echo 'echo test' >&3
 
 
 =========================================================================================================
-                                   Functions
-=========================================================================================================
-To hide global varible withing scope of your function, declare this variable as local. this will prevent
-you from changing global one. Notice, local variables are seen by children functions
-local global_var
-
-Sometimes u want to generate command in runtime, for instance by creating string of command and its arguments.
-This command wount work as expected if it contains redirections and pipes since they will be passed as
-arguements instead of doing redirection. To get expected behaviour we need to run it in subshell using
-command `eval` 
-
-To list sourced functions, use `declare -f`, which will provide name and definition of a function. If you
-don`t want definiton, use `declare -F`
-
-If you want to find where function was defined issue next
-shopt -s extdebug 
-declare -F <function>
-shopt -u extdebug
-
----------------------------------------------------------------------------------------------------------
-                             Function substitution
----------------------------------------------------------------------------------------------------------
-There are cases when you want to save a result of your command or call it in place, as parameter to another
-function. This can be done with '$(cmd)' or ' `cmd` '. This syntax will expand command, call it and return
-results. Difference between two syntaxes is next,`` is older version of $(), but `` needs to be escaped
-when nested , like `cmd | \`cmd \` `. And $() applies to POSIX conformant shells, and can be not supported
-by some old shels, this form is more easy to use when nesting '$( echo $(echo 123))', but is less readable
-'Random string then $(cmd) then string ...'. There are hoax that $() is more resource heavy and faster but
-this requires profiling to be sure.
-
-=========================================================================================================
                                       Eval
 =========================================================================================================
 Eval can be a security issue, and need to be used with care.  It has chance of executing dirty data
@@ -455,7 +454,7 @@ gets executed
 Hadles empty strings more intuitevly
 [ -f "$file" ]    ==   [[ -f $file ]]
 
-Lets use && || and <=> for strings (need to escaped with []), since it is just syntactic
+Lets use && || and <=> for strings (needs to be escaped with []), since it is just syntactic
 
 Has regular expressions
 if [[ $answer =~ ^y(es)?$ ]]
@@ -490,16 +489,16 @@ $SHLVL     :sh call depth
 =========================================================================================================
                                   Login Shell
 =========================================================================================================
-Login shell => first process executed under user ID when you log in for an interactive session. Login
+Login shell. First process executed under user ID when you log in for an interactive session. Login
 shell has conventions like: $0 is prepended with '-'; files that usually have environmet variables are
 read /erc/profile, ~/.prfile, ~/.bash_profile ...
 When you log in on a text console, or through SSH you get an interactive login shell. Interactive means
 that you can type into it and shell will execute your requests.
-When you start a terminal in existing session, you get non-login interactive shell. This one usuallu avoid
+When you start a terminal in existing session, you get non-login interactive shell. This one usually avoid
 environment configuration files and reads user files like bashrc. 
 When you execute scripts they get a non-login, non-interactive shell which may involve reading some
 start up files (bash runs $BASH_ENV)
-More detailed information can be found in man bash
+More detailed information can be found in `man bash`
 
 Check if shell is login-shell with one of the following:
 shopt login_shell       # on
@@ -575,7 +574,7 @@ complete
             disabled/enabled   # bash disabled/enabled bultins ?
             variable           # shell variables -v ?
             export             # exported variables -e
-            hostname           # taken from $HOSTFILE (looks to be windows related stuff)
+            hostname           # taken from $HOSTFILE
             setopt             # valid options for set -o
             shopt              # valid options for shopt
             signal             # signal names
@@ -752,10 +751,27 @@ https://unix.stackexchange.com/questions/11376/what-does-double-dash-mean-also-k
 =========================================================================================================
                                      Prompt
 =========================================================================================================
+PS0 =>
 PS1 => primary prompt
 PS2 => secondaty promt , dispalyed for multiline commands
 PS3 => prompt for bash select
 PS4 => used to display debug log level?
+
+=========================================================================================================
+                                 Traps Signals
+=========================================================================================================
+when a script is terminated by a signal, exist status will be the result of 128 + the signal number
+trap -l     # display signals with their numbers
+kill -l     # same  
+trap -p     # display list of set traps
+
+Pseudo signals
+EXIT        # executed on shell exit
+DEBUG       # executed before every simple command
+RETURN      # executed when a shell function or a sourced code finishes executing
+ERR         # executed each time a command's failure would cause the shell to exit 
+            # when the ''-e'' option (''errexit'') is enabled 
+
 
 =========================================================================================================
                            Run script without parent
@@ -878,7 +894,77 @@ $!              # last backgound process pid
 
 man bash, special parameters for reference
 =========================================================================================================
+                        Job managment
+=========================================================================================================
+coproc <name> cmd <redirections>    # starts a cmd as a background job, setting up pipes connected 
+                                    # to both its stdin and stdout so you can interact with it bidirectionally
+jobs -l                             # list background process + its pid
+
+=========================================================================================================
+                                Pattern matching
+=========================================================================================================
+Bash has mechanism to specify name patterns, the most famouse/used is wildcard `*` which expands to
+anything or depending on usage context. Wildcards are also often referred to as glob patterns (or when
+using them, as "globbing"). The bash man page refers to glob patterns simply as "Pattern Matching".
+As well, bash adds extended globing that can be enabled with `extglob` feature.
+*             # Match zero or more characters
+?             # Match any single character
+[...]         # Match any of the characters in a set
+?(patterns)   # Match zero or one occurrences of the patterns (extglob)
+*(patterns)   # Match zero or more occurrences of the patterns (extglob)
++(patterns)   # Match one or more occurrences of the patterns (extglob)
+@(patterns)   # Match one occurrence of the patterns (extglob)
+!(patterns)   # Match anything that doesn't match one of the patterns (extglob)
+
+ls *.pdf      # any pdf file
+ls ?.pdf      # any pdf file with 1 letter name, e.g a.pdf b.pdf but not ab.pdf
+ls [ab]*      # any file starting with a or b, e.g. a.pdf b.pdf ab.pdf ba.pdf
+
+Glob patterns
+Glob        | Regular Expression Equivalent | Description
+?(patterns) | (regex)?                      | Match an optional regex
+*(patterns) | (regex)*                      | Match zero or more occurrences of a regex
++(patterns) | (regex)+                      | Match one or more occurrences of a regex
+@(patterns) | (regex)                       | Match the regex (one occurrence)
+
+shopt -s extglob   # turn on extended globbing
+ls ?(*.jpg|*.gif)  # any jpg/gif file with a one letter name
+ls !(*.jpg|*.gif)  # not jpg/gif
+
+ls *.pdf     =>  ee.pdf  e.pdf  .pdf
+ls ?(e).pdf  =>  e.pdf  .pdf
+ls *(e).pdf  =>  ee.pdf  e.pdf  .pdf
+ls +(e).pdf  =>  ee.pdf  e.pdf
+ls @(e).pdf  =>  e.pdf
+
+Glob patterns are just another syntax for doing pattern matching in general in bash. And you can use
+them in a number of different places:
+After the == in a bash [[ expr ]] expression.
+In the patterns to a case command.
+In parameter expansions (%, %%, #, ##, /, //).
+
+https://www.linuxjournal.com/content/pattern-matching-bash
+=========================================================================================================
+                                      Case
+=========================================================================================================
+Bash case doesn`t understand number ranges, only shell patterns
+case $number in
+  1[2-3]) echo 12 or 13;;
+  4|5)    echo 4 or 5;;
+  *)
+esac
+
+If you really want to avoid if .. elif .. elif .. fi style code, and prefer case
+case 1 in
+  $((val < 100))) echo Less then 100;;
+  $((val < 200))) echo Less then 200;;
+  $((val < 300))) echo Less then 300;;
+                *) echo Default case;;
+esac
+
+=========================================================================================================
 #           Not filtered
+
 while read LINE;do  
   echo $LINE  
 done <$1

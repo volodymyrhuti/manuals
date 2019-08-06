@@ -141,6 +141,28 @@ git push --tags --dry-run           # -n can be used instead of --dry-run (requi
                                       for remote)
 
 =========================================================================================================
+                                    Config
+=========================================================================================================
+There are 3 levels of git config; project, global and system.
+1. Project. Project configs are only available for the current project and stored in .git/config in the
+   project's directory.
+2. Global. Global configs are available for all projects for the current user and stored in ~/.gitconfig.
+3. System. System configs are available for all the users/projects and stored in /etc/gitconfig.
+
+Options can be changed with `git config <options>` or by editing configuration files.
+By default, `git config` modifies .git/config, not ~/.gitconfig, latter is modified only with --global.
+git config user.name "John Doe" 
+git config --global user.name "John Doe"
+git config --system user.name "John Doe"
+
+As well, there are conditional configuration includes, e.g. add following to your ~/.gitconfig:
+[includeIf "gitdir:~/proj1/"]
+  path = .gitconfig-proj1
+[includeIf "gitdir:~/proj2/"]
+  path = .gitconfig-proj2
+
+https://stackoverflow.com/questions/8801729/is-it-possible-to-have-different-git-config-for-different-projects
+=========================================================================================================
                                      Status
 =========================================================================================================
 git status
@@ -288,7 +310,9 @@ git clean           # remove untracked files and directories
             -d      # remove directories as well
             -i      # interactive
             -n      # dry run
+            -x      # remove ignored files
 
+https://stackoverflow.com/questions/61212/how-to-remove-local-untracked-files-from-the-current-git-working-tree
 ---------------------------------------------------------------------------------------------------------
                                    Commiting
 ---------------------------------------------------------------------------------------------------------
@@ -427,6 +451,24 @@ git clone --filter
 https://unix.stackexchange.com/questions/233327/is-it-possible-to-clone-only-part-of-a-git-project
 ---------------------------------------------------------------------------------------------------------
 https://stackoverflow.com/questions/42906152/git-clone-by-default-shallow-or-not
+=========================================================================================================
+                                   File modes
+=========================================================================================================
+Git maintains a special `mode` for each file in its internal storage. This can be visualized using
+git ls-files --stage
+
+By default, when you add a file to a repository, Git will try to honor its filesystem attributes and set
+the correct filemode accordingly. You can disable this by setting core.fileMode option to false:
+git config core.fileMode false
+
+It can be changes using 
+git update-index --chmod=+x path/to/file
+git add --chmod=+x path/to/file
+
+In Git, file permissions are recorded only as either 644 or 755, where 644 means that the file should not
+be executable, and the latter means that it should be executable
+
+https://stackoverflow.com/questions/40978921/how-to-add-chmod-permissions-to-file-in-git/40979016
 =========================================================================================================
                                      Links
 =========================================================================================================

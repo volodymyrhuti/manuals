@@ -179,4 +179,12 @@ Possible values =>
 # Lock if true, we rewrite lock with, true and retrun true => while is running => we are waiting
 
 
-
+=========================================================================================================
+Programming
+=========================================================================================================
+Posix pthread tutorials
+https://computing.llnl.gov/tutorials/pthreads/
+https://randu.org/tutorials/threads/
+https://www.cs.cmu.edu/afs/cs/academic/class/15492-f07/www/pthreads.html
+http://www.cs.kent.edu/~ruttan/sysprog/lectures/multi-thread/multi-thread.html
+=========================================================================================================

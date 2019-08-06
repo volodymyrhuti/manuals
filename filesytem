@@ -351,6 +351,48 @@ For instance => [fd, sd, hd][a. b. c. d][1..]
 - sd refers to a SCSI drive in general, for SATA drives and CD/DVD
 - fd is floppy disk
 
+---------------------------------------------------------------------------------------------------------
+                                     Cli
+---------------------------------------------------------------------------------------------------------
+To list filesystems issue on of the following
+mount -v
+cat /proc/mounts
+cat /proc/mtd
+cat /etc/mtab       # old variant of fstab that may not support some advanced Linux features like containers?
+cat /etc/fstab      # mounted on boot
+
+If you want to override options used when mounting, use following, options will be appended, last option
+wins when ambiguous
+mount <dir|device> -o <new_options> 
+By default, only root user can mount filesystems, unless it has `noauto,user` options under fstab.
+To remount filesystem issue
+mount -o remount,<rw/ro> <dev> <path>     # ignores configuration files
+mount -o remount,<rw/ro> <path>           # merges options from configuration file
+
+To make all filesystems readony, can be used to prevent any changes before reboot
+echo u > /proc/sysrq-trigger
+If the filesystem is backed by a block device, you can make the block device read-only
+echo 1 > /sys/block/dm-4/ro
+echo 1 > /sys/block/sda/sda2/ro
+There may be option to force mount/remount filesystem but mostly likely it won`t help either, please
+check man to find correct option, since on one system it can be -f but on another, this may mean `fake`.
+
+/dev/disk/by-{label,uuid,partuuid,partlabel}
+---------------------------------------------------------------------------------------------------------
+                               Mounting USB drive
+---------------------------------------------------------------------------------------------------------
+lsblk                          # detect usb harddrive based on its size and filesystem
+df -h
+sudo blkid
+sudo fdisk -l
+dmesg | grep -ie 'sd\|usb'
+sudo lshw
+udisksctl                      # disc scanner from package
+mkdir /media/usb               # create mount point
+mount /dev/<usb> /media/usb    # mount 
+
+? How to detect drives on system of different type hdd ssd flash
+
 =========================================================================================================
                            MIME(Internet Media Types)
 =========================================================================================================
@@ -412,14 +454,14 @@ To solve this issue, initrd (initial root disk) was created. Initrd is block dev
 holds all needed tools and scripts for mounting needed systems before givinig control to init. Kernel
 executes configuration script 'linuxrc'(or something like this) on this disk, which prepares system, then
 switches to real filesystem and calls init.  There are some disadvantages =>
-- ramdev is amulated hard disk that uses memory instead of physical disks that requires driver to
+- ramdev is emulated hard disk that uses memory instead of physical disks that requires driver to
   communicate, meaning that kernel should have compiled-in driver 
 - Data is duplicated from some another filesystem
 - Block device fills cache with used files
 To reduce memory usage, initramfs was created
 Initrams => base filesystem in RAM, based on tmpfs (light filesystem with changable size) which doesnt use
 block device. Its content (scripts, utilities, libraries, configs) is archived into cpio, then archive in
-gziped and saved with kernel. Bootloader will forward it to kernel  Kernel will create tmpfs file system,
+gziped and saved with kernel. Bootloader will forward it to kernel which  will create tmpfs file system,
 unzip archive to there and start init script
 
 http://linuxdevices.org/introducing-initramfs-a-new-model-for-initial-ram-disks-a/
@@ -476,6 +518,15 @@ df                              # disk filesystem
 
 df <path>                       # determines fylesystem of <path>
 ---------------------------------------------------------------------------------------------------------
+du                              # disk usage
+    -h                          # human readable
+    -s                          # single directory size
+    -a                          # filesystem pass
+
+du ~/go | sort -n -r | less  #sort files by size
+ncdu                           # nice cli scanner
+
+
 =========================================================================================================
 Some questions
 ---------------------------------------------------------------------------------------------------------

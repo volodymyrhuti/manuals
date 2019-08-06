@@ -112,23 +112,39 @@ find -name '*.as' | while read f; do cp $f ${f%.as}_dir.as; done
 =========================================================================================================
                                       Find
 =========================================================================================================
+find . -type f
+      -maxdepth 1
+      -print            # print found files, ending with space
+      -print0           # -print but space replaced for nul, can be used when files already contains spaces
+                          and it is already ambiguos, whether you look for a one file or multiple
+      -ls               # list files
+      -delete           # same as rm, please use instead `mv` to some temporary directory and delete it only
+                          after checking
+                          can be used to delete files with unsusual names, just find its inode name with
+                          `ls -lhi` and use if with -inum <num> -delete
+     -exec              # expands iterator to relative name
+     -execdir           # expands iterator to absolute name
 
-find . -type f -maxdepth 1
 find . | xargs -i{} bash -c "tmp={} && echo \${tmp##*.}"
 find . -name fsck  -exec file {} \;
 
-# path to scipt requires to be relative, no need for logical operators
+path to scipt requires to be relative, no need for logical operators
 find -name file ! -path "./dir1/*" ! -path "./dir2/*"
 
-# note, escpaed parentethis with logical operator
+note, escpaed parentethis with logical operator
 find . -type f \( -name "*.conf" -or -name "*.txt" \)
 
-# grep for all source files
+grep for all source files
 find ./ -regextype posix-extended -regex '.*\.(c|cpp|cxx|hpp|h|xml)' -type f -exec grep 
 
-# find word, commit where it was changed, context around
+find word, commit where it was changed, context around
 find -type f | xargs -i{} git blame {}| grep -C 10 -i <word>
 
+If you want to gather all argument to command, instead of running command on each one,
+you can apped + after {}
+find <some_files> ... -exec tar -cvf {} +
+
+http://www.softpanorama.org/Tools/Find/using_exec_option_and_xargs_in_find.shtml
 =========================================================================================================
                                       Cut
 =========================================================================================================

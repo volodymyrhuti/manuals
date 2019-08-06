@@ -40,8 +40,397 @@ https://stackoverflow.com/questions/5843495/what-does-m-character-mean-in-vim
 https://stackoverflow.com/questions/419291/historical-reason-behind-different-line-ending-at-different-platforms
 ---------------------------------------------------------------------------------------------------------
 =========================================================================================================
+                             Device/Driver Binding
+=========================================================================================================
+Driver binding is the process of associating a device with a device driver that can control it.
+=========================================================================================================
+                                     umask
+=========================================================================================================
+By default any created file has permissions 666 and direcotry 777. Umask can be used to unset some of
+this rights. Issue `umask` to see current mask, then subtract it from defaul value and you will get
+permissions of newly created files
+
+? umask -S return default file permission of system, without applied mask
+=========================================================================================================
+                                     Links
+=========================================================================================================
+Files behind a file system are just an tree of inodes and a file is a link to an inode. A hard links creates
+another file with the same underlying inode. When u delete file link is removed but inode is not deleted
+unless there is no more links to it.  A symbolic link is a link to another name in the file system. When
+u move/rename/delete file , this will not affect hard link since it points to background inode. In case of
+soft link it will be broken. Hardlinks are valid only in scope of one filesystem and soft can span multiple.
+Note that you can`t create hard link to directory (possible for symlinks), this is done to maintain acyclic
+directory tree structure.
+
+             /===> | inode    |
+            /          |
+    | Hard Link |  | file.txt | <=== | Soft Link |
+
+Use hard links when original file is often moved between directories. Hard link requires directory entry
+and not inode (cheaper), Symlink may point to another symlink as well as be recursive, make loops, point
+to files on another machine (networt mount filesystems) which may affect time spent to open file.
+
+---------------------------------------------------------------------------------------------------------
+Example usage of hardlinks. There is a utility named rsync which makes periodically backups, in the case
+nothing has changed, since last backup taking, it just hardlinks new backup file to previos one, since
+it is cheaper to create a links then create a duplicate of that file.
+
+---------------------------------------------------------------------------------------------------------
+
+Dangling symlink. Symlink with an invalid target (target file doesn`t exist)
+
+https://stackoverflow.com/questions/185899/what-is-the-difference-between-a-symbolic-link-and-a-hard-link/1531795#1531795
+=========================================================================================================
+                                     Users
+=========================================================================================================
+In linux used are defined by the uid however in life users use nicknames so uids are needed to be mapped
+to them. This is done in one system files like /etc/passwd UID0 => root
+To list all in system user, issue `cat /etc/passwd` and for groups `cat /etc/group`
+To list logged in user, use `w` or `who`
+To displays the system identifications of a specified user `id`
+
+=========================================================================================================
+                       Memory-mapped IO vs Port-mapped IO
+=========================================================================================================
+There are many ways to connect external devices, for instance memory mapped or port mapped IO.
+Memory mapped IO is mapped into the same address space as progeam memory and/or user memory, and is
+accessed in the same way. 
+Port mapped IO uses a separate, dedicated address space and is accessed via dedicated set of microprocessor
+instructions
+
+https://www.bogotobogo.com/Embedded/memory_mapped_io_vs_port_mapped_isolated_io.php
+=========================================================================================================
+                          Sessions and process groups
+=========================================================================================================
+Processes are organized into sets of sessions. The session`s ID is the same as the pid of the process that
+created the session through the setsid() system call. That process is known as the session leader. All
+descendant processes are members pf that session unless they specifically remove themselves from it.
+Sessions are controlled by a terminal from which processes in the session get their input and to which they
+send their output,  This terminal is called controlling terminal of the session. A terminal can be controlling
+terminal for only one session at a time.
+
+One of the original design goals of Unix was to construct a set of simple tools that could be used together
+in complex ways (through mechanisms like pipes). Another popular feature added to Unix was job control.
+Process groups allow the system to keep track of which processes are working together and hecnce should
+be managed together via job control. To add process to a group use int setpgid(pid_t pid, pid_t pgid);
+pid => process, pgid => process group. Value of 0 can be used for pid, to specify current process and for
+pgit to start a new group with pid of current process. Process who created a group is a group leader.
+
+When the session leader exits, the process group become an ophaned. Any of leader child programgs become
+children of init, but stay in their original session. Then SIGHUP is sent to all processes making most of
+them terminating unless process handles it, then SIGCONT is send to such procces. This process is forvibly
+disassociated from its controlling terminal and trying to write or read from terminal will cause EIO.
+Session ID is not fread untill there is process running.
+
+http://www.informit.com/articles/article.aspx?p=397655&seqNum=6
+=========================================================================================================
+                                   Libraries
+=========================================================================================================
+Libraries are simply collections of object files arranged by ar(archiver) utility
+We use libraries because we can link out project to library and recompile our code without recompiling
+the library. Library implementors may dont want to show code but still provide interface to using it.
+However recompilation may be not so important in small projects
+
+ar collects object files into one archive file and adds a table that tells which object files in the
+archive define what symbols. The linker, ld, then binds references to a symbol in one object file to
+the definition of that symbol in an object file in the archive. Static libraries use the suffix .a.
+To convert object files into a static library
+ar rcs libname.a obj1.o obj2.o obj3.o ...
+   r    => include object file into library, replacing the old one if present
+   c    => create silently if doesnt exist
+   s    => maintain the table mapping symbol names to object file names???
+Add object file to alread existing one
+ar rcs libname.a new_obj.o
+
+Shared library are loaded by program when it starts and any other program requiring it can use out copy.
+This let us use smaller executables but entire library should be loaded into memory at runtime, therefore
+it depends on count of users, whether we win in terms of memory or not. Internals of ilibrary is COW protected
+meaning that any process trying to change state of library will allocate its own copy. When bug is found
+it library, shared library can be easily replaced without recompile all applications using library.
+The problem apperes when you give an executable to some one who doesnt have needed shared library, since
+application wount work. First program using it, has penalty of finding and loading library to memory.
+As well, entire library is mapped into space of a program, instead of couple object files.
+
+Shared libraries mechanism was designed to be backward compatibility, that is application still works
+when newer version is used, however ,there needs to be a way to mark libraries as incompatible with each
+other for cases in which developers find it necessary to modify interfaces in a non-backward-compatible manner.
+
+Every shared library is assigned a special name, called soname, that includes the name of the library and
+a version number. When developer change interfaces, they icrement the version number, altering the name.
+Most library developers attempt to maintain stable interfaces that change in an incompatible manner only
+when they release a new major verison of the library.
+
+For instance, developers of C library attempt to maintain backward compatibility for all releases of C
+library with the same major number. Version 5 has gone thorugh five minor versions. Because all version 5
+C libraries are intended to be backward compatible with older version, they all use the smae soname - libc.so.5
+- which is related to the name of the file in which it is stored, /lib/libc.so.5.m.r , where m is the minor
+version and r is the release number, Application that link against a shared library do not link directly
+against /lib/libc.so.5 (for instance) even though the file exists. The ldconfig program, a standart Linux
+system utility, creates a symbolic link from /lib/libc.so.5 (the soname) to /lib/libc-2.3.2.so, the real
+name of the library. To upgrade library, put new so file into /lib and run ldconfing, it will update links
+to point to the newest library that provides the soname.
+
+When a new version of a library needs to be incompatible with an old version, it should be given a
+different soname. For instance, to lease a new version of the C library that is incompatible with the old
+one, developers used the soname libc.so.6 instead of libc.so.5. User can link application to any of there
+libs, soname will point to correct version of real library.
+
+If you want to have ur custom libraries in separate direcotry, add its path to /etc/ld.so.conf and run
+ldconfig, otherwise dynamic loader wount find it in cache /etc/ld.so.cache. Another way is to prepend path
+to LD_LIBRARY_PATH If you want to redefine some function (linker goes through a list of libs until finds
+reqested function definition), use LD_PRELOAD. For instnace zlibc will call existing function otherwise if
+gziped version exists, it transparently for application uncompresses file. This way you can exchange speed
+for space. To make preload behaviour consistent on entire system, add librarry path to /etc/ld.so.preload
+
+---------------------------------------------------------------------------------------------------------
+ldconfing is a program that looks at predefined path and generates links to libs (sonames to real names
+/ real name) + setting up cache (/etc/ld.so.cache). Installer must specifically modify symbolic links to
+update what the linker will use for a library
+
+It is recommended ,by standart, to install libs to 
+/usr/local/lib --- not part of the system
+/lib           --- required on boot
+/usr/lib       --- other/most?
+
+On each execution it is reading cache instead of going through all posible directories. This implies, that,
+ldconf should be run on each DLL creation/ deletion (it is usually done with package managers )
+
+How libs are used
+- Starting up elf will cause program loader to be loaded and run
+- /lib/ld-linux finds and loads all shared libs
+- /etc/ld.so.conf list of directories to be searched
+- Function are overloaded with /etc/ld.so.preload
+
+Use `lld #exe` to see what libs are required (this may try to execute program therefore this is not secure)
+Use `nm #lib` to list all symbols within it
+---------------------------------------------------------------------------------------------------------
+                                  Environment
+---------------------------------------------------------------------------------------------------------
+$LD_LIBRARY_PATH = colon-separated list of dir to be search first, before standart lookup.
+            Alternativly, u can call loader by hand /lib/ld−linux.so.2 −−library−path PATH EXECUTABLE
+$LD_PRELOAD = overriding functions
+$LD_DEBUG = ?
+
+Command example
+gcc -shared
+    -fpic                      => position independent code
+    -W1,-soname,#my_soname     => set soname?
+                                  W1 passes option to linker
+    -rpath                     => runtime lib lookup path
+    -o #libname                => output libname 
+    -l#liblist                 => used libs
+
+gcc −shared −Wl,−soname,my_lib.so.1 −o libmystuff.so.1.0.1 a.o b.o −lc
+
+# Linking to executable
+gcc objects.o exe -l lib
+    -L dir  # extra path to directory when -l will be looked up
+    -l lib  # link lib to executable
+
+=========================================================================================================
+                                    Linking
+=========================================================================================================
+Linking is the process of combining various pieces of code and data together to form a single executable
+that can be loaded in memory. Linking can be done at compile time, at load time (by loaders) and also at
+run time (by application programs).
+
+Linker and loader perform various related but conceptually different tasks:
+- Progam Loading. Copying a program image from hard disk to the main memory in order to put the profram in
+  a ready-to-run state. This may involve allocating storage space or mapping virtual addresses to disk pages
+- Relocation. Each input module is assigned starting address of zero by assembler/compiler.
+  Relocation is the process of assigning load addresses to different parts of the program by merging all
+  sections of the same type into one section. The code and data section are adjusted so they point to the
+  correct runtime addresses
+- Symbol Resolution. A linker`s job is to resolve the reference by noting the symbol`s location and patching
+  the caller`s object code.
+
+Loader does the program loading; the linker does the symbol resolutin; and either of them can do the relocation
+
+At compile time, the compiler exports each global symbool as either strong or weak. Functions and initialized
+global variables get strong wight, while global uninitialized variables are weak. Now, the linker resolves
+the symbols using the following rules =>
+1. Multiple strong symbols are not allowrd
+2. Given a single strong and multiple weak symbols, choose the strong symbol.
+3. Given multiple weak symbols, choose any of the weak symbols.
+
+Once the linker jas resolved all the symbols, each symbol reference has exectly one definition.
+At this point linker starts the process of relocation, which involves:
+- Relocationg sections and symbol definitions, All sections of the same type are merged into a new
+  single section. For example, all .data sections of all input object filers are merged into a single
+  .data section of the final executable. The linker then assigns runtimr memore addresses to new
+  aggregate sections and also to each symbol. Now every instruction and global variable has a unique
+  loadtime address.
+- Relocating symbol reference within sections. In this step, linker modifies every symbol reference
+  in the code and data sections so they point to the correct loadtime addresses.
+
+https://www.linuxjournal.com/article/6463
+---------------------------------------------------------------------------------------------------------
+                             Linking and C runtime
+---------------------------------------------------------------------------------------------------------
+The linker adds an interface to the OS for us, and it is that interface that calls main().
+The actual entry point that the linker uses by default is the symbol with the name _start.
+When we link with gcc, it automatically includes a _start routine, one that sets up argc
+and argv, among other things, and then calls main(). To avoid including this routine, we
+can compile with `-nostartfiles`
+    nasm -f elf tiny.asm
+    gcc -Wall -s -nostartfiles tiny.o
+    ./a.out
+This code will still contain _exit procedure. _Start is not a function, it is a label that
+linker uses as entry point, therefore we can`t return from it. To return from _start, we
+can issue exit(), to clean up resources on process side, or _exit to exit right away.
+It takes one dword from stack, whih is program status and returns to OS. We can remove
+_exit from out executable using `-nostdlib`, like
+    gcc -Wall -s -nostdlib tiny.o
+However, now we are required to implement _exit on our own, using exit system call.
+System all number is assigned to ax, and value to bx
+_start
+    mov eax, 1
+    mov ebx, 42
+    int 0x80
+Now we can check size of the executable and try to keep making it smaller
+    nasm -f elf tiny.asm
+    gcc -Wall -s -nostdlib tiny.o
+    wc -c a.out # ~372 bytes
+We are still left with empty or unusefull sections of the file, that can be seen with objdump
+    objdump -x a.out 
+
+Default address for executables to be loaded is 0x08048000, however anything above 0x0 and page aligned
+is valid
+
+http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
+=========================================================================================================
+                                      Elf
+=========================================================================================================
+Every ELF file begins with a 52byte long ELF header, which contains several pieces of information
+that describe the contents of the file. For instnace, first 16 bytes contain and "identifier", which
+includes the file`s magic-number signature (7F 45 4C 46), and some one byte flags inficating that the
+contents are 32bit or 64bit, little-endian or big-endian, target architecrute, whether file is
+executable/object file/shared-object library, program starting address and location of two tables.
+These two tables are program header table and section header table and they can appear anywhere in the
+file ,but typically the former appears immediately following the ELF header, and the latter appears near
+the end of the file. They have similar purpose, they identify the component parts of the file.
+
+Section header table focuses more on identifying where the various parts of the program are within the file,
+and is used by compiler and linker. It is optional for executables but is almost always present. This may
+containt comment section, or bss section for executable that do nothing, which can be an overhead.
+
+Program header table describes where and how these parts are to be loaded into memory, it is used by loader.
+It is optional for object files, and in practise is never present
+
+---------------------------------------------------------------------------------------------------------
+                                 ELF Structure
+---------------------------------------------------------------------------------------------------------
+ELF Header 
+.text       => machine code of the compiled program
+.rodata     => read-only datam such as the format strings in the printf statements
+.data       => initialized global variables
+.bss        => Block Storage Start, uninitialized global variables
+.symtab     => symbol table, information about functions and global variables
+.rel.text   => list of locations in the .text that need to be modified when linker comnines object files
+.rel.data   => relocation information for reference global variables not defined in the current module
+.debug      => debugging symbol table
+.line       => mapping between instruction line and C code line for debugger
+.strtab     => string table for symbol table and .debug ?
+
+http://www.cirosantilli.com/elf-hello-world/
+=========================================================================================================
+                                     Loader
+=========================================================================================================
+The loader is a program called execve, which loads the code and data of the executable object file
+into memory and then runs the program by jumping to the first instruction. 
+
+=========================================================================================================
+                                Init vs Systemd
+=========================================================================================================
+Init is a daemon process which starts as soon as the computer starts and continue running till, it is
+shutdown. It is the first process after boot, making it the parent of all other running processes directly
+or indirectly and hence typically it is assigned pid=1. If init couldn`t  stat you will receive kernel
+panic. There are many replacements for init, some of which are:
+1. Upstart. Implemented in Ubuntu and designed to start process asynchronously
+2. Epoch. Daemon built around simplicity and service managment, designed to start process single-threaded
+3. Mudar. Daemon written in Python, implemented on Pardus and designed to start processes asynchronously
+4. System. Daemon designed to start process in parallel, implemented in a number of standart distribution.
+
+Init starts serially, one task starts only after last task startup was successful which resulted in
+delayed and long booting time. Systemd is parallel
+=========================================================================================================
+                               Linux init scripts
+=========================================================================================================
+Init scripts are saved to /etc/rc.d, where you can find rc[1-6].d directories and rcS.d. File used to
+be executed are defined in /etc/inittab. Here we define default runlevel and the files that wll be used
+by that runlevel.
+id:4:initdefault:l         # default level
+1:4:wait:/etc/rc.d/rc.4    # directory where scripts for this level are saved
+You can restart system into specific level using `init <n_level>`
+
+There is as well rcS.d which is executed before any runlevel. After completing the boot process, init
+executes all start scripts in a directory specified by default runlevel.
+
+Here rc stands for run control and scripts have names of the form `[KS][0-9][0-9]*` where K stands for
+kill and S for start. All these scripts are links to scripts in /etc/init.d/ directory.
+
+If you don`t have inittab then probably you use another init system like firestart or systemd. They
+will read configuration file in /etc/init/rc-sysinit.conf
+
+To detect active inite system issue one of following
+ps -p 1
+file /sbin/init                        # will show full path behind link
+
+https://unix.stackexchange.com/questions/18209/detect-init-system-using-the-shell
+https://www.debian.org/doc/manuals/debian-faq/ch-customizing.en.html
+https://stackoverflow.com/questions/38934978/meaning-of-the-name-of-linuxs-rcs-script
+=========================================================================================================
+                                    Systemd
+=========================================================================================================
+systemd is a system service manager for Linux that runs as a daemon with PID 1. It is compatible with SysV
+init scripts and can work as a drop-in replacement for sysvinit. Features:
+- Parallelization capabilities
+- Uses socket and D-Bus activation for starting services
+- Offers on-demand starting of daemons ?
+- Tracks processes using Linux cgroups
+- Supports snapshoting and restoring
+- Maintains mount and automount points
+
+=========================================================================================================
+                              D-Bus (Desktop Bus)
+=========================================================================================================
+D-Bus is an IPC mechanism designed to replace the software component communications systems used by the
+GNOME and KDE Linux desktop environments. Due to the large number of processes involved - adding up
+processes providing  the servoces and clients accessing them - establishing one-to-one IPC communications
+between all of them becomes an inefficient approach. D-Bus provides a software-bus abstraction that gathers
+all the communications between a group of processes over a single shared virtual channel. 
+
+Linux uses many of buses:
+Single system bus interconnects system services and user processes
+Single session bus for each user login session, that provides desktop services to user applications in
+the same desktop session, and allows the integration of the desktop session as whole?
+
+
+=========================================================================================================
+                                   Run Levels
+=========================================================================================================
+A runlevel is one of the modes that a Unix -based operating system will run in. Each runlevel has a certain
+number of services stopped or started, giving the user control over the behavior of the machine.
+
+S - true single user mode usually drops you into a minimal root shell
+1 - Administrative mode, you get a standard login request before access
+2 - Multi-user without TCP/IP networking -- could use serial ports for other logins
+3 - Multi-user with TCP/IP networking and text
+4 - To be determined by the system owner
+5 - Multi-User with TCP/IP networking and graphic console
+6 - reboot
+0 - shutdown and power down
+
+To get current run level issue `who -r`
+
+https://www.networkworld.com/article/3222070/maneuvering-around-run-levels-on-linux.html
+=========================================================================================================
                               User/Group managment
 =========================================================================================================
+To check current logged in users and terminal that they use, issue who. Expacted result is one tty7 per
+user which is used by xorg and represnets physical terminal used by client (computer) and as many pts
+as user uses. Ther is option to call `who am i`, which return curent pts and its creation time.
+
 There are multiple way to manage user under linux: using GUI, cli tools or just editing configuration files.
 Local user database is saved under /etc/passwd, where user are save in form like
 mysql:x:126:135:MySQL Server,,,:/nonexistent:/bin/false
@@ -170,6 +559,19 @@ setfacl -d -m #(g|u|o)::rwx #dir
 getfacl #dir
 
 https://askubuntu.com/questions/971836/at-what-point-is-the-bashrc-file-created
+
+=========================================================================================================
+                               Session managment
+=========================================================================================================
+Session usually refers to shell sessions. A new session is launched every time you open a terminal
+
+=========================================================================================================
+                               Process managment
+=========================================================================================================
+echo $$         # current shell pid
+echo $!         # pid of previous process ?
+echo $PPID      # parent pid
+
 =========================================================================================================
                                 Network manager
 =========================================================================================================
@@ -190,20 +592,38 @@ sudo service network-manager restart
    be managed by NM
 
 https://stackoverflow.com/questions/5321380/disable-network-manager-for-a-particular-interface
-=========================================================================================================
-                                   Systemctl
-=========================================================================================================
-systemctl --type=service           # list system services
 
 =========================================================================================================
-                                  Tar/Zip/Rar
+                            Tar vs Gz vs Zip vs Cpio
 =========================================================================================================
-tar (Tape ARchive) is used for archiving, therefore don`t expect to see compression.
-To compress archive you can use gzip/bzip2/xz. For conviniece tar has flag to compress archive
-automatically for you. Type of compression is determined by file extensiom
+.tar ## uncompressed archive file
+.zip ## usually compressed archive file
+.gz  ## file (not always archive) compressed using gzip
+
+Compressed tar files is native for Linux  mechanism for sharing files although it is also common to find
+other compressed formats such as .bz2 that use different compression algorithms.
+ZIP is only really used to share files with Windows users. It may not support all the Unix file system
+metadata reliably. 
+cpio was originally designed to store backup file archives on a tape device in a sequential, contiguos manner.
+It does not compress any content, but resulting archives are often compressed using gzip or other compressors.
+tar is prefered over cpio due to its relative simplicity, it can take input files as arguments instead of
+reading STDIN. 
+
+find myfiles -depth -print0 | cpio -ovc0 | gzip -7 > myfiles.cpio.gz
+tar czvf myfiles.tar.gz myfiles
+
+https://itsfoss.com/tar-vs-zip-vs-gz/
+https://superuser.com/questions/343915/what-is-the-difference-between-tar-vs-cpio-archive-file-formats
+https://www.quora.com/What-is-the-difference-between-tar-gz-zip-and-tar-gz-in-Linux
+=========================================================================================================
+                                  Tar/Zip/Gzip/Rar
+=========================================================================================================
+tar (Tape ARchive) is used for archiving, therefore don`t expect to see compression. To compress archive
+you can use gzip/bzip2/xz. For conviniece tar has flag to compress archive automatically for you. Type of
+compression is determined by file extension
 
 tar
-    -z            # working with .tgz, .tar.fz
+    -z            # invoke gunzip transparently for  .gz, .tgz, .tar.fz
     -j            # working with bzip2
     -x            # extract files from archive
     -v            # verbose
@@ -213,31 +633,26 @@ tar
     -A            # append files to archive
     -d            # diff between two archives
 
-tar -zxvf file                      #uncompress file .tgz or .tar.gz
-tar xvjf file.tar.bz2               #uncompress .tbz / .bz2
-tar xvf file.tar                    #to uncompressed tar file (.tar) 
-tar xvC /var/tmp -f file.tar        #to uncompress tar file (.tar) to another directory 
-tar -czv -f test.tar.gz /www/*      #compress directory
+tar -zxvf file                      # uncompress file .tgz or .tar.gz
+tar xvjf file.tar.bz2               # uncompress .tbz / .bz2
+tar xvf file.tar                    # to uncompressed tar file (.tar) 
+tar xv -C <dir> -f <tar>            # to uncompress tar file (.tar) to another directory 
+tar -czv -f test.tar.gz /www/*      # compress directory
+tar -xvzf <tar> <file>              # extract file from tarball
+tar -tvf <tar>                      # list content of tar
 
-=========================================================================================================
-                                  Linux Files
-=========================================================================================================
-/etc/services      # The services translation 
-/proc/net/dev      # Device network stats
-/etc/hosts         # maps ip to domain name : is checked before dns lookup
-/etc/resolv.cond   # saves ip of dns servers
-/etc/services      # contains ports with services
-/etc/protocols     # ports?
+The .gz file extension are created using Gzip program which reduces the size of the named files using
+Lempel-Ziv coding (LZ77). gzip take input from stdin and outputs compress data to stdout.
+gzip                                # gnu zip
+     -d <file>                      # compress file (doesn`t require piping to stdin)
+     -c <file>                      # uncompress -||- 
+
+cat file{1,2} | gzip > foo.gz       # archive and copress file{1,2} to foo.gz
+gzip -c file{1,2} > foo.gz
+gzip -c file1 > foo.gz
+gzip -c file2 >> foo.gz
 
 
-/dev     : device dir
-/proc    : proces dir
-/sys    : system dir
-
-/lost+find         # directory constructed by fsck (file system check) to 
-                   # it holds things that were found in memory and looks like file
-                   # but there is no name/inode... so they can be restored
-                   # Can contain result of system halt , kernel panic, power failure ...
 =========================================================================================================
                                    File links
 =========================================================================================================
@@ -272,47 +687,7 @@ scp -r username@hostname:path . # copy folder from remote
 scp me1@file me2@file   # cp from one user to another
 
 # SCP will break if init script does echo
-=========================================================================================================
-                                     Mount
-=========================================================================================================
-To list filesystems issue on of the following
-mount -v
-cat /proc/mounts
-cat /proc/mtd
-cat /etc/mtab       # old variant of fstab that may not support some advanced Linux features like containers?
-cat /etc/fstab      # mounted on boot
 
-If you want to override options used when mounting, use following, options will be appended, last option
-wins when ambiguous
-mount <dir|device> -o <new_options> 
-By default, only root user can mount filesystems, unless it has `noauto,user` options under fstab.
-To remount filesystem issue
-mount -o remount,<rw/ro> <dev> <path>     # ignores configuration files
-mount -o remount,<rw/ro> <path>           # merges options from configuration file
-
-To make all filesystems readony, can be used to prevent any changes before reboot
-echo u > /proc/sysrq-trigger
-If the filesystem is backed by a block device, you can make the block device read-only
-echo 1 > /sys/block/dm-4/ro
-echo 1 > /sys/block/sda/sda2/ro
-There may be option to force mount/remount filesystem but mostly likely it won`t help either, please
-check man to find correct option, since on one system it can be -f but on another, this may mean `fake`.
-
-/dev/disk/by-{label,uuid,partuuid,partlabel}
----------------------------------------------------------------------------------------------------------
-                               Mounting USB drive
----------------------------------------------------------------------------------------------------------
-lsblk                          # detect usb harddrive based on its size and filesystem
-df -h
-sudo blkid
-sudo fdisk -l
-dmesg | grep -ie 'sd\|usb'
-sudo lshw
-udisksctl                      # disc scanner from package
-mkdir /media/usb               # create mount point
-mount /dev/<usb> /media/usb    # mount 
-
-? How to detect drives on system of different type hdd ssd flash
 =========================================================================================================
                                      Patch
 =========================================================================================================
@@ -377,54 +752,6 @@ This is a difference section, or “hunk”. Lines starting with space are conte
 https://www.git-tower.com/learn/git/ebook/en/command-line/advanced-topics/diffs
 https://www.oreilly.com/library/view/git-pocket-guide/9781449327507/ch11.html
 ---------------------------------------------------------------------------------------------------------
-
-=========================================================================================================
-                                      Mem
-=========================================================================================================
-du 
-    -h      # human readable
-    -s      # single directory size
-    -a      # filesystem pass
-
-df          # partition stats
-   -h       # more readable
-
-du ~/go | sort -n -r | less  #sort files by size
-ncdu    # nice cli scanner
-
-=========================================================================================================
-                               /proc of interest
-=========================================================================================================
-
-malloc                  # malloc debugging
-meminfo                 #
-
-
-[pid]
-    /attr               # security
-    /exe                # symlink to the executable
-    /comm               # executable name
-    /cmdline            # passed arguments
-    /cwd
-    /map_files          # files responding to mmap
-    /maps               # currently mapped memory regions and their permissions
-    /root               # root mounted for process
-    /smaps              # mem consumptions for each of process mappings
-                        # see pmap(1)
-    /statm              # memory usage, measured in pages
-    /status             # stat + statm mostly in more readable format
-    /timers             # list of proc timers
-
- /stack              # kernell stack?
-
-
-=========================================================================================================
-                        Job managment
-
-coproc <name> cmd <redirections>    # starts a cmd as a background job, setting up pipes connected 
-                                    # to both its stdin and stdout so you can interact with it bidirectionally
-jobs -l                             # list background process + its pid
-
 =========================================================================================================
                                       TOP
 =========================================================================================================
@@ -463,6 +790,26 @@ pstree -hp $pid     # straight tree
 cat /proc/$pid/status | grep PPid:
 cat /proc/$pid/stat # 4th parameter
 =========================================================================================================
+                                    Busybox
+=========================================================================================================
+BusyBox. The Swiss Army Knife of Embedded Linux. BusyBox combines tiny versions of many common UNIX
+utilities into a single small executable. It provides minimalist replacements for most of the utilities
+you usually find in GNU coreutils, util-linux, etc.
+
+BusyBox is a multi-call binary. A multi-call binary is an executable program that performs the same job as
+more than one utility program. That means there is just a single BusyBox binary, but that single binary
+acts like a large number of utilities.
+
+busybox                  # displays list of available utilities
+        ls               # issue busybox version of the `ls` utility
+ln -s /<path>/busybox ls # make link to busybox, equivalent to `busybox ls`
+                         # note, it is expected that such links are configured by build system without user
+
+It can be used as backup for cases when linux coreutils got broken on system, just linked broken binaries
+to busybox and hope that it is not called with unknown, for busybox, flags.
+
+https://busybox.net/downloads/BusyBox.html
+=========================================================================================================
                               Boot troubleshooting
 =========================================================================================================
 To enter grub menu, press quickly left Shift? during boot
@@ -491,12 +838,57 @@ https://askubuntu.com/questions/248/how-can-i-show-or-hide-boot-messages-when-ub
 
 To make changes permament, change file /etc/default/grub and issue `sudo update-grub`.
 
+=========================================================================================================
+Random
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                                  Linux Files
+---------------------------------------------------------------------------------------------------------
+/etc/services      # The services translation 
+/proc/net/dev      # Device network stats
+/etc/hosts         # maps ip to domain name : is checked before dns lookup
+/etc/resolv.cond   # saves ip of dns servers
+/etc/services      # contains ports with services
+/etc/protocols     # ports?
+
+
+/dev     : device dir
+/proc    : proces dir
+/sys    : system dir
+
+/lost+find         # directory constructed by fsck (file system check) to 
+                   # it holds things that were found in memory and looks like file
+                   # but there is no name/inode... so they can be restored
+                   # Can contain result of system halt , kernel panic, power failure ...
+
+---------------------------------------------------------------------------------------------------------
+                               /proc of interest
+---------------------------------------------------------------------------------------------------------
+
+malloc                  # malloc debugging
+meminfo                 #
+
+
+[pid]
+    /attr               # security
+    /exe                # symlink to the executable
+    /comm               # executable name
+    /cmdline            # passed arguments
+    /cwd
+    /map_files          # files responding to mmap
+    /maps               # currently mapped memory regions and their permissions
+    /root               # root mounted for process
+    /smaps              # mem consumptions for each of process mappings
+                        # see pmap(1)
+    /statm              # memory usage, measured in pages
+    /status             # stat + statm mostly in more readable format
+    /timers             # list of proc timers
+
+ /stack              # kernell stack?
+
 
 =========================================================================================================
-                                     Bridge
-=========================================================================================================
-brctl showmacs <intf>       # list of learned macs
-      show                  # list interfaces in bridge
+Links
 =========================================================================================================
 htt://github.com/0xAX/linux-insides/blob/master/Booting/linux-bootstrap-1.md
 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/
