@@ -12,6 +12,29 @@ internet - global network, connects many networks using the tcp/ip stack
 intranet - private tcp/ip network => accessible for people from within one 
            organization
 extranet - intranet that can be accessed by trusted organizations
+=========================================================================================================
+                                   Interfaces
+=========================================================================================================
+
+---------------------------------------------------------------------------------------------------------
+                               Virtual interfaces
+---------------------------------------------------------------------------------------------------------
+Virtual network kernel interfaces is an interface simulated in software without need for hardware to
+operation. They can be created and cleaned on exit by specific program, such interfaces is called transient.
+Other option is to use special utility that will initialize such interface and provide access to it for
+other user space programs, such one is called persistent.
+
+TUN, network TUNel, simulates a network layer device and operates in layer 3 carrying IP packets.
+TAP simulates a link layer device and operates in layer 2 carrying Ethernet frames.
+TUN is used with routing while TAP with bridging.
+
+Once a tun/tap interface is in place, it can be used just like any other interface, meaning that IP
+addresses can be assigned, its traffic can be analyzed, firewall rules can be created, routes pointing to
+it can be established, etc.
+
+tunctl or openvpn --mktun               # create a persistent virtual interface
+ip tuntap help
+
 ---------------------------------------------------------------------------------------------------------
                                Binding vs Bonding
 ---------------------------------------------------------------------------------------------------------
@@ -29,7 +52,6 @@ then ifup #name:#number
 Router => device that knows how to send packets to another nrtwork but it understands only discreat signals
 Modem => de/modulates analog signals
 TODO
-
 =========================================================================================================
                                     Ethernet
 =========================================================================================================
@@ -160,6 +182,21 @@ which the frame can be forwarded, an endless loop can result. When a loop occurs
 MAC address table on a switch to constantly change with the updates from the broadcast frames, which
 results in MAC database instability.
 
+---------------------------------------------------------------------------------------------------------
+                                Broadcast storm
+---------------------------------------------------------------------------------------------------------
+Broadcast storm is the result of sending broadcast messaged to network with L2 loop.
+Some switches/gateways have an option to ignore broadcast messages after reaching defined treashold
+therefore device won`t die from received traffic. For instance, interface can be configured to drop
+received broadcast when the level of broadcast received on the interface reaches 10% of the operational
+link speed.
+storm-control broadcast level 10.00
+storm-control action trap
+
+https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst6500/ios/12-2SX/configuration/guide/book/storm.html
+https://community.cisco.com/t5/switching/storm-control-broadcast-level-what-does-this-command-do-exactly/td-p/2759888
+---------------------------------------------------------------------------------------------------------
+
 Ethernet Multicast address => 01:00:00:00:00:00
 Ethernet Broadcast address => ff:ff:ff:ff:ff:ff
 
@@ -196,14 +233,21 @@ FDB is used on Layer 2 (switching/bridging) to associate MAC addresses that have
 ports that MAC address was learned on. When a Ethernet frame arrives at a Layer 2 device, the Layer 2
 device will inspect the destination MAC address of the frame and look to its FDB table for information
 on where to send that specific Ethernet frame. If the FDB table doesn’t have any information on that
-specific MAC address it will flood the Ethernet frame out to all ports in the broadcast domain.
+specific MAC address it will flood the Ethernet frame out to all ports in the broadcast domain. Host is
+then remebered, and it`s mac is associated with an interface where packet was received. Next time, if
+some one tries to commonicate to that host, message won`t be broadcasted, instead it will be sent to
+wanted host only.
+
+If switch receives a message from already known mac but interface has changed, it will update it`s
+mappings database.
 
 It is implemented in terms of CAM (Content-addressable memory) which efficently associates packet 
 (it`s mac?) with port.
 
+https://networkengineering.stackexchange.com/questions/34754/same-mac-on-different-interfaces
 https://blog.michaelfmcnamara.com/2008/02/what-are-the-arp-and-fdb-tables/
 ---------------------------------------------------------------------------------------------------------
-                        Configuration
+                                 Configuration
 ---------------------------------------------------------------------------------------------------------
 arp -n                          # view cache
 ip neight show                  # to see reachable neigh
@@ -359,21 +403,6 @@ https://wiki.debian.org/BridgeNetworkConnections
 http://ebtables.netfilter.org/documentation/docs.html
 http://ebtables.netfilter.org/br_fw_ia/br_fw_ia.html
 =========================================================================================================
-                              Routing vs Bridging
-=========================================================================================================
-# TODO, Refactor?
-Routing refers to the interconnection of separate and independent networks which have non-overlapping
-ranges if IP addresses. Router examines the destination IP to determine which of several connected
-networks should receive it, after which the packet is forwarded to the proper network. Therefore routing
-allows transactions between hosts that are not at the same logical network while bridging L2 device
-works only within one logical network.
-
-Bridging refers to interconnection between separate physical networks that are all carryng the
-same range of IP addresses. Hubs and switches are example of bridges, they receive packet on one
-port and send it to another
-
-
-=========================================================================================================
                                       STP
 =========================================================================================================
 Often for network stability concerns we use redundant links. Idea is next, if one link goes down, we can
@@ -396,9 +425,9 @@ tree implementation on the switches, a Layer 2 loop occurs. A Layer 2 loop can r
 1. MAC database instability. Instability in the content of the MAC address table results from copies of
    the same frame being received on different ports of the switch. Data forwarding can be impaired when
    the switch consumes the resources that are coping with instability in the MAC address table.
-2. Broadcast storm—Without some loop-avoidance process, each switch may flood broadcasts endlessly. This
+2. Broadcast storm. Without some loop-avoidance process, each switch may flood broadcasts endlessly. This
    situation is commonly called a broadcast storm.
-3. Multiple-frame transmission—Multiple copies of unicast frames may be delivered to destination stations.
+3. Multiple-frame transmission. Multiple copies of unicast frames may be delivered to destination stations.
    Many protocols expect to receive only a single copy of each transmission. Multiple copies of the same
    frame can cause unrecoverable errors.
 
@@ -441,10 +470,19 @@ root switch (Root port). Root port is choosen by root path price. It is callcula
 and its bandwidth.  There can be only one root port per non-root switch, otherwise there is loop.
 1. Root port sends BPDU with Root Path Cost = 0
 2. Receiving switch looks at speed of link and add cost according to table (802.1d)
-10 Mbps  => 100 # 100 Mbps => 19 # 1 Gbps   => 4 # 10 Gbps  => 2
-3. Received switch resends it to next one and so on.
-If there are multiple ports with equal path price, port with the smallest number is choosen.
-It can be configured with `brctl setpathcost <bridge> <port> <cost>`
+   10 Mbps  => 100
+   100 Mbps => 19
+   1 Gbps   => 4
+   10 Gbps  => 2
+   Note, path cost is increased on a receiver side by inspecting characteristics of the link.
+3. Device selects the port connected to the path with the lowest accumulated STP cost to the root which
+   will be a root port. If there are multiple ports with equal path price, then port pointing to
+   bridge/switch with the smalest(after root bridge) bridge priority is choosen.
+4. If all ports are pointing to the same bridge/switch, then port which receives with the lowest STP Port
+   Priority from neighbor switch is choosen as root port.
+5. If STP Port Priority values are the same between connected ports, then port which receives the lowest
+   physical port number from neighbor switch becomes the root port. This is the last tie breaker.
+6. Received switch resends it to next one and so on
 
 Now we need to choose Designated ports which are allowed to forward traffic. Designated ports are selected
 on a per-segment basis, based on the cost of each port on either side of the segment and the total cost
@@ -465,7 +503,7 @@ Therefore, port with lower id stays alive and another gets blocked.
 Now we want to remove reduntant links to prevent loop. Any port that is not root nor designated gets
 blocked.
 
-Alternate port and backup port—An alternate port and a backup port are in a blocking state (or discarding
+Alternate port and backup port. An alternate port and a backup port are in a blocking state (or discarding
 state) to prevent loops. Alternate ports are selected only on links where neither end is a root port.
 Only one end of the segment is blocked, while the other end remains in forwarding state, allowing for a
 faster transition to the forwarding state when necessary.
@@ -490,14 +528,28 @@ https://www.experts-exchange.com/questions/27490140/Do-BPDUs-return-to-the-switc
                                    Messaging
 ---------------------------------------------------------------------------------------------------------
 Switches communicate with special packets called BPDU (Bridge Protocol Data Units). This message is sent
-from each port for multicast mac address 01:80:C2:00:00:00, by default every 2 seconds and is listened by
-another switches with eneabled STP.
+from each port for multicast mac address 01:80:C2:00:00:00. They are used to keep devices with updated
+information about network and to prevent loop occurance. It is done, by default every 2 seconds or when
+something has changed to speed up convergence (amount of time it takes to deal with algorithm to be
+re-executed and create a new topology). 
 
-There are two types of BPDU. Configuration BPDU and toplogy change notification BPDU (TCN). Configuration
-BPDUs are originated only by the root bridge (not a case for RSTP?), but a TCN BPDU will be generated by
-any switch in the network when one of two things happen:
-A port has gone into Forwarding mode
-A port has gone from Forwarding or Learning mode into Blocking mode
+There are two types of BPDU. Configuration BPDU, toplogy change notification BPDU (TCN) and Topology
+Change Acknowledgment (TCA) confirming the reception of the TCN. Configuration BPDUs are originated only
+by the root bridge (not a case for RSTP?). Non-Root Switch only propagates the BPDUs generated by the Root
+Bridge (Root Switch). The Non-Root Switch also updates certain fields in the Configuration BPDUs, such
+as Message Age, Root Path Cost, Sender Bridge ID etc.
+
+Before sending forward the BPDU, switch replaces Sender Bridge ID with it`s own. Root Bridge ID will be
+replaced as well, if received switch has higher priority.
+
+The Configuration BPDU with the Type = 0x00, and the TCN BPDU with the Type = 0x80. What is called TCA is
+simply a regular Configuration BPDU, Type = 0x00, with the TCA flag set.
+
+When a port receives a BPDU, it has a path to the Root Bridge (Root Switch), because BPDUs are originated
+from the Root Bridge (Root Switch). The port which receives a BPDU is normally a Root Port. For a Non-Root
+Bridge a port that receives a BPDU, that port leads to the Root Bridge (Root Switch).
+If a Non-Root Bridge receives BPDUs in two ports, probably the network is in a Layer 2 loop.
+
 
 Couple important fields of Configuration BPDU =>
 1. Sender identifier (Bridge ID)
@@ -506,31 +558,35 @@ Couple important fields of Configuration BPDU =>
 4. Path to root switch cost (Root Path Cost) 
 
 ---------------------------------------------------------------------------------------------------------
-                                    Timings
+                                      TCN
 ---------------------------------------------------------------------------------------------------------
-Usually, when topology changes, it takes about 50 seconds before STP is finished and packets are again
-forwarded. There are some common ways to decrease this time.
-Access ports (e.g. ports to which clients are connected and not switches?) should have STP disabled. To
-do this, you should set them as portfast (they skip blocking/learning state and are always forwarding) and
-also enable bpdufilter on those ports, so they do not participate in STP.
+A TCN BPDU will be generated by any switch in the network and flow upstream towards the Root Bridge, when
+one of two things happen:
+A port has gone into Forwarding mode
+A port has gone from Forwarding or Learning mode into Blocking mode
+It is sent over root port and contains no data. Notice, TCN will not be sent of PortFast is enabled.
 
-The rapid feature or RSTP is what you’ll probably find most useful. This allows the network to recover
-from most failures in times on the order of 1 to 2 seconds.
----------------------------------------------------------------------------------------------------------
-                                 Loop Detection
----------------------------------------------------------------------------------------------------------
-If switch receives its own BPDU, receiving port is getting blocked.
+The switch continues sending TCN BPDUs every Hello Time interval until it gets ack from its upstream
+neighbor. Upstream neighbors propage TCP upto root, which on receive will send an ack. It is done with
+simple BPDU but with Topology Change flag enabled. This is done to signal topology change and make
+non-root switches to change bridge table aging time from 300 default seconds to the Forward Delay.
 
-https://www.experts-exchange.com/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html
 ---------------------------------------------------------------------------------------------------------
                             States of port on bridge 
 ---------------------------------------------------------------------------------------------------------
-1. Blocking. Initial state of port after initialization. Listens for BPDU to know when it needs to ublocked.
-2. Listening. Port sends BPDUs but is not allowed to send data.
-- not allowed to learn addresses or forward data?
-- after forwarding? delay starts to study?
-3. Learninig. Port listens and sends BPDU, and changes CAM table, but no data is forwarded.
-4. Forwarding. Working state of port, can do anything.
+1. Blocking. Initial state of port after initialization.
+   Cannot receive/transmit data and cannot add MAC addresses to its address table.
+   Listens for BPDU to know when it needs to ublock.
+   If port is moved from Forwarding to blocking, TCN is send.
+2. Listening. Moved to Listening if the switch thinks that the port can be selected as a Root/Designated.
+   Cannot receive/transmit data and cannot add MAC addresses to its address table.
+   Listens as well as sends BPDUs therefore it can be choose to be Root/Designated.
+   If it looses Root/Designated status, it gets blocked.
+   Waits for forwarding delay before starting to learn.
+3. Learninig. Same as listening but now can remember MAC to its address table but can`t send data.
+4. Forwarding. After another Forward Delay period in the Learninig state port is moved to Forwarding state.
+   Normal working state of port when it can forward data. This port is expected to be Root/Designated.
+   TCN is sent.
 5. Disabled, Dissabled with shutdown command.
 
 State of port is changes 1-4 after initialization, which makes some delay but then device can be sure that
@@ -538,6 +594,54 @@ nothing will be broken. Client may think that there is no DHCP in network and se
 timeout. There is option `portfast` which makes prot start in state forwarding for end nodes to avoid such
 problems
 
+---------------------------------------------------------------------------------------------------------
+                                     Timers
+---------------------------------------------------------------------------------------------------------
+It takes time to pass BPDUs between switches and create loop free topology. In addtition, news of a topology
+change (such as a link or Root Bridge failure) can suffer from propagation delays as the announcement
+travels from one side of a network to the other.
+STP uses three times to make sure there is enough time for switches to receive accurate information and
+avoid bridging loop formation.
+
+Hello Time. Time interval at which Root sends BPDU, by default 2 seconds. It is configured on root and
+can`t be change on non-root since they are just forwarding root BPDU. However, it can be configured for
+TCN messages generated by non-root switches.
+
+Forward Delay. The time interval that a switch port spends in both the Listening and Learning state.
+The default value is 15 seconds.
+
+Max Age. Switch holds copy of the best received BPDU. If it was not updated (better one was received or
+at least the same one) for Age time, switch considered the BPDU to be outdated and topology change was
+perforemed. The default Max Age value is 20 seconds.
+
+This value can be changed but with care. This should be done on root switch since it will propagete BPDU
+with timer values to non root devices.
+
+---------------------------------------------------------------------------------------------------------
+                                    Timings
+---------------------------------------------------------------------------------------------------------
+For Layer 2 switches, convergence occurs once Spanning Tree Protocol (STP) process has completed: a Root
+Switch is elected, Root Ports and Designated Ports have been chosen, the Root Ports and Designated Ports
+have been placed in a forwarding state, and all other ports have been placed in a blocking state.
+
+If a port has to go through all four states, convergence takes 50 seconds: 20 seconds in blocking, 15
+seconds in listening, and 15 seconds in learning.
+
+There are some common ways to decrease this time.
+Access ports (e.g. ports to which clients are connected and not switches?) should have STP disabled. To
+do this, you should set them as portfast (they skip blocking/learning state and are always forwarding) and
+also enable bpdufilter on those ports, so they do not participate in STP.
+
+The rapid feature or RSTP is what you’ll probably find most useful. This allows the network to recover
+from most failures in times on the order of 1 to 2 seconds.
+---------------------------------------------------------------------------------------------------------
+                                 Protecting STP
+---------------------------------------------------------------------------------------------------------
+
+
+If switch receives its own BPDU, receiving port is getting blocked.
+
+https://www.experts-exchange.com/questions/27490140/Do-BPDUs-return-to-the-switch-to-indicate-a-loop.html
 ---------------------------------------------------------------------------------------------------------
                                 Port attributes
 ---------------------------------------------------------------------------------------------------------
@@ -586,10 +690,8 @@ how do you obtain IP
 
 
 ---------------------------------------------------------------------------------------------------------
-                         BPDU filter vs guard, PortFast
+                         Protecting STP
 ---------------------------------------------------------------------------------------------------------
-BPDU is short for the phrase Bridge Protocol Data Unit, which is part of the STP that help describe and
-identify attributes of a switch port. BPDUs allow for switches to obtain information about each other.
 Some devices and local stacks running on systems/workstations are capable of generating potential STP BPDUs
 that cause Denial of Service (DOS) attacks. PortFast and BPDU Guard features provide stability and security
 for network topologies to prevent such attacks.
@@ -605,8 +707,24 @@ BPDU filter will prevent inbound and outbound BPDU but will remove portfast stat
 received. Enabling BPDU filtering on an interface is the same as disabling spanning tree on it and can
 cause spanning-tree loops.
 
-BPDU Guard looks for any BPDU’s entering the interfaces that are enabled this feature. The port will
-disable as soon as the first BPDU is received, by shutting the port down.
+BPDU Guard. Imagine that you have enabled PortFast for endpoint client port and later, by mistake, this
+port was used to connect to another switch. This creates a risk to make a loop. To prevent this, you need
+to enable BPDU Guard on such port, therefore swith will looks for any BPDU’s entering the interfaces and
+disable port as soon as the first BPDU is received, by shutting the port down.
+By default it is disabled, but can be enabled, then it works for all PortFast ports. It should be used on
+all switch ports where STP PortFast is enabled.
+
+Root Guards. This is a feature created to protect a topology from a rogue switch. It introduces a new state
+of port called Alternate port which should be configured mannualy on per port basis.
+Alternate port. Ports that are candidate root ports (thet are also close to the Root Bridge) but are in
+the Blocking state.
+The root guard feature was developed as a means to control where candidate Root Bridges can be connected
+and found on a network. When such port gets an BPDU with a superrior Bridge ID it gets into `root-inconsistent
+STP state`, meaning, no data can be sent/received, but the switch can listen to BPDUs received on the
+port to detect a new root advertising itself. Root guard prevents the port from becoming a root port.
+When the superior BPDUs ano longer are received, the port is cycled through the normal STP states to
+return to normal use.
+
 
 https://medium.com/ken-m-lai/bpdu-filter-vs-bpdu-guard-a112f967798b
 ---------------------------------------------------------------------------------------------------------
@@ -617,36 +735,127 @@ To check that stp is working, issue `tcpdump -vvv -p -n -i <intf> stp`, it is ex
                                VLAN (Virtual LAN)
 =========================================================================================================
 A VLAN is a logical subnetwork that can group together a collection of devices from different physical
-LANs. It can be used to re-partition network for improved traffic managment. VLAN van be managed by router
-or smart switch.
+LANs if they were within the same one. It can be used to re-partition network, increase security, reduce
+costs, improved traffic managment or performance improvments. VLAN can be managed by router or smart switch.
+
+A full L2 only switched network is referred to as a flat network topology. A flat network is a signle
+broadcast domain, such that every connected device sees every broadcast packet that is transmitted.
+There can be no paths for load balancing or fault tolerance, they are just blocked by STP. This limitation
+can be overcomed by dividing flat network into VLANs. Each vlan creates a separate broadcast domain.
 
 When a VLAN is provided at an access-layer switch, an end user must have some means of gaining membership
 to it. Two membership methods exist:
 1. Static requires an administrator to assign individual ports on the network switch to a virtual network.
    Switch ports are assigned to specific VLANS, each port receives a Port VLAN ID (PVID) that associates
-   it with a VLAN number.
+   it with a VLAN number. The ports on a single switch can be assigned and grouped into many VLANs.
+2. Dynamic VLAN configuration allows an administrator to define network membershop according to
+   characteristics of the devices themselves rather than their switch port location.
+---------------------------------------------------------------------------------------------------------
+                                 Types of VLANs
+---------------------------------------------------------------------------------------------------------
+Default VLAN. All switch ports are a part of the default VLAN after the initial bootup of a switch and
+loading the default configuration.  This is usually VLAN 1. It has all the features of any VLAN, except
+it cannot be renamed or deleted.
 
-Dynamic VLAN configuration allows an administrator to define network membershop according to characteristics
-of the devices themselves rather than their switch port location.
+Native/Untagged VLAN. Is assigned to trunk port (one that supports traffic comming from many VLANs) and
+used to forward untagged traffic. By default it is VLAN 1 which collides with Default VLAN, therefore it
+is recommended to configure it as an unused VLAN, distinct from VLAN 1 and other VLANs.
+Note, any traffic the switch forwards out a Trunk port that is associated with the Native VLAN is forwarded
+without a VLAN Tag.
+It is crucial to have both sides of a Trunk port configured with the same Native VLAN.
 
-VLAN adds 4byte 802.1Q tag to ethernet frames. The first 16bits of this field contain the hardcoded number
-0x8100 that identifies that frame is part of VLAN. The last 12bits contain the VLAN number between 1 and 4096. 
+ | Switch1  | Native VLAN 22   ===========>  Native VLAN 33 | Switch2  | ====\
+      |                                                          |           |
+|Host Vlan 22|                                             |Host Vlan 33| |Host Vlan 22|
+In the case described above, packet from host connected to VLAN 22 will overlap with default VLAN and
+tag will be skiped. Switch2 will not know who should receive it and use it`s own native VLAN which is
+not one expected. In such case some CISCO devices may display error log.
+
+Data VLAN. VLAN configured to carry user-generated traffic. It is used to separate some generic traffic
+from voice or managment traffic.
+
+Managment VLAN. VLAN that is allowed to access the managment capabilities of a switch. VLAN 1 is the
+managment VLAN by default. To manage switch, you need to assign an IP and subnet to one (virtual?)
+interface of the switch, allowing the switch to be manage via HTTP/Telnet/SSH/SNMP. 
+It is possible to have more than one management VLAN but it increases exposure to network attacks
+
+Voice VLAN. Separate high priority VLAN provided for VoIP usage. It is required since VoIP has some rough
+requirements on delay, which should be less than 150ms to provide constant sound stream. Without creating
+separate VLAN, voice packets would be left somewhere in packet queue for a while.
+
+---------------------------------------------------------------------------------------------------------
+VLAN adds 4byte 802.1Q tag to ethernet frames, it is refered as tagged traffic. The first 16bits of this
+field contain the hardcoded number 0x8100 that identifies that frame is part of VLAN. The last 12bits
+contain the VLAN number between 1 and 4096. Three bits between them are used to define user priority and
+the last bit says whether token ring frames should be carried over Ethernet
+| Type (0x8100) | Pri | CFI | VID |
+      16           3     1     12   bits
+
+Your network may have devices not aware of VLANs (maybe you haven`t configured it for them yet), traffic
+generated by them is not tagged. Untagged traffic is placed on Native VLAN, which by default is VLAN 1.
 
 There are 2 types of ports used for VLAN:
-1. Access port. End nodes connects to it. Trafic between port and end node is not tagged. This port is
-attached to some VLAN, sometimes this VLAN parameter is called PVID. Traffic passing through this port
-from client is getting tagged. Traffic passing to client is not tagged.
+1. Access/Untagged port. End nodes connects to it. Trafic between port and end node is not tagged. This
+   port is attached to some VLAN, sometimes this VLAN parameter is called PVID. Traffic passing through
+   this ports is not tagged.
+   Note, in order to extend a VLAN to the second switch, a connection is made between one Access port on
+   both switches for each VLAN. While functional, this strategy does not scale. Imagine if our topology
+   was using ten VLANs, on a 24 port switch nearly half of the ports would be taken up by the inter-switch
+   links. Instead, there is a mechanism which allows a single switch port to carry traffic from multiple
+   VLANs called Trunk port.
+2. Trunk/Tagged port. Port/Interface that is allowed to receive and send packet frames for multiple VLANs
+   (tagged traffic), as well as traffic that does not come from a VLAN(untagged traffic).
+   VLAN trunks allow all VLAN traffic to propagate between switches so that devices that are in the same
+   VLAN, but connected to different switches, can communicate without the intervention of a router.
+   |Host|  ==> Port 1 | Switch1 | Port 2 ==>  Port 3 | Switch 2 | Port 4 ==> | Host|
+   Ports 2 and 3 are trunk ports, they won`t remove tag.
+   Trunk ports tag traffic depending on it`s source port.
 
-2. Trunk port. Port/Interface that is allowed to receive and send packet frames for multiple VLANs.
-Swith port connected to router is supposed to be able to send frames from multiple VLANs therefore
-it is made to be trunk. Another example, two switches with multiple VLANs configured connected to allow
-this port carry data of all interfaces between the two switches. Frames passing this port are getting
-tagged. 
+Different vendors have different names for ports. Cisco referes to port like Access an Trunk while another
+vendors prefer Untagged and Tagged ports.
+
+Note, access port accepts only untagged traffic and drops any tagged. The only case where tagged frames
+(matching VLAN IDs) are accepted is when the port is a hybrid link, which is a link that can receive both
+tagged and untagged traffic. An access port with voice vlan configured is a hybrid link as it can receive
+both untagged traffic (from PC) and tagged traffic from phones.
+
+If trunk port receives traffic with VLAN ID that is the same as the native VLANn, it drops the frame.
+Control traffic sent on the narive VLAN  sjould not be tagged????
+
+
+By default, all switch ports are assigned to VLAN 1, are set to be a VLAN type of Ethernet, and have
+MTU size of 1500 bytes.
+
+
+First, the VLAN must be created on the switch and assigned to specific switch ports. VLANs are referenced
+by a VLAN number in range 1 to 1005, where 1(default VLAN PVID) and 1002 through 1005 (legacy functions
+related to Token Ring and FDDI) are automatically created and set aside.
+for special uses.
+
+VLANs can be scaled in the switch block by using two basic methods:
+1. End-to-End VLANs. 
+2. Local VLANs
 
 As well there is native vlan which is never tagged? By default it is vlanid 1. It is used for devices
 that don`t know about VLANs.
+
+http://www.practicalnetworking.net/stand-alone/vlans/#tagged-untagged
+https://networkdirection.net/articles/network-theory/taggeduntaggedandnativevlans/
+https://serverfault.com/questions/432873/vlan-tagging-at-access-port-in-switch
+https://community.cisco.com/t5/switching/802-1q-tag-on-access-switchport/td-p/1686159
+---------------------------------------------------------------------------------------------------------
+                                    Routing
+---------------------------------------------------------------------------------------------------------
+Packets destined for stations that do not belong to the VLAN must be forwarded through a device that
+supports routing.
+
+VLAN provides network performance by separating broadcast domain into smaller ones, therefore there is
+less flood in the network, only devices that need/ are expected to receive broadcast are receiving it.
+
 ---------------------------------------------------------------------------------------------------------
                                     Examples
+---------------------------------------------------------------------------------------------------------
+Enabling vlans at linux
 ---------------------------------------------------------------------------------------------------------
 sudo modprobe 8021q                       # load kernel module
 vconfig add eno1 10                       # add interface
@@ -657,8 +866,8 @@ To make interface available on boot use /etc/network/interfaces
 auto eno1.10
 iface eno1.10 inet dhcp
     vlan-raw-device eno1
-
-
+---------------------------------------------------------------------------------------------------------
+www.picturesofeverydaylife.com/misc/20130502-Rep_Cap/
 =========================================================================================================
                                   Multicasting
 =========================================================================================================
@@ -888,8 +1097,10 @@ ip route flush cache
 ip -s route show cache      # statictics
 
 
-
-Policy-routing => route that allows to apply multiple rules for packet instead of one destination rule.
+---------------------------------------------------------------------------------------------------------
+                              Policy based routing
+---------------------------------------------------------------------------------------------------------
+Policy-routing is a routing that allows to apply multiple rules for packet instead of one destination rule.
 
 Ip route output =>
 - netmask
@@ -926,6 +1137,19 @@ Rule table => ip rule
 ip route add default via <ip> table <id>    # will create table with one rule
 ip rule add from <ip> table <id>            # will create rule sending packets to table <id>
 
+---------------------------------------------------------------------------------------------------------
+                              Routing vs Bridging
+---------------------------------------------------------------------------------------------------------
+# TODO, Refactor?
+Routing refers to the interconnection of separate and independent networks which have non-overlapping
+ranges if IP addresses. Router examines the destination IP to determine which of several connected
+networks should receive it, after which the packet is forwarded to the proper network. Therefore routing
+allows transactions between hosts that are not at the same logical network while bridging L2 device
+works only within one logical network.
+
+Bridging refers to interconnection between separate physical networks that are all carryng the
+same range of IP addresses. Hubs and switches are example of bridges, they receive packet on one
+port and send it to another
 
 ---------------------------------------------------------------------------------------------------------
                                   Config files
@@ -1313,7 +1537,7 @@ O (Other Configuration)
 =========================================================================================================
                                  Message types 
 =========================================================================================================
-Router Solicit      ##  sent by client to all routers multicast address
+Router Solicit      ## sent by client to all routers multicast address
 Router Advertisment ## contains M and O flags
 SOLICIT             ## message used to find dhcp6 server after RA
 ADVERTISE           ## response to solicit
@@ -1413,7 +1637,7 @@ Caching only servers
 
 DnsMasque => utility that used for local (on router) dns requests caching, and as dhcp server
 ---------------------------------------------------------------------------------------------------------
-                                Configuration
+                                 Configuration
 ---------------------------------------------------------------------------------------------------------
 /etc/nsswitch.conf   # dictate what name services are used (DNS, LDAP, etc) and order
 /etc/resolv.conf     # dns server used for resolving
@@ -1623,7 +1847,7 @@ https://www.booleanworld.com/depth-guide-iptables-linux-firewall/
 http://vasilisc.com/21-examples-iptables
 
 ---------------------------------------------------------------------------------------------------------
-                        Configuration
+                                 Configuration
 ---------------------------------------------------------------------------------------------------------
 iptables
 # Chain managment
@@ -2023,7 +2247,7 @@ tcpdump
 -i <name/any>       # interface, any means all, even those yet not created
 -w <file_name>      # save results to file
 ip/ip6              # to choose ip version
-host <ip>           # filter by ip
+host <ip>           # filter by ip, the same as src=<ip> and dst=<ip>
 src/dst <ip>
 port <port>         # filter by port
 src/dst <port>
@@ -2032,10 +2256,15 @@ port-range <start>-<end>
 Display interface name in case of `-i any`
 https://serverfault.com/questions/224698/how-to-display-interface-in-tcpdump-output-flow
 
+If there is no tcpdump on your embdeded linux, you can monitor connections with `netstat` or `ss`
+netstat -n -t | awk '{print $5}' | grep <ip:port>
+ss      -n -t | awk '{print $5}' | grep <ip:port>
+
+tcpdump -i any -s 0 host 192.168.1.3 and host 192.168.1.4 -w wl.pcap
 tcpdump -i any -vvvv ip6 -s 65535 -w dump6.pcap &
 tcpdump -i any -vvvv ip -s 65535 -w dump4.pcap &
 ---------------------------------------------------------------------------------------------------------
-                        nmap/netstat
+                                  nmap/netstat
 ---------------------------------------------------------------------------------------------------------
 nmap
     -Pn <ip>        # skip host discovery
@@ -2053,7 +2282,7 @@ netstat
 
 netstat -tapln      :lists ports and program that opened them
 ---------------------------------------------------------------------------------------------------------
-                            Iperf
+                                     Iperf
 ---------------------------------------------------------------------------------------------------------
 Note that there are three version of iperf, iperf3 works using client-server approach and requires tcp
 connection before starting, therefore you may have problems with firewall. 
@@ -2068,7 +2297,7 @@ iptables -P INPUT ACCEPT
 iperf3 -s &                         # server
 iperf3 -n 900Kb -c 192.168.151.14   # client
 ---------------------------------------------------------------------------------------------------------
-                            SCP
+                                      SCP
 ---------------------------------------------------------------------------------------------------------
 me/remote -> hostname@ip/domain
 
@@ -2084,21 +2313,63 @@ SCP will break if init script prints something, for instace echo from bashprofil
 To exit ssh session on lost connection press ~.
 https://unix.stackexchange.com/questions/196701/terminal-hang-when-lost-connection-and-ssh-is-on
 ---------------------------------------------------------------------------------------------------------
-                            Netcat
+                                      ssh
+---------------------------------------------------------------------------------------------------------
+Mounting remote file system
+Install fuse and sshfs if you haven`t before.
+ sudo apt-get install sshfs fuse
+ mkdir /home/johndoe/sshfs-path/
+ sshfs <user>@<hostname>:<remote_path> <local_path>
+To umount
+ fusermount -u <local_path>
+
+Connecting over ssh without password
+ssh-keygen -t rsa               # generate a key without password
+ssh b@B mkdir -p .ssh           # create .ssh config dir on remote device if needed
+cat .ssh/id_rsa.pub | ssh b@B 'cat >> .ssh/authorized_keys' # add yourserf to authorized users
+ssh b@B
+
+Opening firefox through ssh and forwarding picture back
+First of all, you need to enable X forwarwarding on remote host, edit /etc/ssh/sshd_config
+X11Forwarding yes
+X11DisplayOffset 10
+X11UseLocalhost yes
+restart sshd
+Now connect to remote with enabled X11 forwarding, compression is recommended to speed up X
+ssh -X remote
+Start firefox
+echo $DISPLAY
+firefox
+
+http://www.linuxproblem.org/art_9.html
+https://stackoverflow.com/questions/35635631/ubuntu-15-10-no-fuse-group
+---------------------------------------------------------------------------------------------------------
+                                     Netcat
 ---------------------------------------------------------------------------------------------------------
 netcat -l -p <port>         # server
 netcat <ip> <port> < <msg>  # client, send msg to server
 
 ---------------------------------------------------------------------------------------------------------
-                            Wireshark
+                                   Wireshark
 ---------------------------------------------------------------------------------------------------------
+There are meny ways to follow communication between two hosts. You may want to filter all trafic by ip/port
+but this may give non interesting packets transalted by the same hosts but, for instance, another
+applications. The easier way is to use Follow Stream options that you may find by clicking on packet and
+choosing appropriate option. This will setup needed filters and open conversation in separed window that
+is updated in live. As well it has some cool options like dumping packet in C language format.
+Under cover it uses a stream index, wireshark internal mapping between
+[IP A => IP B][ Port A => Port B][ L5 Protocol]
+This index is that associated to all packets.
+
 udp.port -- 67 || udp.port -- 68     ## dhcp filter using ports
 tcp contains SOAP                    ## check packet content for word
-
+                                     ## does this supports regex?
+wlan.ssid matches ".*regex.*"        ## apply regex on contents
+https://stackoverflow.com/questions/6076897/follow-tcp-stream-where-does-field-stream-index-come-from
 ---------------------------------------------------------------------------------------------------------
-                            Scappy
+                                     Scappy
 ---------------------------------------------------------------------------------------------------------
-Resend packet from previous capture
+                      Resend packet from previous capture
 ---------------------------------------------------------------------------------------------------------
 p=rdpcap("/capture.pcap")
 srp1(p[1],iface="enxd46e0e089703")    # waits for response
@@ -2318,8 +2589,8 @@ DFS is a WiFi function that enables WLANs to use 5GHz frequencies that are gener
 Main benefit of using DFS channels is to utilize under-serviced frequencies to increase the number of
 available WiFi channels. Firstly AP checks that no radar is using DFS frequencies. This process is
 called Channel Availablity Check. If there is a radar on a channel, channel will be ignored for next
-30 min and then repeated  Availability Check can take anywhere between 1 and 10 minutes, depending on
-which country you`re in.  If AP detectes radar on used channel, it will contact associtated WiFi clients
+30 min and then repeated. Availability Check can take anywhere between 1 and 10 minutes, depending on
+which country you`re in. If AP detectes radar on used channel, it will contact associtated WiFi clients
 to stop transmitting on that channel and try to change DFS channel.
 
 http://wifinigel.blogspot.com/2018/05/the-5ghz-problem-for-wi-fi-networks-dfs.html
@@ -2341,9 +2612,9 @@ WMN (Wireless Mesh Network) => network made up of radio nodes organized in a mes
        WPS (Wi-Fi Protected Setup, originally Wi-Fi Simple Configuration)
 =========================================================================================================
 WPS is a network security standard to create a secure wireless home network;
-is a method of connecting to gateway without knowing its password. This is commonly used for first
-time logging, therefore client can reconfigure password. This is done via an external or internal
-registrar. These methods include:
+is a method of connecting to gateway without knowing its password. This is commonly used for first time
+logging, allwing client to reconfigure password. This is done via an external or internal registrar.
+These methods include:
 1. Push Button (PBC), external registrar. User has to push a button, either an actual or virtual one, on
    both the access point and the new wireless client device. On most devices, this discovery mode turns
    itself off as soon as a connection is established or after a delay (typically 2 minutes or less),
@@ -2381,8 +2652,8 @@ or longer time may have other functions, such as factory-reset or toggling WiFi.
 
 http://junyelee.blogspot.com/2014/11/wi-fi-protected-setup_4.html
 https://kb.netgear.com/19824/How-do-NETGEAR-Home-routers-defend-WiFi-Protected-Setup-PIN-against-brute-force-vulnerability
----------------------------------------------------------------------------------------------------------
-                               Managment packets
+=========================================================================================================
+                               Beacon frame
 ---------------------------------------------------------------------------------------------------------
 The Wi Fi Beacon management frame is a sent out by the access point every 100ms (can be configured).
 Beacon frames are used to advertise that the existence of a wireless access point is available and contains
@@ -2405,8 +2676,51 @@ all the required information required to connect to the network. It contains fol
 There are also fields that hold  extra parameters, that has been added to the Wi FI spec since its first
 initial standard. This information can be found under tagged parameters.
 
-
 https://networksystemsblog.wordpress.com/2014/04/21/wi-fi-management-packets-explained-part-1-wi-fi-beacon-frames/
+---------------------------------------------------------------------------------------------------------
+                             Probe Request/Response
+---------------------------------------------------------------------------------------------------------
+Station looking for network may do it passively by iterating through possible channels and listening to
+beacons but it is not efficient (passive scanning). Instead, active stations, iterate through channels
+and send a Prob Request management frame asking what network is available on that channel.
+It`s broadcasted to DestinationAddress (ff:ff:ff:ff:ff:ff). Once a Probe sent, STA starts a ProbeTimer
+countdown & wait for answers. At the end of the timer, STA process the answer it has received. If no
+answers received, STA moves to next channel & repeats the discovery process.
+
+STA sending Probe Request may specify the SSID they looking (called directed probe request). Then only
+IBSS STA or AP support that SSID will answer. The SSID value can also be set to 0 (ie SSID field is
+present, but empty). This is called Wildcard SSID or Null Probe Request.
+
+Beacon frame and Probe response are similar but here are 3 noticable differences:
+1. The beacon frame contain a TIM, the probe response does not
+2. The beacon frame contain a QoS Capability information Element
+3. The probe response contain the Requested Information elements that may have been requested by the
+   probing station.
+
+Once Probe Response received by the STA, it should send an  ACK frame to the AP.
+https://mrncciew.com/2014/10/27/cwap-802-11-probe-requestresponse/
+---------------------------------------------------------------------------------------------------------
+                             IE Information Element
+---------------------------------------------------------------------------------------------------------
+
+https://stackoverflow.com/questions/36632029/wireshark-beacon-frame-wps-vendor-tag
+---------------------------------------------------------------------------------------------------------
+                                Filters
+---------------------------------------------------------------------------------------------------------
+Management Frames       |  wlan.fc.type==0
+Control Frames          |  wlan.fc.type==1
+Data Frames             |  wlan.fc.type==2
+Association Request     |  wlan.fc.type_subtype==0
+Association Response    |  wlan.fc.type_subtype==1
+Reassociation Request   |  wlan.fc.type_subtype==2
+Reassociation Response  |  wlan.fc.type_subtype==3
+Probe Request           |  wlan.fc.type_subtype==4
+Probe Response          |  wlan.fc.type_subtype==5
+Beacon                  |  wlan.fc.type_subtype==8
+ATIM                    |  wlan.fc.type_subtype==9
+Disassociation          |  wlan.fc.type_subtype==10
+
+https://dalewifisec.wordpress.com/2014/04/29/wireshark-802-11-display-filters-2/
 =========================================================================================================
                                  Configurations
 =========================================================================================================
@@ -2428,8 +2742,14 @@ wpa_passphrase Home_ home_1234 > wpa.conf
 sudo wpa_supplicant -Dnl80211 -iwlp1s0 -cwpa.conf
 
 ---------------------------------------------------------------------------------------------------------
-Enable promiscuous (monitoring) mode
+Sometimes, you need to sniff a wireless network traffic. This can be done using wireless interface in
+monitor mode and wireshark. Note, you can sniff only one channel using one interface. Usually you want
+to configure this channel mannualy, e.g. you want to sniff channel currently used by AP on your gateway.
+Whether you receive or miss some part of traffic depends on quality of your wifi adapter, therefore on
+some cheap adapter you may miss part of current channel traffic, as well as, receive traffic from another
+channels.
 
+Configuring interface mode to monitor
 sudo ifconfig wlp1s0 down           && \
 sudo iwconfig wlp1s0 mode managed   && \
 sudo ifconfig wlp1s0 up             && \
@@ -2440,7 +2760,9 @@ sudo ifconfig wlp1s0 up             && \
 iwconfig wlp1s0
 
 Don`t forge to configure channel you want to sniff traffic on
-sudo iwconfig wlp1s0 channel 60
+sudo iwconfig wlp1s0 channel 11
+sudo iwconfig wlp1s0 channel 1
+iwlist wlp1s0 channel
 
 If some rf related error pops up
 sudo rfkill list            &&\
@@ -2448,6 +2770,7 @@ sudo rfkill unblock wifi    &&\
 sudo rfkill unblock all     &&\
 sudo rfkill list
 
+https://networkengineering.stackexchange.com/questions/2261/can-a-probe-request-be-answered-on-a-different-channel
 =========================================================================================================
                                  WiFi standarts
 =========================================================================================================
@@ -2473,6 +2796,7 @@ EVE NG (Emulated Virtual Environment)  http://www.eve-ng.net/
 Looks cool but requires separate VM, as result, can be used on any OS
 https://www.brianlinkletter.com/how-to-set-up-the-eve-ng-network-emulator-on-a-linux-system/.
 
+gns3
 
 http://www.brianlinkletter.com/open-source-network-simulators/
 
@@ -2616,6 +2940,8 @@ receiving cable modem.
 
 CM (Cable Modem).
 
+MTA (Message/Mail Transfer Agent). A software that transfers electronic mail messages from one computer
+to another using SMTP.
 
 ---------------------------------------------------------------------------------------------------------
                   EMTA (Embedded Multimedia Terminal Adapter)
@@ -2763,3 +3089,55 @@ Signaling protocol =>
 # Codecs => trasfroms signals from analog to digital and vice-versa
 - From caller => analog to digital
 - To calle => digital to analog
+
+---------------------------------------------------------------------------------------------------------
+                    PSTN | Public Switched Telephone Network
+---------------------------------------------------------------------------------------------------------
+PSTN is commonly known as a ‘telephone line’. This is the most commonly used method by all users that only
+have the need to use one line for one conversation at a time using only one phone number. PSTN uses an old
+technology whereby circuit-switched copper phone lines are used to transmit analogue voice data.
+PSTN line cannot be used for any other purpose while a call is being made. A PSTN phone number is equivalent
+to one phone line.
+
+The phones themselves are known by several names, such as PSTN, landlines, Plain Old Telephone Service
+(POTS), or fixed-line telephones.
+
+PSTN phones are widely used and generally still accepted as a standard form of communication. However,
+they have seen a steady decline over the last decade.
+
+https://www.nextiva.com/blog/what-is-pstn.html
+---------------------------------------------------------------------------------------------------------
+                   ISDN | Integrated Services Digital Network
+---------------------------------------------------------------------------------------------------------
+Network providing digital transmission of voice and data services. It is primarily used for Voice as it
+give you the options of having more than one Channel (line). They come in many ‘flavours’… 2, 10, 20 and
+30 and you can also increase the number of Channels as your business expands by multiple ISDNs to meet
+your requirements.
+
+---------------------------------------------------------------------------------------------------------
+                         PBX | Private Branch Exchange
+---------------------------------------------------------------------------------------------------------
+PBX is a private telephone network used within a company or organization. The users of the PBX phone system
+can communicate internally (within their company) and externally (with the outside world), using different
+communication channels like Voice over IP, ISDN or analog. PBX also allows you to have more phones than
+physical phone lines (PSTN) and allows free calls between users. Additionally, it provides features like
+transfer calls, voicemail, call recording, interactive voice menus (IVRs) and call queues.
+
+https://www.nextiva.com/blog/what-is-pstn.html
+---------------------------------------------------------------------------------------------------------
+Both PSTN and ISDN are quite outdated and will be replaced soon with cloud versions. This will require
+replacing of old hardware PSTN phones with a new ones.
+
+---------------------------------------------------------------------------------------------------------
+                                  MGCP vs SIP
+---------------------------------------------------------------------------------------------------------
+
+
+https://community.cisco.com/t5/telepresence-and-video/difference-between-h-323-mgcp-sip-sccp/td-p/2416741
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                               Studying resources
+=========================================================================================================
+https://mrncciew.com/                   # blog by CWNE && CCIE
+http://www.practicalnetworking.net
+http://www.omnisecu.com                 # CCNA preparation blog

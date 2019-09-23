@@ -79,6 +79,20 @@ paging and mutli-tasking. Can be startet after real mode initializes one descrip
 Protection Enable (PE) bit in the control register 0 (CR0)
 
 =========================================================================================================
+                                  Instructions
+=========================================================================================================
+                                   Lea vs Mov
+---------------------------------------------------------------------------------------------------------
+Mov performs copying of value from register to memory, memory to register, register to register and some
+variations of offset calculationsa like displacement and a sclaed index usage  Lea performs a part of what
+Mov is doing, it stores not actually data referenced but the address itself.
+MOV EAX, [ESI*8 + EBX + 0x20]   # moves content at address to register
+LEA EAX, [ESI*8 + EBX + 0x20]   # movers address to register
+There is a way to load offset of symbol at compile time instead of runtime using OFFSET operator
+MOV    EBX, OFFSET table1
+
+https://www.quora.com/What-is-the-difference-between-LEA-and-MOV-offset-instruction-in-assembly-level-programming
+=========================================================================================================
                         Omit frame pointer optimization
 =========================================================================================================
 There are two registers pointing on a stack, the stack pointer which points to the top of a stack and can

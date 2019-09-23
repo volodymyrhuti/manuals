@@ -311,7 +311,12 @@ Real time processes: PR = - 1 - real_time_priority (real_time_priority ranges fr
 https://askubuntu.com/questions/656771/process-niceness-vs-priority
 https://www.thegeekstuff.com/2013/08/nice-renice-command-examples/
 ---------------------------------------------------------------------------------------------------------
+                                 Pid/Lock file
+---------------------------------------------------------------------------------------------------------
 
+http://www.guido-flohr.net/never-delete-your-pid-file/
+https://unix.stackexchange.com/questions/12815/what-are-pid-and-lock-files-for
+---------------------------------------------------------------------------------------------------------
 =========================================================================================================
                                    Threading
 =========================================================================================================

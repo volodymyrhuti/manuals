@@ -75,7 +75,7 @@ Instead of waiting for make to get to your package, you can run one of the follo
    |
    \-> feeds.conf | Indicates the package feeds that will be made available during the firmware configuration stage.
    |          | Package shouldbe included here to be visible. Is not created by default
-   |          | src-<link|git|forge> <package> <path/url>
+   |          | src-<link|git> <package> <path/url>
    |          | File be checked during scripts/feeds update package => makes packages available for config menu
    |          |                        scripts/feeds install -a -p package      ?? not sure what this does
    |          |
@@ -134,6 +134,4 @@ PKG_CAT            # How to decompress the sources (zcat, bzcat, unzip)
 =========================================================================================================
                                    Some flags
 =========================================================================================================
-
 IGNORE_ERRORS=1 make <make options>         # keep building on failure
-dl/bcm963xx-linux.4.1-scos-5688b-bouygues/tools/testing/ktest/ktest.pl:284:    "IGNORE_ERRORS"		=> \$ignore_errors,

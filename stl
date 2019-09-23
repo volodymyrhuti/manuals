@@ -1,0 +1,174 @@
+=========================================================================================================
+                                      STL
+=========================================================================================================
+STL is an combination of data structures, algorithms and container adapters.
+
+=========================================================================================================
+                                   Containers
+=========================================================================================================
+The implementation of each type of container differs. For example: 
+Sequence containers are usually implemented as arrays or linked-lists.
+Associative containers  are usually implemented as binary trees.
+Unordered containers are usually implemented as hash tables.
+
+Reasons to use standart containers:
+Standard containers eliminate much of the boilerplate code that you need to write when bringing up a new
+system for a new client. Following reasons should be considered:
+1. STL containers are already debuged, saving you time
+2. Usually they are faster then something handwritten for fast
+3. Many containers share the common interfaces, making it quite simple to utilize different conatiners
+   without lookinf up member function definitions.
+4. STL is well-documented and easily understood by other developers.
+
+=========================================================================================================
+                              Sequence containers
+=========================================================================================================
+Sequence containers are container classes that maintain the ordering of elements in the container.
+A defining characteristic of sequence containers is that you can choose where to insert your element by
+position.
+Sequence containers: vector, deque, array, list, forward_list basic_string
+
+---------------------------------------------------------------------------------------------------------
+                                     Deque
+---------------------------------------------------------------------------------------------------------
+The deque class (pronounced “deck”) is a double-ended queue class, implemented as a dynamic array that can
+grow from both ends.
+Advantages:
+1. Insertion/deletion to the end is constant time + deletion at the ends never invalidates pointers
+   references to the rest of the elements.
+2. Internally it is implemented as a couple of arrays, therefore when overalocation is need, only part
+   of structed is copied to new location.
+
+Disadvantages:
+1. Since it is implemented as multiple arrays, dereferencing element requires to dereference bookkeping
+   information and only then dereferencing an variable which is overhead
+2. Large minimal cost, to allocate one element deque you need to alocate couple buffers internally.
+
+Complexity:
+1. Random access - constant O(1)
+
+---------------------------------------------------------------------------------------------------------
+                                      List
+---------------------------------------------------------------------------------------------------------
+Lists only provide access to the start and end of the list -- there is no random access provided. If you
+want to find a value in the middle, you have to start at one end and “walk the list” until you reach the
+element you want to find. The advantage of lists is that inserting elements into a list is very fast if
+you already know where you want to insert them. Generally iterators are used to walk through the list.
+
+
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+                             Associative containers
+=========================================================================================================
+These are sorted-collections in which the position of an element depends on its value. The value of the
+elements determine the position of the elements in the container. The order of insertion doesn't matter.
+Associative containers are containers that automatically sort their inputs when those inputs are inserted
+into the container. By default, associative containers compare elements using operator<.
+
+Associative containers provide sorted data structures that provide a fast lookup (O(log n) time) using keys.
+The STL contains four associative container classes: set, multiset, map, multimap.
+---------------------------------------------------------------------------------------------------------
+                                      Set
+---------------------------------------------------------------------------------------------------------
+A set is a container that stores unique elements, with duplicate elements disallowed. The elements are
+sorted according to their values. 
+
+---------------------------------------------------------------------------------------------------------
+                                    Multiset
+---------------------------------------------------------------------------------------------------------
+A multiset is a set where duplicate elements are allowed. 
+---------------------------------------------------------------------------------------------------------
+                                      Map
+---------------------------------------------------------------------------------------------------------
+A map (also called an associative array) is a set where each element is a pair, called a key/value pair.
+The key is used for sorting and indexing the data, and must be unique. The value is the actual data. 
+
+---------------------------------------------------------------------------------------------------------
+                                    Multimap
+---------------------------------------------------------------------------------------------------------
+A multimap (also called a dictionary) is a map that allows duplicate keys. Real-life dictionaries are
+multimaps: the key is the word, and the value is the meaning of the word. All the keys are sorted in
+ascending order, and you can look up the value by key. Some words can have multiple meanings, which is
+why the dictionary is a multimap rather than a map. 
+
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+                       Unordered (associative) Containers
+=========================================================================================================
+These are unordered-collections in which the position of an element doesn't matter. Neither does the order
+of insertion nor the value of the element. Only their existence in the container matters. If you put four
+elements in to a collection, their order is undefined and might change over time.
+
+
+Unordered associative containers provide unsorted data structures that can be accessed using a hash.
+Access times are O(n) in the worst-case, but much faster than linear time for most operations.
+The STL container contains four unordered container classes: unordered_set, unordered_multiset, unordered_map,
+unordered_multimap.
+
+
+
+=========================================================================================================
+                               Container Adapters
+=========================================================================================================
+Container adapters are special predefined containers that are adapted to specific uses. The interesting
+part about container adapters is that you can choose which sequence container you want them to use.
+
+---------------------------------------------------------------------------------------------------------
+                                     Stack
+---------------------------------------------------------------------------------------------------------
+A stack is a container where elements operate in a LIFO (Last In, First Out) context, where elements are
+inserted (pushed) and removed (popped) from the end of the container. Stacks default to using deque as
+their default sequence container (which seems odd, since vector seems like a more natural fit), but can
+use vector or list as well. 
+
+---------------------------------------------------------------------------------------------------------
+                                     Queue
+---------------------------------------------------------------------------------------------------------
+A queue is a container where elements operate in a FIFO (First In, First Out) context, where elements are
+inserted (pushed) to the back of the container and removed (popped) from the front. Queues default to
+using deque, but can also use list. 
+
+---------------------------------------------------------------------------------------------------------
+                                 Priority queue
+---------------------------------------------------------------------------------------------------------
+A priority queue is a type of queue where the elements are kept sorted (via operator<). When elements are
+pushed, the element is sorted in the queue. Removing an element from the front returns the highest priority
+item in the priority queue. 
+
+=========================================================================================================
+                                   Iterators
+=========================================================================================================
+An Iterator is an object that can traverse (iterate over) a container class without the user having to
+know how the container is implemented. With many classes (particularly lists and the associative classes),
+iterators are the primary way elements of these classes are accessed.
+
+An iterator is best visualized as a pointer to a given element in the container, with a set of overloaded
+operators to provide a set of well-defined functions:
+1. Operator*  ## dereferencing iterator to get element it is currently pointing to
+2. Operator++ ## moves iterator to next elements ( most containter have operator--, except ones like
+                 directed lists)
+3. Operator=  ## assign iterator to some position, usually start/end assigned through common interface
+                 begin()  # returns an iterator representing the beginning of the elements in the container
+                 end()    # returns an iterator representing the element just past the end of the elements
+                 cbegin() # the begin() but iterator is const(read-only)
+                 cend()   # the end() but iterator is const(read-only)
+4. Operator==/!=  ## comparison operators to determine if two iterators point to the same element.
+
+To declare iterator, containers provide types which can be used with `container::iterator` or const version
+`container::const_iterator`.
+
+One point worth noting: Iterators must be implemented on a per-class basis, because the iterator does need
+to know how a class is implemented. Thus iterators are always tied to specific container classes.
+=========================================================================================================
+                                   Algorithms
+=========================================================================================================
+In addition to container classes and iterators, STL also provides a number of generic algorithms for
+working with the elements of the container classes. These allow you to do things like search, sort, insert,
+reorder, remove, and copy elements of the container class. They are implemented as functions operating
+on iterators. This means that each algorithm only needs to be implemented once, and it will generally
+automatically work for all containers that provides a set of iterators (including your custom container
+classes).
+
+=========================================================================================================

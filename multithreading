@@ -14,6 +14,13 @@ that the consumer won't try to remove data from an empty buffer.
 https://www.codeproject.com/Articles/27703/Producer-Consumer-Using-Double-Queues
 ---------------------------------------------------------------------------------------------------------
 =========================================================================================================
+                                 Sync vs Async
+=========================================================================================================
+When you execute something synchronously, you wait for it to finish before moving on to another task. When
+you execute something asynchronously, you can move on to another task before it finishes.
+
+https://stackoverflow.com/questions/748175/asynchronous-vs-synchronous-execution-what-does-it-really-mean
+=========================================================================================================
                                Deadlock detection
 =========================================================================================================
 Resource allocation graph
@@ -133,7 +140,7 @@ Proper way is to check and wait in loop
         thread_cond_wait(&c->above_zero,&c->lock)
 
 Conditional variables gives ability to cover multiple conditions. For instance, there may be multpile users
-trying to withdrow funds from a bank, and if there is nit much funds but we can still supplie at list one
+trying to withdrow funds from a bank, and if there is not much funds but we can still supplie at list one
 client, we can signal all of them that money are awailable, but each of them will check if there is enough
 individually and go to slip if not
 
@@ -187,4 +194,9 @@ https://computing.llnl.gov/tutorials/pthreads/
 https://randu.org/tutorials/threads/
 https://www.cs.cmu.edu/afs/cs/academic/class/15492-f07/www/pthreads.html
 http://www.cs.kent.edu/~ruttan/sysprog/lectures/multi-thread/multi-thread.html
+=========================================================================================================
+To study
+=========================================================================================================
+https://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
+https://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
 =========================================================================================================

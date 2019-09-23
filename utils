@@ -124,6 +124,9 @@ find . -type f
                           `ls -lhi` and use if with -inum <num> -delete
      -exec              # expands iterator to relative name
      -execdir           # expands iterator to absolute name
+     -m <[+- ]time>     # last modification time
+     -a <[+- ]time>     # last access time
+
 
 find . | xargs -i{} bash -c "tmp={} && echo \${tmp##*.}"
 find . -name fsck  -exec file {} \;
@@ -143,6 +146,11 @@ find -type f | xargs -i{} git blame {}| grep -C 10 -i <word>
 If you want to gather all argument to command, instead of running command on each one,
 you can apped + after {}
 find <some_files> ... -exec tar -cvf {} +
+
+
+find -iname '*.txt' -mtime 60 -exec echo {} \;      # print files changed exectly 60 days ago
+                          +60                       #                     more then 60 days ago?
+                          -60                       #                     less then 60 days ago
 
 http://www.softpanorama.org/Tools/Find/using_exec_option_and_xargs_in_find.shtml
 =========================================================================================================

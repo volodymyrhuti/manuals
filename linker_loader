@@ -60,7 +60,7 @@ definitions and references of all of the symbols. This information is used to cr
 table and assigne numeric locations in the output address space. The second pass uses previous information
 to control the actual linking process. It reads and relocates the object code, substituing numeric addresses
 for symbol references and adjusting memory addresses in code and data to reflect relocated segment addresses,
-and writes the relocated code to the output file. Often linker will generate code/date such as glue used
+and writes the relocated code to the output file. Often linker will generate code/data such as glue used
 to call routines in overlays? or in dynamically linked libraries or an array of pointers to initialization
 routines that need to be called at program startup time (for instace _start method for C).
 

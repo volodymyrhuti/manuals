@@ -70,6 +70,10 @@ Use hard links when original file is often moved between directories. Hard link 
 and not inode (cheaper), Symlink may point to another symlink as well as be recursive, make loops, point
 to files on another machine (networt mount filesystems) which may affect time spent to open file.
 
+ln -s /source/file /target/symlink    ## create a new symlink (fails if symlink exists already)
+ln -sf /source/file /target/symlink   ## create or update a symlink
+ls -l /source/file /target/symlink    ## checking for validity
+ln -s /directory/*  /target/          ## link all files from one directory to another (without hidden ones)
 ---------------------------------------------------------------------------------------------------------
 Example usage of hardlinks. There is a utility named rsync which makes periodically backups, in the case
 nothing has changed, since last backup taking, it just hardlinks new backup file to previos one, since
@@ -654,17 +658,8 @@ gzip -c file2 >> foo.gz
 
 
 =========================================================================================================
-                                   File links
+                                    Hardware
 =========================================================================================================
-Hard link - pointed to data
-Soft link - pointer to name referencing data
-
-ln -s /source/file /target/symlink    ## create a new symlink (fails if symlink exists already)
-ln -sf /source/file /target/symlink   ## create or update a symlink
-ls -l /source/file /target/symlink    ## checking for validity
-=========================================================================================================
-                        Hardware
-
 use lshw to lookup info about hardware
 lspci
 lsusb

@@ -406,6 +406,32 @@ exec 3>&-                 # Close fd 3.
 https://catonmat.net/bash-one-liners-explained-part-three
 https://catonmat.net/bash-one-liners-explained-part-one
 ---------------------------------------------------------------------------------------------------------
+                        Redirecting already running process
+---------------------------------------------------------------------------------------------------------
+There are many ways to redirect an already running process: strace, gdb and packaged binary reredirect...
+1. You can attach to process with strace and look through system calls like write. It will be seen what
+   arguments are used but there will be a lot of other unusefull information.
+   strace -p <pid> -s9999 -e write
+          -s9999, avoids truncationg string to 32 characters
+          -e write, prints only write calls
+2. If it`s output was already redirected to file before, you can read file discriptors owned by process
+   tail -f /proc/<pid>/fd/1     // stdout
+   tail -f /proc/<pid>/fd/2     // stderr
+3. Change used file descriptors with gdb
+   ls -l /proc/<pid>/fd  # see what fds are used, /dev/pts means console
+   gdb -p <pid>          # attach
+   p dup2(open("/tmp/stdout", 1), 1)
+   p dup2(open("/tmp/stderr", 1), 2)
+   detach
+   quit
+4. Using reredirect binary
+   reredirect -m <file> <pid>
+   referred <pid> | grep <content>
+
+https://serverfault.com/questions/213119/how-can-i-redirect-an-already-running-processs-stdout-stderr
+https://etbe.coker.com.au/2008/02/27/redirecting-output-from-a-running-process/
+https://unix.stackexchange.com/questions/58550/how-to-view-the-output-of-a-running-process-in-another-bash-session
+---------------------------------------------------------------------------------------------------------
                                     Examples
 ---------------------------------------------------------------------------------------------------------
 Reading file line by line
@@ -449,27 +475,59 @@ gets executed
 =========================================================================================================
                                  Test operator
 =========================================================================================================
-[[ is improved version of [ for bash scripts
+There are a couple of ways to test values/attributer in shell/bash. Usually you some form of `test` command
+and chain it with if .. elif .. else .. fi. There are three ways to perform test, the `test` command and
+`[`, `[[` commands. Where `[` is just an alias? for test that makes code with it more readable but requires
+closing `]` as one of its arguments. It has some unintuitive behaviours that makes it more error prone.
 
-Hadles empty strings more intuitevly
-[ -f "$file" ]    ==   [[ -f $file ]]
+$ type -a [
+[ is a shell builtin
+[ is /usr/bin/[
 
-Lets use && || and <=> for strings (needs to be escaped with []), since it is just syntactic
+$ type -a [[
+[[ is a shell keyword
 
-Has regular expressions
+Bash has imporoved version of `[` which is called `[[`. It is a keyword, that does pretty much the same
+but in a more intuitive way. For instace spaces in file names, suppose you have a $file, which is a two
+word name with a space between them.
+[ -f $file ]    # will take the first word as arguemtn and ignore the second
+[ -f "$file" ]  # works fine
+[ -f $file ]    # file is empty, therefore there is no argument after expansion and it fails
+[[ -f $file ]]  # handles all three previous casses
+
+
+Support regular expressions, globs + avoids expanding astrisk
 if [[ $answer =~ ^y(es)?$ ]]
-
-Pattern matching aka globbing for free?
-Durring expansion of variable containing astrerisk [] will try expand it, [[]] wount
-
 [[ $a == z* ]]   # True if $a starts with an "z" (pattern matching).
 [[ $a == "z*" ]] # True if $a is equal to z* (literal matching).
-
 [ $a == z* ]     # File globbing and word splitting take place.
 [ "$a" == "z*" ] # True if $a is equal to z* (literal matching).
 
+No need to escape string comparison opeators and expression grouping \>, \<, \(\), since it is keyword
+and shell understands that there is no file redirection but comparison.
 [ -s file ] # check if file is empty
 
+https://unix.stackexchange.com/questions/306111/what-is-the-difference-between-the-bash-operators-vs-vs-vs
+http://mywiki.wooledge.org/BashFAQ/031
+=========================================================================================================
+                                   Codestyle
+=========================================================================================================
+References for some codestyle guides
+https://github.com/icy/bash-coding-style/blob/master/LESSONS.md
+https://github.com/bahamas10/bash-style-guide
+https://github.com/icy/bash-coding-style
+---------------------------------------------------------------------------------------------------------
+                                    Packages
+---------------------------------------------------------------------------------------------------------
+There is no packages in bash but there is a naming conventions that purposes to use :: with function
+names, to make scripts more readable. There is no special syntax sugar, it is just allowed by lanuage
+to user : withing names, there is even a fork bomb created by `:` command.
+This convention is described in Google code style as follows
+Lower-case, with underscores to separate words. Separate libraries with ::. Parentheses are required after
+the function name. The keyword function is optional, but must be used consistently throughout a project.
+
+https://stackoverflow.com/questions/44558080/what-are-double-colons-in-a-shell-script
+https://unix.stackexchange.com/questions/404076/what-are-bash-packages
 =========================================================================================================
                                     History
 =========================================================================================================
@@ -789,7 +847,7 @@ To change starting shell for user, issue one of following commands are relogin
 sudo usermod -s <shell> <username>
 chsh -s <shell> <username>
 =========================================================================================================
-                                sudo
+                                      sudo
 =========================================================================================================
 To allow user issue commands under sudo, you should add him to sudo/admin group withing /etc/group
 Privileges for sudo user are configured within /etc/sudoers
@@ -806,7 +864,7 @@ sudo -u <user> <cmd>
 
 https://www.unixtutorial.org/how-to-use-visudo
 ---------------------------------------------------------------------------------------------------------
-            Changing /etc/sudoers
+                             Changing /etc/sudoers
 ---------------------------------------------------------------------------------------------------------
 Since /etc/sudoers is important file, we should be carefull not to corrupt it. Imagine case when multiple
 users would try to modify it at the same time, therefore making it unusable. For this reason, there is
@@ -943,6 +1001,22 @@ After the == in a bash [[ expr ]] expression.
 In the patterns to a case command.
 In parameter expansions (%, %%, #, ##, /, //).
 
+Since version 3 of bash, there is a built-in regular expression comparison operator `=~`. In addition to
+doing simple matching, bash regex support sub-patterns surrounded by parenthesis for capturing parts of
+the match. The matches are assigned to an array variable BASH_REMATCH
+Note, regular expressions used with =~ are unquoted. If the string on the right is quoted, then it is
+treated as a string literal. Use the appropriate character classes, or escape your space if you want a
+space in regex.
+x='foo bar bletch'
+if [[ $x =~ foo[[:space:]](bar)[[:space:]]bl(.*) ]]; then
+    echo The regex matches!
+    echo $BASH_REMATCH      
+    echo ${BASH_REMATCH[1]} 
+    echo ${BASH_REMATCH[2]} 
+fi
+
+https://stackoverflow.com/questions/13150411/why-does-bash-rematch-not-work-for-a-quoted-regular-expression
+https://www.linuxjournal.com/content/bash-regular-expressions
 https://www.linuxjournal.com/content/pattern-matching-bash
 =========================================================================================================
                                       Case

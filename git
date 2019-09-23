@@ -1,3 +1,4 @@
+
 =========================================================================================================
                                       Git
 =========================================================================================================
@@ -11,32 +12,75 @@ GIT_REFLOG_ACTION="<description>" <intf>   # description displayed in reflog
 
 GIT_CURL_VERBOSE=1 GIT_TRACE=1 GIT_TRACE_PACKET=1 
 =========================================================================================================
+                                    Refspec
+=========================================================================================================
+Local branches are mapped to remite ones with a special syntax called `refspec`, that takes the form
+<source>:<destination>. Here, <source> is a branch that exists on a remote repository, while <destination>
+is the branch it should map to in the local repo.
+Example of refspec may look like `fetch: +refs/heads/master:refs/remotes/origin/master`, meaning that
+next time we fetch, git will update local master from remote one. The `+` tells git to perform a merge
+if no fast-forwarding is appropriate during a fetch.
+Aother example `fetch = +refs/pull/*/head:refs/pull/origin/*` would create a local branch for each
+pull request in repo on a fetch.
+
+https://stackoverflow.com/questions/44333437/git-what-is-refspec
+https://stackoverflow.com/questions/47814644/how-to-understand-remote-origin-fetch-setting-in-git-conf-file
+=========================================================================================================
                                     Branches
 =========================================================================================================
 Branch => active parallel line of development, usefull for isolation and separation different types of work.
-A single repository can have an arbitrary numer of branches. There are next types of brnaches =>
-Branches on local machine
-* Local branch
-  To list local branches issue `git branch`
-* Non-tracking local branch
-  Standalone branches not associated with any other branches, newly crated branches with `git branch <name>`
-* Local-tracking branch
-  Branch associated with remote tracking. To list local tracking/nontracking branches issue `git branch -vv`
-  <name> <hash> [optional tracking branch]
-* Remote tracking branch
+A single repository can have an arbitrary numer of branches. There are next types of brnaches:
+Branches on local machine:
+Local branches can be divided into: non-tracking local, local-tracking and remote-tracking.
+To list local branches issue `git branch`
+1. Non-tracking local branch
+   Standalone branches not associated with any other branches, newly crated branches with `git branch <name>`
+2. Local-tracking branch
+   Branch associated with remote tracking branch. Word tracking means when you push/pull on that branch,
+   git knows which remote branch to get changes from or push to during push/pull. This will affect your
+   `git status`. Since now it will know about difference between local and remote state, it will say
+   that you HEAD is behind or ahead of remote.
+   To list local tracking/nontracking branches issue `git branch -vv`
+       <name> <hash> [optional tracking branch]
+       * master d758bbb [origin/master] Merge th_% and % files in one, update readme
+   From previous output you can see that there is a local branch master pointing to remote one origin/master
+
+   You can create a new branch and make it track another with `git branch --track <new_branch> <to_track>`.
+   You can use shorter command if your local name is the same as remote one, like
+   git checkout --track <remote>/<branch>         # creates local tracking branch <branch>
+   git checkout -b <local> <remote>/<branch>      # creates local tracking branch <local> pointing to <branch>
+   git branch --set-upstream-to=<to_track> <local_branch> # updates already created branch
+   git branch --unset-upstream                    # stops tracking
+
+3. Remote tracking branch
+   References to the state of branches in yout remote machines. You can`t move them but can update with
+   `git fetch`. This one has form of <remote>/<branch>. You can list them with `git branch -r`
+
 Branches on remote machine
-* Remote branch
+1. Remote branch. It is a branch located on a remote machine/server. You can view all the remote branches
+   with `git remote show <remote>` or `git ls-remote --heads <remote>`
 
 Default branch (probably named master) is considered the base branch in your repository, against which
 all pull requests and code commits are automatically made unless you specify a different branch. Note
 that this applies only to GitHub and not git. This way people will, by default, clone branch defined by
 you, and upstream will be the same  branch? but this doesn`t stop you from commiting into master.
 There is option to set hooks with permisions on branch therefore, you can specify who can change branch
-and don`t.
+and who don`t.
 
 When you pull like `git pull origin master`, chages from master will be pulled into whichever branch is
 currently checked out.
+?? How git knows where to fetch data from and which exect branch to track
 
+When you create/checkout a new branch, your config file will change. Additional section that configures
+the branch is added. It looks like following
+[branch "master"]
+    remote = origin
+    merge = refs/heads/master
+Here `remote` 
+
+http://gitready.com/beginner/2009/03/09/remote-tracking-branches.html
+https://stackoverflow.com/questions/4693588/what-is-a-tracking-branch
+https://dzone.com/articles/git-differences-between-local-branch-non-tracking-1
 https://help.github.com/en/articles/setting-the-default-branch
 ---------------------------------------------------------------------------------------------------------
 git push <remote> <branch_name>                             # push branch to remote 
@@ -52,6 +96,96 @@ git branch --set-upstream my_branch origin/origin_branch    # set upstream branc
             -a                                              # list all (local?) branches
             -m <newname>                                    # rename current branch
             -m <oldname> <newname>                          # rename any branch
+
+=========================================================================================================
+                                     Remote
+=========================================================================================================
+
+git remote add  <remote_name> <location>          # adds remote to your local repo
+                               git@github.com:User/UserRepo.git
+                               http://host/path/to/repo.git
+                               ssh://user@host/path/to/repo.gi
+                               <local_path>/git_repo/
+git remote set-url <local_remote> <location>      # change local remote to point to <location>
+                                                  # fails if there is no <local_remote>
+git remote rename <old_name> <new_name>           # rename without changing <location>
+git remote -v                                     # list remotes
+
+Under the hood, `git remote add` changes your `.git/config`, therefore there is no need to call `git` and
+you can edit file mannualy, but using command is more convinient. Changes looks like following
+[remote <name>]
+    url = <location>
+    fetch = ...
+Here, `url` says where repo is living and `fetch` configures hot the `fetch/pull` commands handle retrieving
+information from the <name> remote.
+
+For more information look into `man git-config`
+
+https://dev.to/jessachandler/explain-git-config-like-im-five-750
+=========================================================================================================
+                                      Push
+=========================================================================================================
+                                   Force push
+---------------------------------------------------------------------------------------------------------
+When you push changes to a remote server, Git prevents you from pushing your changes if the remote has
+changes you’re missing. This feature is designed to prevent data loss. Usually what you need to do
+is just pulling before push.
+A force push overwrites a remote branch with yout local branch, regardless of the status of that remote
+branch. This may result in the scenarion when one developer doesn`t fetch before force pushing, therefore
+overwriting other developer`s commits.
+
+What are the situations where we can`t push without force?
+1. Pushing changes to remote without pull before
+2. Changing history with squshing/fixuping and then pushing.
+3. You want to remove sensitive data from history
+4. You have ammended already pushed commit
+5. You reset HEAD instead of reverting
+
+If you’re working on a team and need to rebase a shared branch, here are the steps:
+1. Make sure your team has committed and pushed any pending changes
+2. Ask your team to pause work on that branch temporarily
+3. Make sure you have the latest changes for that branch (git pull)
+4. Rebase, then git push origin <yourbranch> -f
+5. Have your team fix up their local branches with
+   git checkout <yourbranch>,
+   git fetch
+   git reset --hard origin/<yourbranch>
+
+Before force pushing, fetch changes and apply them to your tree, otherwise you will overwrite them.
+Note, there still may be a race condition if somebody pushes changes between when you fetch and you push,
+you may still overwrite them. To avoid this, communicate with your team.
+
+
+Safer alternative:
+Force-with-lease. Let`s you change the history, but will stop if there are some new commits on the remote
+branch
+
+https://willi.am/blog/2014/08/12/the-dark-side-of-the-force-push/
+---------------------------------------------------------------------------------------------------------
+                           Recovering from force push
+---------------------------------------------------------------------------------------------------------
+In case you missused `push -f` you may have copule solutions to fix the situation. 
+
+Best case scenario: someone else who is working on the same code pulled a recent version of the master just
+before you broke it. Then all you have to do is to go into your team’s chat and ask that person to force
+push their recent changes. If you are lucky, their local repository will have the full history of commits,
+your mistake will be overwritten with fresh code, and nothing will be lost.
+
+Case 1: You were the last person to push to master before the mistake. In such case you need to force
+push last valid commit to master. HEAD transition is displayed to terminal after push.
+ + deadbeef...f00f00ba master -> master (forced update)     # transition
+ git push --force origin deadbeef:master                    # push last valid commit
+
+Case 2: Someone else pushed before you have messed up. In this case you should open feed display on the
+GitHub, then open hash of the last good commit and make a branch from it. Now you can fetch that branch
+and force push it as main.
+git fetch git push --force origin origin/master-before-force-push:master
+
+? Why can`t we ask him to force push
+? What if he has not full history for the repo
+
+https://evilmartians.com/chronicles/git-push---force-and-how-to-deal-with-it
+---------------------------------------------------------------------------------------------------------
 =========================================================================================================
                                Renaming detection
 =========================================================================================================
@@ -61,17 +195,29 @@ file from contents, rather than seeing it as a new untracked file, and keep the 
 ? How does git compare file content, calculates and compares hash ?
 
 =========================================================================================================
-                                Fetching
+                                    Fetching
 =========================================================================================================
-To fetch one branch from remote, use
+Fetch is an operation of downloading changes (newer/older) from a remote server. When you clone your
+project, it automatically gets remote-tracking master branch. After that, git tries to checkout your
+local master, however it is not present, therefore git guess that you wanted to make a new local branch
+`master` pointing to remote `master.
+This provides git with location information about where it should get changes from.
+Remote branch is called an upstream.
+
 git fetch <remote> <remote_branch>:<local_branch>           # fetch branch from remote into local non existing branch
 git checkout <local_branch>
-=========================================================================================================
-                                     Applying
-=========================================================================================================
-git apply --check             # dry run
-git apply --reject            # apply any valid hunks and save rejected to *.rej files
+# Short form of previous solution
+git checkout -b <local_branch> <remote>/<remote_branch>     # fetche remote branch and make local branch
+                                                              point to remote one.
+git checkout --track <remote>/<branch>                      # the same as previous but shorter
 
+https://stackoverflow.com/questions/37770467/why-do-i-have-to-git-push-set-upstream-origin-branch/37770744
+=========================================================================================================
+                                    Applying
+=========================================================================================================
+git apply --check                   # dry run
+git apply --reject                  # apply any valid hunks and save rejected to *.rej files
+          --directiry="prefix/"     # add prefix directory when applying patches with different root path
 If git apply makes no output, and changes are not applied, try -v flag. If there is no output as well
 check paths used during patch creating and try applying from another directory.
 
@@ -118,13 +264,13 @@ git rev-parse <tag>^{}                            # to get hash of tagged commit
               -d <tag>                            # to get hash of both
 
 ---------------------------------------------------------------------------------------------------------
-        Updating tags
+                                 Updating tags
 ---------------------------------------------------------------------------------------------------------
 https://stackoverflow.com/questions/7813194/how-do-i-edit-an-existing-tag-message-in-git
 git tag <tag> <tag>^{} -f -m "<new message>"      # replace tag message
                        -f -a                      # opens editor for message
 ---------------------------------------------------------------------------------------------------------
-Replace tag flow
+                                Replace tag flow
 ---------------------------------------------------------------------------------------------------------
 git tag <new_tag> <old_tag>                 # create new tag aliasing old one
 git tag -d <old_tag>                        # delete locally old
@@ -134,14 +280,14 @@ git push --tags
 annotated tags?
 unshallow ?
 ---------------------------------------------------------------------------------------------------------
-To list unpushed tags issue one of the next
+                  To list unpushed tags issue one of the next
 ---------------------------------------------------------------------------------------------------------
 git show-ref --tags | grep -v -F "$(git ls-remote --tags <remote name> | grep -v '\^{}' | cut -f 2)"
 git push --tags --dry-run           # -n can be used instead of --dry-run (requires to have permisions
                                       for remote)
 
 =========================================================================================================
-                                    Config
+                                     Config
 =========================================================================================================
 There are 3 levels of git config; project, global and system.
 1. Project. Project configs are only available for the current project and stored in .git/config in the
@@ -195,41 +341,35 @@ https://stackoverflow.com/questions/3538144/how-do-you-git-show-untracked-files-
                                       Logs
 =========================================================================================================
 git log --author=Smith
-git log --diff-filter=A                 # commit when file was added
-git log --follow -- filename            #  -- all commits touching file 
-git log
+        --diff-filter=A                 # commit when file was added
+        --follow -- filename            #  -- all commits touching file 
         --pretty=oneline                # hash + commit in 1 line
         --pretty=fuller                 # by default git log displays date when commit was made locally
                                           but not when pushed, this option display both timestamps
-                                        
-git log --abbrev-commit --pretty=oneline        -- short hash + commit in 1 line
-git log --oneline --decorate  --all --graph
-git grep -n ‘log_syslog’ v1.5.3.8 v1.0.0 -- *.c
-git log --merges <commit>..             -- to see merge commits that have the given commit as an ancestor.
-git log --graph --oneline --all
-git log --all-match --grep=frotz --author=Linus     -- word and author within entire file
-    --since=1.month
-    --author
-git shortlog                        -- commit message + empty line + summary
+        --abbrev-commit --pretty=oneline     # short hash + commit in 1 line
+        --merges <commit>..                  # to see merge commits that have the given commit as an ancestor.
+        --oneline --decorate  --all --graph
+        --graph --oneline --all
+        --since=1.month
+        --author
+git shortlog                            # commit message + empty line + summary
 
-git log -S<word> -- path            -- find commit where word was added or removed but not moved
-        -G<wold> -- path            -- find commit adding, removing or moving regex
+git log -S<word> -- path                # find commit where word was added or removed but not moved
+        -G<wold> -- path                # find commit adding, removing or moving regex
             --since=<date> --untill=<date>
 
-#   Files
-git log --stat #hash                -- files + some stats
-        --name                      -- name only
-        --name-status               -- name + status (one letter abriviation)
+Files history
+git log --stat #hash                    # files + some stats
+        --name                          # name only
+        --name-status                   # name + status (one letter abriviation)
 
----------------------------------------------------------------------------------------------------------
-                                     Config
----------------------------------------------------------------------------------------------------------
-   git config --global alias.whatadded 'log --diff-filter=A'   --adding alias
+git grep -n ‘log_syslog’ v1.5.3.8 v1.0.0 -- *.c
+
 ---------------------------------------------------------------------------------------------------------
                                      Reflog
 ---------------------------------------------------------------------------------------------------------
-git reflog                          -- create a branch for deleted commit so it won`t be cleaned 
-git reflog show --all | grep <commit_hash>      -- can be use to find first occurence of commit
+git reflog                                   # create a branch for deleted commit so it won`t be cleaned 
+git reflog show --all | grep <commit_hash>   # can be use to find first occurence of commit
 =========================================================================================================
                                     Merging
 =========================================================================================================
@@ -247,60 +387,91 @@ When merge occurs, diverged hunks will be outlined with
 
 https://dev.to/neshaz/how-to-use-git-merge-the-correctway-25pd
 ---------------------------------------------------------------------------------------------------------
-            Merge history
+                                 Merge history
 ---------------------------------------------------------------------------------------------------------
 git diff-tree -cc <hash>    # to see merge resolving
                             #or maybe -c ?
 ---------------------------------------------------------------------------------------------------------
-                Merge vs Rebase
+                                Merge vs Rebase
 ---------------------------------------------------------------------------------------------------------
 
 =========================================================================================================
-                              Undoing && Reverting
+                                   Reverting
+=========================================================================================================
+git revert <commit_range/list>    # revert already pushed commits 
+           <sha>..HEAD            # HEAD is taken inclusively
+
+If you want to revert multiple commits as one (otherwise each revert is made in separate commit),
+use --no-commit flag.
+git revert --no-commit <commit_range/list>
+git commit -m 'Reverted range of commits'
+
 ---------------------------------------------------------------------------------------------------------
-git revert  -- for already pushed commits 
+                             Alternative solutions:
+---------------------------------------------------------------------------------------------------------
+checkout contents of older commit, and commit this state
+git checkout -f HEAD~<n> -- .
+git commit -a
+This would create additional commit, with changes returning current state of repo to older one and commiting
+it above.
+---------------------------------------------------------------------------------------------------------
+Take reverse diff and apply it
+git diff HEAD <old_sha> | git apply
+---------------------------------------------------------------------------------------------------------
+
+Sometimes, you can avoid rever and use rebase but it has side effect of changing hisoty of repo, making
+work of other users based on this history inalid (you have rewrited part of history on which another work
+was based). As well, it may create problems with merging and other operations depending on repos history.
+
+
+https://stackoverflow.com/questions/1463340/how-to-revert-multiple-git-commits
+=========================================================================================================
+                                     Reset
+=========================================================================================================
 git reset HEAD^        -- moves head to a specific commit (doesnt remove changes)
         --hard
         --soft
 git checkout file : to clean file from chages since commit
 git bisect start
-            goot 
+            good
             bad
             visualize :(gtk)
             run <script>
----------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
                                    Submodules
----------------------------------------------------------------------------------------------------------
+=========================================================================================================
 git submodele add ../mainmod.git submod
 git submodule update
 
-
----------------------------------------------------------------------------------------------------------
+=========================================================================================================
                                     Stashing
----------------------------------------------------------------------------------------------------------
-git stash
-git stash list
-git stash apply
-git stash apply stash@{#}
+=========================================================================================================
+git stash                           # stash changes
+git stash list                      # list stashes
+git stash apply                     # apply last stash
+git stash apply stash@{#}           # apply specific stash
+git stash show -p                   # show stashed content in patch form
+git stash show -p stash@{any}       # show specific stash in patch form
 
-git stash show -p       
-git stash show -p stash@{any}
----------------------------------------------------------------------------------------------------------
+=========================================================================================================
                                     Rebasing
----------------------------------------------------------------------------------------------------------
-git rebase <dst> : chage <<current branch>> base commit to point for <dst>
-git rebase -i HEAD~5   -- redo content/msg of last local commits
-git rebase -i          -- rebase for all unpushed commits
-            fixup       -- clears commit message and merge content
-            squash      -- merger changes and lets you to give new commit message
-git rebase --continue
-            —abort
+=========================================================================================================
+git rebase <destination>     # chage <current branch> base commit to point for <dst>
+git rebase -i                # rebase for all unpushed commits
+git rebase -i HEAD~5         # redo content/msg of last local commits
+            fixup            # clears commit message and merge content
+            squash           # merger changes and lets you to give new commit message
 
-#rebase preferring current branch changes merge during conflicts
-git rebase -Xtheirs branch-b
-       -Xours       #will apply their changes
+Preferring current branch changes during merge conflicts
+git rebase -Xtheirs <branch>
+           -Xours
+
 It is reversed for git merge
-git merge -Xours origin/master  #to leave your changes over master
+git merge -Xours origin/master  # to leave your changes over master
+
+Note, squashing/fixup will alter your history which may be a problem if somebody based their job on a
+commit you have removed.
 
 ---------------------------------------------------------------------------------------------------------
                                      Clean
@@ -322,7 +493,6 @@ git commit --amend <<< :wq  -- will merge last commit and current changes?
 =========================================================================================================
                                      Diffs
 =========================================================================================================
----------------------------------------------------------------------------------------------------------
                           Diff strategies(algorithms)
 ---------------------------------------------------------------------------------------------------------
 There are 4 different diff strategies: myer, patience, histogram and minimal. Myer is the default mode
@@ -401,10 +571,11 @@ GIT_REFLOG_ACTION  <git operation>  : to add comment into reflog for operation
                              Restore file by commit
 ---------------------------------------------------------------------------------------------------------
 git reset <hash> <filename>
-git checkout <hash> -- <filename>
+git checkout <hash> -- <filename>       # will change local file
+git show <hash>:<file> > <new_file>     # save file state to <new_file>
 
 =========================================================================================================
-                            Clone and Fetch
+                                Clone and Fetch
 =========================================================================================================
 To get your local copy of remote repository issue `git clone <url>`, which by default will get full copy
 of specified branch (master by default?) and metadata for other branches (saved under .git). However, such
@@ -452,6 +623,18 @@ https://unix.stackexchange.com/questions/233327/is-it-possible-to-clone-only-par
 ---------------------------------------------------------------------------------------------------------
 https://stackoverflow.com/questions/42906152/git-clone-by-default-shallow-or-not
 =========================================================================================================
+                                  Cherry-pick
+=========================================================================================================
+
+Cherry-pick from another repository
+git remote add <name> <path>
+git fetch <name>
+git log <name>/<branch>
+git cherry-picl <sha>
+
+https://stackoverflow.com/questions/5120038/is-it-possible-to-cherry-pick-a-commit-from-another-git-repository
+https://coderwall.com/p/sgpksw/git-cherry-pick-from-another-repository
+=========================================================================================================
                                    File modes
 =========================================================================================================
 Git maintains a special `mode` for each file in its internal storage. This can be visualized using
@@ -485,14 +668,14 @@ git --work-tree=/home/project/ commit /home/static/
 
 https://superuser.com/questions/174833/how-can-i-make-git-commit-files-in-a-symlinked-folder
 =========================================================================================================
-Special characters
+                               Special characters
 =========================================================================================================
 HEAD => points to last commit in repo
 @ => alias for HEAD, can be like
 git diff HEAD~ HEAD  == git diff @~ @
 
 =========================================================================================================
-Rules for making good commit
+                          Rules for making good commit
 =========================================================================================================
 Why is this change necessary?
 How does it address the issue? (describe at high level what was fone to affect change)
@@ -510,12 +693,12 @@ Write your commit message in the imperative: "Fix bug" and not "Fixed bug" or "F
 #
 # Include a link to the ticket, if any.
 =========================================================================================================
-                        Misc
+                                      Misc
 ---------------------------------------------------------------------------------------------------------
 wget --no-check-certificate --content-disposition https://URL-RAW   # download one file
 curl -LJO                                                           #
 =========================================================================================================
- Amending
+                                    Amending
 =========================================================================================================
 To change commit msg or merge currently staged objects to your last local commit, from directory with
 repository issue (commit window will popup)
@@ -523,16 +706,39 @@ git commit --amend
 git commit --amend --no-edit     # if you don`t want to change commit message
 git commit --amend -c <hash>     # ammend specific commit
 =========================================================================================================
-Index
+                                     Index
 =========================================================================================================
                              stage/
              add             commit                 push
 workspace ==========> index ==========> local repo =========> remote repo
 
-https://stackoverflow.com/questions/3689838/whats-the-difference-between-head-working-tree-and-index-in-git
+---------------------------------------------------------------------------------------------------------
+                                  update-index
+---------------------------------------------------------------------------------------------------------
+You may have a file that is quite big and chages from time to time but you preatty much don`t care about
+it`s content or just don`t want to check if it was changed since last commit. For example, some device
+firmware or compiled libraries may be big in size therefore taking allot of time to check if they were
+changed. As well, it`s content is mostly binary and not readable by human therefore you don`t care what
+about changes within it, only about fact that it has changed. To avoid spending resources to check such
+files you ask git to ignore them. This is done using `git update-index --assume-unchanged <file>`, to
+temporarilt exclude the file from any tracking.
+git update-index --assume-unchanged <file>          # ignore file tracking
+git update-index --no-assume-unchanged <file>       # undo previous command
+git ls-files -v                                     # list `assume-unchanged` files
 
+This can be used to hide a file without stashing + unstashing + checking out the file to avoid it`s getting
+into commit.
+Following aliases may be usefull:
+hide = update-index --asume-unchanged
+unhide = update-index --no-asume-unchanged
+hidden = ! git ls-files -v | grep '^v' | cut -c3-
+
+https://codeclimber.net.nz/archive/2016/12/19/ignoring-files-on-git-but-just-for-a-while-with-assume-unchanged/
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/3689838/whats-the-difference-between-head-working-tree-and-index-in-git
 =========================================================================================================
-                        Questions
+                                   Questions
+=========================================================================================================
 --cached vs --staged
 indent heuristics
 https://git-memo.readthedocs.io/en/latest/index.html
@@ -543,4 +749,16 @@ https://news.ycombinator.com/item?id=13983085
 -2 --ours
 -3 --theirs
 What is refspec in git
+=========================================================================================================
+                                     Secret
+=========================================================================================================
+Sometimes, you want to hold some private data in repo, for instance ecnryption keys, database passwords,
+application secret-keys and so on outside of git history. Even if repo is private, you may use some third
+party applications with git. Even, if application owners are not interested in your private data, if
+somebody breaks this application, he may get an access to your private data.
+
+git-secret is a bash script to store your private data inside a git repo. Basically, it just encrypts,
+using gpg, the tracked files with the public keys of all the users that you trust. So everyone of them can
+decrypt these files using only their personal secret key.
+
 =========================================================================================================
