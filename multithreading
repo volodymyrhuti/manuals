@@ -199,4 +199,10 @@ To study
 =========================================================================================================
 https://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
 https://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
+https://unix.stackexchange.com/questions/266434/are-kernel-threads-processes-and-daemons
+https://superuser.com/questions/1239592/why-hyper-threading-provides-2-virtual-cores-but-not-more
+https://www.quora.com/What-is-the-virtual-CPU-concept-in-hyper-threading-How-is-it-different-from-threads-running-on-physical-CPU-cores
+https://stackoverflow.com/questions/1718465/optimal-number-of-threads-per-core/10670440#10670440
+https://askubuntu.com/questions/668538/cores-vs-threads-how-many-threads-should-i-run-on-this-machine
+https://stackoverflow.com/questions/9481055/what-is-a-kernel-thread
 =========================================================================================================

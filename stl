@@ -26,7 +26,7 @@ system for a new client. Following reasons should be considered:
 Sequence containers are container classes that maintain the ordering of elements in the container.
 A defining characteristic of sequence containers is that you can choose where to insert your element by
 position.
-Sequence containers: vector, deque, array, list, forward_list basic_string
+Sequence containers: vector, deque, array, list, forward_list, basic_string
 
 ---------------------------------------------------------------------------------------------------------
                                      Deque
@@ -138,6 +138,20 @@ pushed, the element is sorted in the queue. Removing an element from the front r
 item in the priority queue. 
 
 =========================================================================================================
+                             Choosing the container
+=========================================================================================================
+1. Use sequential containers when you need to access elements by position
+-  Default container to use is std:vector
+-  If size is known in advance, use std::array
+-  If you need to work frequently with both sides of container, use std::deque
+-  If you need to insert/delete freeuently element from the middle, use std::list
+-  Do not use std::list if you need random access
+-  Prefer std::vector over std::list if your system uses a cache
+-  std::string is almost always better than a C-string
+2. Use associative containers when you need to access elements by key
+-  
+
+=========================================================================================================
                                    Iterators
 =========================================================================================================
 An Iterator is an object that can traverse (iterate over) a container class without the user having to
@@ -172,3 +186,15 @@ automatically work for all containers that provides a set of iterators (includin
 classes).
 
 =========================================================================================================
+                                     Links
+=========================================================================================================
+Cheat-sheet
+https://github.com/gibsjose/cpp-cheat-sheet/blob/master/Data%20Structures%20and%20Algorithms.md
+https://github.com/karansaxena/STL_Cheat_Sheets/blob/master/Data%20structures%20in%20C%2B%2B.pdf
+
+=========================================================================================================
+                                    To study
+=========================================================================================================
+https://embeddedartistry.com/blog/2017/8/23/choosing-the-right-stl-container-general-rules-of-thumb
+https://embeddedartistry.com/blog/2017/8/2/an-overview-of-c-stl-containers
+https://embeddedartistry.com/blog/2017/9/11/choosing-the-right-stl-container-sequential-containers

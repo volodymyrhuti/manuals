@@ -19,9 +19,9 @@ extranet - intranet that can be accessed by trusted organizations
 ---------------------------------------------------------------------------------------------------------
                                Virtual interfaces
 ---------------------------------------------------------------------------------------------------------
-Virtual network kernel interfaces is an interface simulated in software without need for hardware to
+Virtual network kernel interface is an interface simulated in software without need for hardware to
 operation. They can be created and cleaned on exit by specific program, such interfaces is called transient.
-Other option is to use special utility that will initialize such interface and provide access to it for
+Other option is using special utility that will initialize such interface and provide access to it for
 other user space programs, such one is called persistent.
 
 TUN, network TUNel, simulates a network layer device and operates in layer 3 carrying IP packets.
@@ -1712,7 +1712,7 @@ can be implemented to prevent abnormal usage of network resources. The FORWARD c
 to control where packets can be routed within LAN.
 
 LAN nodes using internal IP can communicate with each other, however they can properly communicate with
-external networks. This can be overcome with firewall IP masqueradung, whicj masks requests from LAN nodes
+external networks. This can be overcome with firewall IP masqueradung, which masks requests from LAN nodes
 with the IP address of the firewall`s external device
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
@@ -2734,6 +2734,11 @@ sudo iptables -A FORWARD -i <wl_intf> -o <internet_intf> -j ACCEPT
 sudo ifconfig <wl_interface> down
 sudo ifconfig <wl_interface> up
 
+
+sudo iptables -t nat -A POSTROUTING -o wlp1s0  -j MASQUERADE
+sudo iptables -A FORWARD -i wlp1s0 -o anbox0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i anbox0 -o wlp1s0 -j ACCEPT
+
 ---------------------------------------------------------------------------------------------------------
 Connecting to AP from cli
 
@@ -3141,3 +3146,21 @@ https://community.cisco.com/t5/telepresence-and-video/difference-between-h-323-m
 https://mrncciew.com/                   # blog by CWNE && CCIE
 http://www.practicalnetworking.net
 http://www.omnisecu.com                 # CCNA preparation blog
+=========================================================================================================
+                                    To study
+=========================================================================================================
+https://bidsarmanish.blogspot.com/2017/01/rib-vs-fib.html
+https://networkengineering.stackexchange.com/questions/38588/rib-vs-fib-differences
+https://learningnetwork.cisco.com/thread/39646
+https://blog.packagecloud.io/eng/2016/10/11/monitoring-tuning-linux-networking-stack-receiving-data-illustrated/
+https://blog.packagecloud.io/eng/2016/06/22/monitoring-tuning-linux-networking-stack-receiving-data/
+https://blog.packagecloud.io/eng/2016/06/22/monitoring-tuning-linux-networking-stack-receiving-data/
+https://en.wikipedia.org/wiki/TCP_offload_engine
+https://www.juniper.net/documentation/en_US/junos/topics/topic-map/spanning-tree-loop-protection.html
+https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/10556-16.html
+https://stackoverflow.com/questions/6128598/find-ip-address-of-directly-connected-device
+policy-based routing
+http://linux-ip.net/html/routing-tables.html
+PVST and trunking protocols
+https://www.practicalnetworking.net/stand-alone/routing-between-vlans/
+www.practicalnetworking.net/series/nat/nat/

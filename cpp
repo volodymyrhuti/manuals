@@ -4622,11 +4622,16 @@ of the features from the parent class.
 =========================================================================================================
                                     To study
 =========================================================================================================
- but it has
- plenty of drawbacks:
- 1. Returned value. like -1, is cryptick and you need to look through entire function to find what it may
-    mean. Don`t forget, it could be use in multiple places through function.
-2. Usually it is hard to return both result and error.
-3. Error code should be checked constantly, after each command.
-4. Functions that have no return value. If something goes not as expected within constructorttps://en.m.wikibooks.org/wiki/More_C%2B%2B_Idioms
-
+https://en.m.wikibooks.org/wiki/More_C%2B%2B_Idioms
+http://codexpert.ro/blog/2014/10/17/c-gems-ref-qualifiers/      ref qualifiers
+https://foonathan.net/2018/03/rvalue-references-api-guidelines/
+https://stackoverflow.com/questions/130117/throwing-exceptions-out-of-a-destructor
+https://stackoverflow.com/questions/136880/sell-me-on-const-correctness
+https://www.cprogramming.com/tutorial/const_correctness.html
+http://www.possibility.com/Cpp/const.html
+https://habr.com/ru/company/infopulse/blog/341264/
+https://stackoverflow.com/questions/105014/does-the-mutable-keyword-have-any-purpose-other-than-allowing-the-variable-to
+https://arne-mertz.de/2017/10/mutable/
+https://arne-mertz.de/2016/07/const-correctness/
+    # relase/commit semantics
+constness and lambdas

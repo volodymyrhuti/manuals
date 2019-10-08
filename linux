@@ -75,10 +75,26 @@ ln -sf /source/file /target/symlink   ## create or update a symlink
 ls -l /source/file /target/symlink    ## checking for validity
 ln -s /directory/*  /target/          ## link all files from one directory to another (without hidden ones)
 ---------------------------------------------------------------------------------------------------------
-Example usage of hardlinks. There is a utility named rsync which makes periodically backups, in the case
+Example usage of hardlinks. There is a utility named rsync used to make periodically backups, in the case
 nothing has changed, since last backup taking, it just hardlinks new backup file to previos one, since
 it is cheaper to create a links then create a duplicate of that file.
 
+---------------------------------------------------------------------------------------------------------
+To find if there are symbolick links pointing to your file, you can issue
+find -L / -samefile path/to/foo.txt    # find all links pointing exactly to <path/to/foo.txt>
+find -L /  -xtype l -prune -samefile foo -exec ls -ld {} +  # another way
+find / -lname foo.txt                  # find all links pointing to any <foo.txt>
+Using inode
+find -follow -inum $(ls -i foo.txt)
+Or just use special utility like `symlinks`
+https://stackoverflow.com/questions/6184849/symbolic-link-find-all-files-that-link-to-this-file
+
+---------------------------------------------------------------------------------------------------------
+It is possible to have a loop formed with links. To find if there is loop starting from current directory,
+issue `find` with `-follow`. It should print an error if loop was detected.
+find . -follow -printf ""
+
+https://serverfault.com/questions/265598/how-do-i-find-circular-symbolic-links
 ---------------------------------------------------------------------------------------------------------
 
 Dangling symlink. Symlink with an invalid target (target file doesn`t exist)
@@ -836,6 +852,12 @@ To make changes permament, change file /etc/default/grub and issue `sudo update-
 =========================================================================================================
 Random
 =========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                           Copy-merge two directories
+---------------------------------------------------------------------------------------------------------
+rsync -vha --progress /src_path/ /dst_path/
+
+https://unix.stackexchange.com/questions/149965/how-to-copy-merge-two-directories
 ---------------------------------------------------------------------------------------------------------
                                   Linux Files
 ---------------------------------------------------------------------------------------------------------

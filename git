@@ -83,6 +83,19 @@ https://stackoverflow.com/questions/4693588/what-is-a-tracking-branch
 https://dzone.com/articles/git-differences-between-local-branch-non-tracking-1
 https://help.github.com/en/articles/setting-the-default-branch
 ---------------------------------------------------------------------------------------------------------
+                               Comparing branches
+---------------------------------------------------------------------------------------------------------
+You can look which commits are present on one branch and abscent on another using `show-branch`
+git show-branch feature_branch master origin/master
+This can be used to find the closest common commit between them.
+
+Another thing that you can do is taking diff between HEAD of branches
+git diff <branch_a>..<branch_b>
+
+git-merge-base - Find as good common ancestors as possible for a merge
+
+https://thoughtbot.com/blog/compare-commits-between-git-branches
+---------------------------------------------------------------------------------------------------------
 git push <remote> <branch_name>                             # push branch to remote 
                                                               local branch has the same name as remote
 git push origin <local_branch>:<branch_on_remote>
@@ -371,6 +384,29 @@ git grep -n ‘log_syslog’ v1.5.3.8 v1.0.0 -- *.c
 git reflog                                   # create a branch for deleted commit so it won`t be cleaned 
 git reflog show --all | grep <commit_hash>   # can be use to find first occurence of commit
 =========================================================================================================
+                                     Blame
+=========================================================================================================
+
+---------------------------------------------------------------------------------------------------------
+                                    Pickaxe
+---------------------------------------------------------------------------------------------------------
+The problem of blame is showing the latest syntactic change instead of semantic, therefore if you will try
+to fix code formation, instead of seeing who last has changed line semantics, you see who last changed a
+lines` content.
+The soultion for this is a git pickaxe, which is a `-S` flag of git log. This option takes an argument,
+a line that is looked through commit history for ones changing it.
+
+git log -S 'return'     # will display all commits who added/removed/changed line containing a `return`
+        -G 'stmt'       # supports regex
+            -p          # will display patch instead of metadat
+        --all           # search over all branches and tags
+        --branches=<pattern>
+        --tags=<pattern>
+        --grep="<text>" # all commits have <text> in commit message
+
+https://stackoverflow.com/questions/4468361/search-all-of-git-history-for-a-string
+https://remireuvekamp.nl/blog/the-git-pickaxe.html
+=========================================================================================================
                                     Merging
 =========================================================================================================
 Fast-forward merge, can be used when ther is not diverge between branches that want to merge. This will
@@ -432,12 +468,35 @@ git reset HEAD^        -- moves head to a specific commit (doesnt remove changes
         --hard
         --soft
 git checkout file : to clean file from chages since commit
-git bisect start
-            good
-            bad
-            visualize :(gtk)
-            run <script>
 
+=========================================================================================================
+                                     Bisect
+=========================================================================================================
+When you don`t know which commit introduced a bug, use `git bisect` to find the bad commit quickly via a
+binary search algorithm.
+git bisect start            # starts a search process
+git bisect bad  HEAD        # start of the range
+git bisect good <commit>    # end of the range
+This set of commadns will checkout commit in the middle of the range and let you to check.
+Now you can keep spliting ranges with `git bisect good/bad`
+Onee, you have found the bug, clean up and return to the original HEAD
+git bisect reset
+
+It is possible to run bisect with a script
+https://www.tygertec.com/find-stuff-git/
+=========================================================================================================
+                                      Grep
+=========================================================================================================
+The main difference between your system wide grep and git grep is that git grep looks only at tracked
+files. Another feature of git grep is that it has option to grep through repository at certain commit state.
+git grep foo HEAD^
+git grep -e <regexp> my_other_branch -- '*.js'
+
+It has more ways of commbining patterns you are looking for
+git grep -e pattern1 --and --not \( -e pattern2 -e pattern3 \)
+git grep pattern -- '*.[ch]
+
+https://travisjeffery.com/b/2012/02/search-a-git-repo-like-a-ninja/
 =========================================================================================================
                                    Submodules
 =========================================================================================================
@@ -493,6 +552,21 @@ git commit --amend <<< :wq  -- will merge last commit and current changes?
 =========================================================================================================
                                      Diffs
 =========================================================================================================
+
+git diff --no-index <file1.txt> <file2.txt>           # diff on non git files
+git diff --staged                                     # same to git diff HEAD
+patch -p1 < patch.diff                                # apply patch, remove first dir from paths in patch
+
+To take diff for all file of one type issue `git diff -- '*.c' '*.h'` or if you want it to be recursive
+shopt -s globstar; git diff -- *.py **/*.py
+
+You can take diff between HEADs of different branches like follows
+git diff <branch_a>..<branch_b>
+git diff master..development
+
+
+https://stackoverflow.com/questions/8554776/how-to-filter-git-diff-based-on-file-extensions
+---------------------------------------------------------------------------------------------------------
                           Diff strategies(algorithms)
 ---------------------------------------------------------------------------------------------------------
 There are 4 different diff strategies: myer, patience, histogram and minimal. Myer is the default mode
@@ -527,17 +601,6 @@ dp      # put the changes from current window into the other window
 [c      # jump to the previous change
 
 https://stackoverflow.com/questions/242646/use-vimdiff-with-a-diff-file
----------------------------------------------------------------------------------------------------------
-
-git diff --no-index <file1.txt> <file2.txt>           # diff on non git files
-git diff --staged                                     # same to git diff HEAD
-patch -p1 < patch.diff                                # apply patch, remove first dir from paths in patch
-
-To take diff for all file of one type issue `git diff -- '*.c' '*.h'` or if you want it to be recursive
-shopt -s globstar
-git diff -- *.py **/*.py
-
-https://stackoverflow.com/questions/8554776/how-to-filter-git-diff-based-on-file-extensions
 ---------------------------------------------------------------------------------------------------------
                                       Gui
 ---------------------------------------------------------------------------------------------------------

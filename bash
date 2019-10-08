@@ -187,6 +187,8 @@ ${P#PATTERN}    # from beggining shortest match
 ${P##PATTERN}   #        longest
 ${P%PATTERN}    # from end   shortest
 ${P%%PATTERN}   #        longest
+Note, you will probably use it like follwing, don`t forget to use asterisk
+file_name=${file_path##*/}
 
 The `#` and `%` operators have a convenient mnemonic if you use the US keyboard. The `#` key is on the
 left side of the `$` key and operates from the left, while `%` is to right of `$` key. 
@@ -1037,6 +1039,62 @@ case 1 in
 esac
 
 =========================================================================================================
+                                     Alias
+=========================================================================================================
+Alias is used to give a short name for some commonly used command set. This is done using the keyword
+`alias` with name and definition, note asignment of definition to name without spaces.
+alias alias_name='<alias_definiton>'
+To list already defined alias, issue `alias` without parameters.
+Usually, you define them in your bashrc/profile, however they can be defined anywhere and further sourced
+into currect bash session.
+It is possible to override some binary/scripts by defining an alias with the same name (even alias itself
+can be overriden with an alias called alias). The alias has higher lookup order and will be expanded+executed
+instead. This behaviour can be overriden, on per command basis by prefixing alias with `\` or `command`
+or `builtin`, or can be dissabled for session(?) using `shopt`.
+
+Note when using aliases withing functions: aliases are expanded before function execution, therefore if
+try to define and use aliases in function, it will fail. There is no problem if alias was defined in
+configuration files before executing script or atlist at global scope (before it usage) in script
+(requires ` shopt -s expand_aliases ` before defining any alias).
+  type ls1                      # not defined
+  shopt -s expand_aliases       # if not performed, following alias won`t work
+  alias ls1='ls'
+  function func {
+    ls1
+  }
+  type ls1                      # `ls`
+  type func                     # will display expanded function
+  func
+Another option is to define aliases in function, then they will be accessible after function execution
+$ myfunc() {
+>     alias myalias=cat
+> }
+myalias myfile          # no myalias defined
+myfunc                  # alias get`s defined
+myalias myfile          # myalias is defined
+
+---------------------------------------------------------------------------------------------------------
+                                   Parameters
+---------------------------------------------------------------------------------------------------------
+Alias can`t take parameters since it is just set of commands, however alias can be used to define and
+execute function. In such case, everything following it becomes a parameter of the function
+  alias func_define_call="function func{ echo "$@" ;}; func"
+  func_define_call 1 2 3
+
+---------------------------------------------------------------------------------------------------------
+
+https://askubuntu.com/questions/841761/should-i-create-an-alias-for-each-bash-function
+https://unix.stackexchange.com/questions/329994/alias-and-functions
+https://superuser.com/questions/708462/alias-scoping-in-bash-functions
+=========================================================================================================
+                                 Notifications
+=========================================================================================================
+You can notify user with different user space applications and demons. Two the most common text based are
+`dunst` with it`s `notify-send <msg>` and `osd_cat <msg>`. If you wan`t to syntesis a speach, use a
+`spd-say <text>`
+
+https://askubuntu.com/questions/277215/how-to-make-a-sound-once-a-process-is-complete
+=========================================================================================================
 #           Not filtered
 
 while read LINE;do  
@@ -1096,3 +1154,9 @@ Subcommands like in git
 https://stackoverflow.com/questions/37257551/defining-subcommands-that-take-arguments-in-bash
 Timeout workaround for shells without timeout
 http://mywiki.wooledge.org/BashFAQ/068
+=========================================================================================================
+                                    To study
+=========================================================================================================
+BASH_REMATCH usage
+https://stackoverflow.com/questions/34111281/bash-rematch-and-regex-with-nested-parens
+https://helloacm.com/simple-example-use-bash-shell-to-match-ip-address/

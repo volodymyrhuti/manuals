@@ -147,6 +147,10 @@ If you want to gather all argument to command, instead of running command on eac
 you can apped + after {}
 find <some_files> ... -exec tar -cvf {} +
 
+Exclude hidden files
+find ! -path '*/\.*'
+find -name ".*" -prune -o -print        # if hidden file, then prun (drop), otherwise print
+find -maxdepth 1 -type f ! -path '*/\.*'
 
 find -iname '*.txt' -mtime 60 -exec echo {} \;      # print files changed exectly 60 days ago
                           +60                       #                     more then 60 days ago?
