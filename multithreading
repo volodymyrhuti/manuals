@@ -109,7 +109,7 @@ Example with a bug =>
 struct counter {
     int count;
     thread_mutex lock;
-    threda_cond above_zero;
+    thread_cond above_zero;
 }
 increment(struct counter *c){
     thread_mutex_lock(&c->lock);
@@ -142,7 +142,7 @@ Proper way is to check and wait in loop
 Conditional variables gives ability to cover multiple conditions. For instance, there may be multpile users
 trying to withdrow funds from a bank, and if there is not much funds but we can still supplie at list one
 client, we can signal all of them that money are awailable, but each of them will check if there is enough
-individually and go to slip if not
+individually and go to sleep if not
 
 Should we always protect conditional variable with a mutex?
 Yes, otherwise two thread may enter function an signal can be send before wait. This mutex protects you

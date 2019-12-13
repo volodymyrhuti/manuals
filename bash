@@ -836,12 +836,20 @@ ERR         # executed each time a command's failure would cause the shell to ex
 =========================================================================================================
                            Run script without parent
 =========================================================================================================
-If u want to leave command active when terminal is closed, u can =>
-- Make it immune to hangups / make it child of `init`
-  nohup <cmd> &
-- Disown the process
-  <cmd> &
-  disown
+If u want to leave command active when terminal is closed, you have to make it immune to hangups(SIGHUP), this is done using `nohup` or `disown`. The difference between
+them:
+1. `nohup` is used when command is executed while disown should be used after command has already started
+  nohup <cmd> &  |	 <cmd> &
+		 |	 disown
+2. nohup process becomes a child of init process, with closed stdin and stdout/err redirected to `nohup.out` file
+3. nohup doesn`t put process to background, there is no much of use from such process since stdin is closed,
+   therefore, usually you would send it to background by hand
+4. `disowned` process is still associated with terminal and will be stop when terminal is stoped.
+5. `disown` removes the process from shell job list while `nohup` doesn`t
+    nohup <cmd> & # process is present in `jobs`
+    disown        # process is abscent in `jobs`
+
+https://unix.stackexchange.com/questions/3886/difference-between-nohup-disown-and
 =========================================================================================================
                              Change starting shell
 =========================================================================================================
@@ -1094,6 +1102,12 @@ You can notify user with different user space applications and demons. Two the m
 `spd-say <text>`
 
 https://askubuntu.com/questions/277215/how-to-make-a-sound-once-a-process-is-complete
+=========================================================================================================
+                                     Random
+=========================================================================================================
+Creating a dummy process
+perl -MPOSIX -e '$0="<name>"; pause' &
+
 =========================================================================================================
 #           Not filtered
 

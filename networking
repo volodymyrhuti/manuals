@@ -15,12 +15,11 @@ extranet - intranet that can be accessed by trusted organizations
 =========================================================================================================
                                    Interfaces
 =========================================================================================================
-
 ---------------------------------------------------------------------------------------------------------
                                Virtual interfaces
 ---------------------------------------------------------------------------------------------------------
 Virtual network kernel interface is an interface simulated in software without need for hardware to
-operation. They can be created and cleaned on exit by specific program, such interfaces is called transient.
+operate. They can be created and cleaned on exit by specific program, such interfaces is called transient.
 Other option is using special utility that will initialize such interface and provide access to it for
 other user space programs, such one is called persistent.
 
@@ -35,6 +34,7 @@ it can be established, etc.
 tunctl or openvpn --mktun               # create a persistent virtual interface
 ip tuntap help
 
+https://backreference.org/2010/03/26/tuntap-interface-tutorial/
 ---------------------------------------------------------------------------------------------------------
                                Binding vs Bonding
 ---------------------------------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ The destination address all 1`s is refred as broadcast packet.
 ARP message types
 1. Request. Requst send over ethernet to every host on the shraed link-layer segment,
    This is called link-layer broadcast
-   User respones to requester only
+   User respones to requester only (unicast mode)
 2. Probe. Arp asks whether ip is used
 3. Reply. Owner of ip replying
 4. Announcment. You assign ip to urself
@@ -225,7 +225,13 @@ and looks like `who is X.X.X.X tell Y.Y.Y.Y`. It is required that only owner of 
 and all other sillently drop the frame. The target forms arp reply of form `X.X.X.X is hh:hh:hh:hh:hh:hh`
 and send it as unicast response. 
 
+Before sending a request we need to know which interface should be used and if the host is in local subnet.
+This is done by interating through interfaces and checking if both interface and host are within one
+subnet. If the endhost is from another subnet, we send requst to default gateway with dst-mac assigned
+to gateway mac.
+
 ARP probe and announcment are part of DAD (Duplicate Address Detection)
+https://networkengineering.stackexchange.com/questions/52504/how-does-the-arp-table-work-in-case-of-the-gateway-router
 ---------------------------------------------------------------------------------------------------------
          FIB (Forwarding Information Base) / FDB (Forwarding Data Base)
 ---------------------------------------------------------------------------------------------------------
@@ -754,7 +760,7 @@ to it. Two membership methods exist:
                                  Types of VLANs
 ---------------------------------------------------------------------------------------------------------
 Default VLAN. All switch ports are a part of the default VLAN after the initial bootup of a switch and
-loading the default configuration.  This is usually VLAN 1. It has all the features of any VLAN, except
+loading the default configuration. This is usually VLAN 1. It has all the features of any VLAN, except
 it cannot be renamed or deleted.
 
 Native/Untagged VLAN. Is assigned to trunk port (one that supports traffic comming from many VLANs) and
@@ -1071,6 +1077,12 @@ http://support.tenasys.com/INtimeHelp_62/multicast.html
 =========================================================================================================
                                     Routing
 =========================================================================================================
+Symetric routing - interface used for receiving a packet is used for sending
+Asymetric routing - ingress and outgress interfaces are separate
+
+---------------------------------------------------------------------------------------------------------
+                                 Static routing
+---------------------------------------------------------------------------------------------------------
 Main purpose of static routing is to route traffic that must not, or should not, go through the defauly
 gateway. The default gateway is for any and all traffic which is not destined for the local network and
 for which no preferred route is specified in the routing table.
@@ -1098,9 +1110,25 @@ ip -s route show cache      # statictics
 
 
 ---------------------------------------------------------------------------------------------------------
+                             Reverse Path Filtering
+---------------------------------------------------------------------------------------------------------
+To prevent DDOS attacks based on IP spoofing, Linux based routers, usually have a raverse path filtering
+enabled. This feature drops received packets if the sender is not rechable from the receiving link.
+This can be configured using the /proc/sys/net/ipv4/conf/all/rp_filter file.
+ 0 - no validation performed
+ 1 - if receiving interface is not the best return path for the packet then the packet is droped
+ 2 - if the source address is not routable through any interface the packet is droped
+     This one allows the asymetric routing
+
+
+https://www.theurbanpenguin.com/rp_filter-and-lpic-3-linux-security/
+---------------------------------------------------------------------------------------------------------
                               Policy based routing
 ---------------------------------------------------------------------------------------------------------
 Policy-routing is a routing that allows to apply multiple rules for packet instead of one destination rule.
+
+ip rule list                # list of route tables
+ip route show table <num>   # list the specific table
 
 Ip route output =>
 - netmask
@@ -1651,8 +1679,8 @@ search <domain_name>    # if you try to resolve path without dots, this domain_n
 =========================================================================================================
 There are three common types of firewalls and how they function =>
 1. NAT (Network Address Translation) =>  places private IP subnetworks behind one or
-a small pool of public IP addresses, masquerading all requests to one source rather
-than several. Implemented with Netfilter kernel susbsytem
+   a small pool of public IP addresses, masquerading all requests to one source rather
+   than several. Implemented with Netfilter kernel susbsytem
 + Transparent for LAN clients
 + Protection of many machines and services behind one+ external IPs simplifies administration
 + Restiction of user access to and from the LAN can be configured by the opening/closing
@@ -1660,7 +1688,7 @@ than several. Implemented with Netfilter kernel susbsytem
 - Once users connect to a service outsied of the firewall, cannot prevent malicious
   activity (from which side? service?)
 2. Packet Filter => firewall reades each data packet and filters the packet based on sets
-of programmable rules implemented by administrator. (Netfilter kernel subsystem)
+   of programmable rules implemented by administrator. (Netfilter kernel subsystem)
 + Customizable with iptables utility
 + All network activity is filtered at the router level, rather then on application level
 + Reads header information but not a content
@@ -1670,8 +1698,8 @@ of programmable rules implemented by administrator. (Netfilter kernel subsystem)
 - Works on protocol layer, but cannot filter at an application layer
 - Taugh to create rules for complex networks like one with DMZ or masqurading
 3. Proxy => filters all trafic of configured protocol from LAN client to a proxy machine,
-which then forwards trafic on behalve of client. Proxy machine works like a buffer between
-malicious remote users and internal network client machine
+   which then forwards trafic on behalve of client. Proxy machine works like a buffer between
+   malicious remote users and internal network client machine
 + Admin controls applications and protocols function outside of the LAN (can control which
   application and protocols are forwarded or not?)
 + Proxy server can cache requests
@@ -2157,7 +2185,28 @@ Common methods:
 8. CONNECT. Request connection to a transparant TCP/IP tunnel, usually to facilitate SSL-encrypted communication
    through an unencrypted HTTP proxy.
 
+---------------------------------------------------------------------------------------------------------
+                                    Headers
+---------------------------------------------------------------------------------------------------------
+HTTP headers let the client and the server pass additional information with an HTTP request or response.
+An HTTP header consists of its case-insensitive name followed by a colon (:), then by its value.
+Whitespace before the value is ignored.
 
+Headers can be grouped according to their contexts:
+- General headers.
+  Apply to both requests and responses, but with no relation to the data transmitted in the body.
+- Request headers.
+  Contain more information about the resource to be fetched, or about the client requesting the resource.
+- Response headers
+  Hold additional information about the response, like its location or about the server providing it.
+- Entity headers
+  Contain information about the body of the resource, like its content length or MIME type.
+
+Headers can also be grouped according to how proxies handle them: Connection, Keep-Alive,
+Proxy-Authenticate, Proxy-Authorization, TE, Trailer, Transfer-Encoding, Upgrade.
+
+https://github.com/for-GET/know-your-http-well/blob/master/headers.md
+https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 =========================================================================================================
                                      Proxy
 =========================================================================================================
@@ -2231,27 +2280,64 @@ export https_proxy=<ip>
 export http_proxy=<ip>
 
 =========================================================================================================
+                            SSL. Secure Socket Layer
+=========================================================================================================
+SSL (Secure Socket Layer) also known as TLS, short for ‘Transfer Layer Security’.
+SSL certificates are widely used in websites, mobile apps, emails, fax, messaging, etc but the most
+commonly used for websites. If website contains one, you will see that connection is encrypted and
+running over https.
+SSL certificates work based on public key infrastructure (PKI) or public key cryptography. This method
+involves two distinct cryptographic keys — Private Key and Public Key, where the public key is used for
+encryption purposes and the private key is for decryption. The Public Key is shared with everyone who
+receives the certificate upon visiting a website.
+Both the keys are different but related to each other. This means that the information encrypted using a
+particular public key can only be decrypted using the private key attached to it. A secure connection is
+established if the client can verify that the public key matches the private key. This is called
+‘Asymmetric Encryption.'
+
+In SSL/TLS and other digital certificates, both methods – Symmetric and Asymmetric – are employed.
+The Asymmetric encryption has a drawback, as the verification and functions are applied from both the
+sides, it slows down the process significantly, therefore, Symmetric is sometime more preferable.
+
+---------------------------------------------------------------------------------------------------------
+                 Asymmetric Encryption, Public-Key Cryptograph
+---------------------------------------------------------------------------------------------------------
+Asymmetric Encryption uses two distinct, yet related keys. One key, the Public Key, is used for encryption
+and the other, the Private Key, is for decryption. As implied in the name, the Private Key is intended to
+be private so that only the authenticated recipient can decrypt the message.
+
+At the heart of Asymmetric Encryption lies a cryptographic algorithm. This algorithm uses a key generation
+protocol (a kind of mathematical function) to generate a key pair. Both the keys are mathematically
+connected with each other. This relationship between the keys differs from one algorithm to another.
+The algorithm is basically a combination of two functions – encryption function and decryption function.
+
+Message encrypted with publick key can be decrypted only with private key.
+
+---------------------------------------------------------------------------------------------------------
+
+
+=========================================================================================================
                                    Debugging
 =========================================================================================================
                                     Tcpdump
 ---------------------------------------------------------------------------------------------------------
 tcpdump
--s 0/65535          # packet size , 0 stands for default (65535)
--n                  # numeric, dont translate ip to domain name
--q                  # quite, less protocol information
--t                  # don`t print time stamp
--A                  # print packet in ASCII
--X                  # content in HEX and ASCII
--XX                 # -X + ethernet header
--D                  # list available interfaces
--i <name/any>       # interface, any means all, even those yet not created
--w <file_name>      # save results to file
-ip/ip6              # to choose ip version
-host <ip>           # filter by ip, the same as src=<ip> and dst=<ip>
-src/dst <ip>
-port <port>         # filter by port
-src/dst <port>
-port-range <start>-<end>
+        -s 0/65535          # packet size , 0 stands for default (65535)
+        -n                  # numeric, dont translate ip to domain name
+        -q                  # quite, less protocol information
+        -t                  # don`t print time stamp
+        -A                  # print packet in ASCII
+        -X                  # content in HEX and ASCII
+        -XX                 # -X + ethernet header
+        -D                  # list available interfaces
+        -i <name/any>       # interface, any means all, even those yet not created
+        -w <file_name>      # save results to file
+        ip/ip6              # to choose ip version
+        host <ip>           # filter by ip, the same as src=<ip> and dst=<ip>
+        src/dst <ip>
+        port <port>         # filter by port
+        src/dst <port>
+        port-range <start>-<end>
 
 Display interface name in case of `-i any`
 https://serverfault.com/questions/224698/how-to-display-interface-in-tcpdump-output-flow
@@ -2374,6 +2460,7 @@ https://stackoverflow.com/questions/6076897/follow-tcp-stream-where-does-field-s
 p=rdpcap("/capture.pcap")
 srp1(p[1],iface="enxd46e0e089703")    # waits for response
 sendp(p[1],iface="enxd46e0e089703")   # send without response
+
 ---------------------------------------------------------------------------------------------------------
 
 =========================================================================================================
@@ -3164,3 +3251,4 @@ http://linux-ip.net/html/routing-tables.html
 PVST and trunking protocols
 https://www.practicalnetworking.net/stand-alone/routing-between-vlans/
 www.practicalnetworking.net/series/nat/nat/
+nv/socat

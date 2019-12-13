@@ -1,4 +1,25 @@
 =========================================================================================================
+                                  Kernel desing types
+=========================================================================================================
+Kernels design can be devided for monolithic kernel and the microkernel (and exokernel in reasearch systems).
+
+Monolithic kernels are implemented as a single process running in a single address space. Such kernel
+typically exist on disk as single static binarie. All kernel services exist and execute in the large kernel
+address space.  Communication within the kernel is trivial because everything runs in kernel mode in the
+same address space: The kernel can invoke functions directly, as a user-space application might.
+Such model is simple and has good performance.
+
+Microkernels are broken down into separate processes, usually called servers, running in different address
+spaces. Server can be runned not in privilleged mode unless it requires it. Direct function call, as in
+monolithic ones, is not possible and replaced with message based IPC. The separation of the various
+servers prevents a failure of one server from bringing down another and allows swapping out one with another.
+Message based IPC and context switches (when server is implemented in user space) decreases the performance.
+To avoid context switching, all servers are usually implemented in the kernel space.
+
+Linux is a monolithic kernel that implements some features of microkernel. For instance, swapping of servers
+is implemented using swapping kernel modules, there is a kernel preemptiom, kernel threads.
+
+=========================================================================================================
                        Preemtion (multi-tasking paradigm)
 =========================================================================================================
 Kernels can be classified by the way context switch is working. There are 3 types:
@@ -438,6 +459,11 @@ reconfigure dmesg, like `dmesg -s <buf_size in bytes?>`
 
 https://elinux.org/Debugging_by_printing
 ---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                     SysRq
+=========================================================================================================
+
+https://linux.101hacks.com/sysadmin-tasks/magic-sysrq-key/
 =========================================================================================================
                                     Logging
 =========================================================================================================

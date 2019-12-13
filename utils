@@ -109,6 +109,10 @@ find ./ -type f -name *".html" | xargs sed -i "s/php/html/g"
 #  cpy and rename files
 find -name '*.as' | while read f; do cp $f ${f%.as}_dir.as; done 
 
+# Using user defined function with xargs
+export -f custom_grep
+find -iname '*makefile*' | xargs bash -c 'custom_grep -i targer $@'
+
 =========================================================================================================
                                       Find
 =========================================================================================================
@@ -160,15 +164,15 @@ http://www.softpanorama.org/Tools/Find/using_exec_option_and_xargs_in_find.shtml
 =========================================================================================================
                                       Cut
 =========================================================================================================
-cut foram start(,-)end
--b <byte> position
--b 1,3 | 1 | 1-3 | 1- | -3
-
--c                         # character, is usefull when symboll takes dynamic number of bytes
--d"<char>"                 # delimiter used for separation, print want columns with -f<start>-<end>
--s                         # dont output line if delimeter is not present
---complement               # invert condition
---output-delimiter <del>   # print with new delim <del> (replace old?)
+cut from start(,-)end
+    -b <byte> position
+    -b 1,3 | 1 | 1-3 | 1- | -3
+    
+    -c                         # character, is usefull when symboll takes dynamic number of bytes
+    -d"<char>"                 # delimiter used for separation, print want columns with -f<start>-<end>
+    -s                         # dont output line if delimeter is not present
+    --complement               # invert condition
+    --output-delimiter <del>   # print with new delim <del> (replace old?)
 
 =========================================================================================================
                                      Strace
@@ -183,6 +187,23 @@ Flags
 =========================================================================================================
                                       Apt
 =========================================================================================================
+Apt knows what packages are available and how to download them from the repository by inspecting
+/var/lib/apt/lists. These files are updated 
+
+/etc/apt/sources.list
+
+To list currently used repos
+egrep -v '^#|^ *$' /etc/apt/sources.list /etc/apt/sources.list.d/*
+
+dpkg-deb -c <package.deb>       # list files withing .deb file
+apt-file list <package>         # no need to download .deb to see files
+dpkg -L <package>               # list files of install package
+dpkg -s <package>               # list installed
+apt-cache showpkg  <package>    # list available for installation
+
+dpkg -x <package.deb> <dst_dir> # unpack .deb
+ar -xv <package.deb>            # another way to unpack
+
 apt-file search <filename>                    # determine packages providing file
 sudo apt-cache search <package> | grep dev    #
 

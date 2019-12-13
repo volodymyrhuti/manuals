@@ -850,6 +850,49 @@ https://askubuntu.com/questions/248/how-can-i-show-or-hide-boot-messages-when-ub
 To make changes permament, change file /etc/default/grub and issue `sudo update-grub`.
 
 =========================================================================================================
+                               Package managment
+=========================================================================================================
+You can package your solution what ever you want, but to make it portable, easy to use and share you
+need to follow rules provided by OS distribution. Let`s supose that you have followed the rules, provided
+special configuration/installation files and file structure, now we face the question: should we package
+everything related to application as one package or multiple? The answer is that you need to separate
+them: your user may not need header file if he won`t use them, or there is no need to install docs for
+already experienced user. Therefore, package is divided into multiple packages with the same name but
+different suffix. Common are -doc, -data, -dbg[sym], -dev, -common, -util, -all (means that for all
+architectures)
+
+
+Excepet from using the package, you may want to develop or debug it. In such case you will download
+specially named version of the package *-dev, *-dbg. Dev package contains header files and statically
+compiled versions of library files, sometimes additional documentation/examples or even helper apps.
+This all let`s your own application`s based on interface provided by package.
+
+dpkg -l                     # list installed packages
+dpkg -L <package>           # list files installed by package
+apt-file list <package>     # list files installed by package
+
+https://www.debian.org/doc/manuals/maint-guide/advanced.en.html
+https://askubuntu.com/questions/182703/how-and-why-to-create-dbg-dev-doc-packages
+=========================================================================================================
+                  PAM. Linux Pluggable Authentication Modules
+=========================================================================================================
+Mechanism that provide dynamic authentication support for applications and services in Linux system.
+It integrates multiple low-level authentication modules into a high-level API that provides dynamic
+authentication support for applications. This allows developers to write applications that require
+authentication, independently of the underlying authentication system.
+
+All authentication tasks are separated into four independent managment groups:
+1. Account modules. Checks that the specified account is a valid authentication target under current conditions.
+   Possible coniditions include: account expiration, time of day, access to the requested service.
+2. Authentication modules. Verify the user's identity, for example by requesting and checking a password
+   or other secret. They may also pass authentication information on to other systems like a keyring.
+3. password modules. Responsible for updating passwords, and are generally coupled to modules employed
+   in the authentication step. They may also be used to enforce strong passwords.
+4. Session modules. Defines actions that are performed at the beginning and end of sessions.
+   A session starts after the user has successfully authenticated.
+
+NOTE: Erroneous PAM configuration can disable access to your system partially, or completely.
+=========================================================================================================
 Random
 =========================================================================================================
 ---------------------------------------------------------------------------------------------------------
@@ -904,6 +947,12 @@ meminfo                 #
  /stack              # kernell stack?
 
 
+=========================================================================================================
+TODO
+=========================================================================================================
+Debian packages
+https://iomem.com/archives/18-Avoiding-tests-when-building-Debian-packages.html
+https://unix.stackexchange.com/questions/418354/understanding-what-a-linux-binary-is-doing
 =========================================================================================================
 Links
 =========================================================================================================
