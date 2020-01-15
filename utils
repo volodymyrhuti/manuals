@@ -220,6 +220,9 @@ rmadison <pkg>                               # from devscripts package
 
 apt purge <pkg>                         # remove everything related to the package + configs
 apt remove <pkg>                        # remove the binaries of a package
+
+# List of packages
+debian.pkgs.org
 ---------------------------------------------------------------------------------------------------------
                         Proxy
 ---------------------------------------------------------------------------------------------------------

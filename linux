@@ -846,8 +846,20 @@ To remove initialization picture, remove splash from init line. To see logs, rem
 To switch from splash screen to terminal issue `alt` + `F1` or `F2`
 https://askubuntu.com/questions/248/how-can-i-show-or-hide-boot-messages-when-ubuntu-starts
 ---------------------------------------------------------------------------------------------------------
-
 To make changes permament, change file /etc/default/grub and issue `sudo update-grub`.
+
+If you need to access kernel log from previous sessions, like when something have crashed, issue
+journalctl -o short-precise -k         # current boot
+journalctl -o short-precise -k -b -1   # last boot
+journalctl -o short-precise -k -b -<n> # nth boot
+journalctl --list-boot                 # list of available boot logs
+Otherwise you can take a look at /var/log/dmesg[n][.gz]
+
+To specify defaul kernel version that will be used, you need to define GRUB_DEFAULT in `/etc/default/grub`
+using menu entires from `/boot/grub/grub.cfg`, like
+             | The menu entry           |>| The kernel entry             |
+GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 5.4.0-custom"
+
 
 =========================================================================================================
                                Package managment

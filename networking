@@ -233,23 +233,33 @@ to gateway mac.
 ARP probe and announcment are part of DAD (Duplicate Address Detection)
 https://networkengineering.stackexchange.com/questions/52504/how-does-the-arp-table-work-in-case-of-the-gateway-router
 ---------------------------------------------------------------------------------------------------------
-         FIB (Forwarding Information Base) / FDB (Forwarding Data Base)
+                                     Tables
 ---------------------------------------------------------------------------------------------------------
-FDB is used on Layer 2 (switching/bridging) to associate MAC addresses that have been learned and which
-ports that MAC address was learned on. When a Ethernet frame arrives at a Layer 2 device, the Layer 2
-device will inspect the destination MAC address of the frame and look to its FDB table for information
-on where to send that specific Ethernet frame. If the FDB table doesn’t have any information on that
-specific MAC address it will flood the Ethernet frame out to all ports in the broadcast domain. Host is
-then remebered, and it`s mac is associated with an interface where packet was received. Next time, if
-some one tries to commonicate to that host, message won`t be broadcasted, instead it will be sent to
-wanted host only.
+FDB (Forwarding Data Base). The correspondence between Mac+vlan and port. FDB is used on Layer 2
+(switching/bridging) to associate MAC addresses that have been learned and which ports that MAC address
+was learned on. When a Ethernet frame arrives at a Layer 2 device, the Layer 2 device will inspect the
+destination MAC address of the frame and look to its FDB table for information on where to send that
+specific Ethernet frame.
+If the FDB table doesn’t have any information on that specific MAC address it will flood the Ethernet
+frame out to all ports in the broadcast domain. Host is then remebered, and it`s mac is associated with
+an interface where packet was received. Next time, if some one tries to commonicate to that host, message
+won`t be broadcasted, instead it will be sent to wanted host only.
 
 If switch receives a message from already known mac but interface has changed, it will update it`s
 mappings database.
-
 It is implemented in terms of CAM (Content-addressable memory) which efficently associates packet 
 (it`s mac?) with port.
 
+RIB (Routing Table). RIB holds all routes known to gateway. It is usually big and takes long time to
+lookup, therefore, the most common entries are cached into FIB.
+
+FIB (Forwarding Information Base). FIB table appears as a streamlined form of the routing table,
+usually only for commonly used table entries. When a route is required, the FIB table is retrieved first,
+and the routing table is retrieved if it is not found. 
+
+ARP (Address resolution) table. The correspondence between IP and Mac. 
+
+https://topic.alibabacloud.com/a/rib-fib-arp-fdb_8_8_30052435.html
 https://networkengineering.stackexchange.com/questions/34754/same-mac-on-different-interfaces
 https://blog.michaelfmcnamara.com/2008/02/what-are-the-arp-and-fdb-tables/
 ---------------------------------------------------------------------------------------------------------
@@ -1079,7 +1089,16 @@ http://support.tenasys.com/INtimeHelp_62/multicast.html
 =========================================================================================================
 Symetric routing - interface used for receiving a packet is used for sending
 Asymetric routing - ingress and outgress interfaces are separate
+In order for routing to work on a Linux system, forwarding must be enabled:
+$ sysctl net.ipv4.ip_forward
+$ sysctl -w net.ipv4.ip_forward=1
+$ sysctl net.ipv6.conf.all.forwarding
+$ sysctl -w net.ipv6.conf.all.forwarding=1
+# Permament change
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/forward.conf
+echo "net.ipv6.conf.all.forwarding = 1" >> /etc/sysctl.d/forward.conf
 
+https://github.com/Mellanox/mlxsw/wiki/Static-Routing
 ---------------------------------------------------------------------------------------------------------
                                  Static routing
 ---------------------------------------------------------------------------------------------------------
@@ -1120,15 +1139,42 @@ This can be configured using the /proc/sys/net/ipv4/conf/all/rp_filter file.
  2 - if the source address is not routable through any interface the packet is droped
      This one allows the asymetric routing
 
+You can check if any packets are filter with RPF with `nstat`
+nstat -za       # list network counters, can be usefull to track things like ReversePathFilter
 
 https://www.theurbanpenguin.com/rp_filter-and-lpic-3-linux-security/
 ---------------------------------------------------------------------------------------------------------
                               Policy based routing
 ---------------------------------------------------------------------------------------------------------
-Policy-routing is a routing that allows to apply multiple rules for packet instead of one destination rule.
+Policy-routing is a routing scheme that allows to apply multiple rules for packet and not only longest
+prefix match.
+Linux comes with policy routing tables by default:
+- Local[0] - managed by kernel, cannot be modified or delted
+  Special routing table containing high priority control routes for local and broadcast addresses.
+- Main[32766] - used when no table specied to `ip route` command
+  The normal routing table containing all non-policy routes
+- Default[32767]
+  Is empty and reserved for post-processing if previous default rules did not select the packet.
+Table is choosen using policy routing rules ,rules applied to packets like src/dst address.
+Each rule has a priority 0 through 32766 where 0 is the highest priority. Rules are tested in priority
+order. In linux, they are indexed with another value that can be found in /etc/iproute2/rt_tables
 
-ip rule list                # list of route tables
-ip route show table <num>   # list the specific table
+echo <table_priority_num> <name> >> /etc/iproute2/rt_tables # creates a new table
+                                                              persistent across reboots
+ip rule add from <src> lookup <table name>                  # creates a new rule based on src address
+ip rule add from 192.168.30.200 lookup custom               # traffic originated from .200 goes through
+                                                              `custom` table
+ip route add <route> table <table>                          # add route to a specific table
+ip rule list                                                # list of policy routing rules
+ip route show table <num>                                   # list the specific table
+
+
+Note, rules are not persistent across reboots and require automatic configuration like
+/etc/network/interfaces: post-up ip rule add  ...
+
+https://unix.stackexchange.com/questions/188584/which-order-is-the-route-table-analyzed-in/188590#188590
+https://blog.scottlowe.org/2013/05/29/a-quick-introduction-to-linux-policy-routing/
+
 
 Ip route output =>
 - netmask
@@ -2881,6 +2927,30 @@ Also known as Very High Throughput (VHT), 802.11ac is positioned as the successo
 =========================================================================================================
 https://www.edrawsoft.com/cisco-networks-symbols.php => cisco network diagaram legend
 
+
+---------------------------------------------------------------------------------------------------------
+		       SFP (Small Form-Factor Pluggable)
+---------------------------------------------------------------------------------------------------------
+There may be a situation when you have a device with network interface that should be capable to
+communicate over either fiber optic or copper networking cable, depending on the situation. This can
+be done with SFP. Your network device should have a special port where you can plugin SFP.
+SFP transceivers are hot-swappable and have the capability to allow modifications which can be added
+after the initial purchase
+
+https://blog.cablesandkits.com/what-is-a-sfp-and-how-is-it-used/
+---------------------------------------------------------------------------------------------------------
+RDMA (Remote DMA)
+---------------------------------------------------------------------------------------------------------
+RDMA enables more direct data movement in and out of a server by implementing a transport protocol in the
+network interface card (NIC) hardware. The technology supports a feature called zero-copy networking that
+makes it possible to read data directly from the main memory of one computer and write that data directly
+to the main memory of another computer.
+
+RDMA is the standard protocol for high-speed InfiniBand network connections.
+
+https://searchstorage.techtarget.com/definition/Remote-Direct-Memory-Access
+---------------------------------------------------------------------------------------------------------
+https://wiki.archlinux.org/index.php/InfiniBand
 ---------------------------------------------------------------------------------------------------------
                                Network simulators
 ---------------------------------------------------------------------------------------------------------
