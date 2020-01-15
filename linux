@@ -202,6 +202,17 @@ reqested function definition), use LD_PRELOAD. For instnace zlibc will call exis
 gziped version exists, it transparently for application uncompresses file. This way you can exchange speed
 for space. To make preload behaviour consistent on entire system, add librarry path to /etc/ld.so.preload
 
+In case, compiler has failed to locate a library file. like following, you can issue following
+make: *** No rule to make target '/usr/lib/arm-linux-gnueabihf/libreadline.a', needed by 'bin/cint'.  Stop.
+
+1. Check if directory is present at all
+   stat /usr/lib/arm-linux-gnueabihf/libreadline.a
+2. If it is not, locate package that contains it
+   apt-file search /usr/lib/arm-linux-gnueabihf/libreadline.a
+   apt-file search libreadline.a
+   apt install libreadline-dev
+
+
 ---------------------------------------------------------------------------------------------------------
 ldconfing is a program that looks at predefined path and generates links to libs (sonames to real names
 / real name) + setting up cache (/etc/ld.so.cache). Installer must specifically modify symbolic links to
@@ -764,8 +775,19 @@ https://www.git-tower.com/learn/git/ebook/en/command-line/advanced-topics/diffs
 https://www.oreilly.com/library/view/git-pocket-guide/9781449327507/ch11.html
 ---------------------------------------------------------------------------------------------------------
 =========================================================================================================
-                                      TOP
+                                   Memory CLI
 =========================================================================================================
+free               # list RAM/Swap memory usage
+        -m         # in MB
+        -h         # human readable
+cat /proc/meminfo  # allot of different system buffers
+vmstat             # memory usage statistics
+dmidecode          # get hardware info for your RAM
+
+
+---------------------------------------------------------------------------------------------------------
+                                      TOP
+---------------------------------------------------------------------------------------------------------
 RSS (Resident Set Size) => how much memory is allocated to the process and in in RAM. Doesn`t include memory
 that is swapped out. It does include memory from shared libraries whose pages are in memory. Includes all
 stack and heap memory. Since part of the memory is shared, many processes may use it, so if you add up all
@@ -861,6 +883,49 @@ using menu entires from `/boot/grub/grub.cfg`, like
 GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 5.4.0-custom"
 
 
+=========================================================================================================
+                               Package managment
+=========================================================================================================
+You can package your solution what ever you want, but to make it portable, easy to use and share you
+need to follow rules provided by OS distribution. Let`s supose that you have followed the rules, provided
+special configuration/installation files and file structure, now we face the question: should we package
+everything related to application as one package or multiple? The answer is that you need to separate
+them: your user may not need header file if he won`t use them, or there is no need to install docs for
+already experienced user. Therefore, package is divided into multiple packages with the same name but
+different suffix. Common are -doc, -data, -dbg[sym], -dev, -common, -util, -all (means that for all
+architectures)
+
+
+Excepet from using the package, you may want to develop or debug it. In such case you will download
+specially named version of the package *-dev, *-dbg. Dev package contains header files and statically
+compiled versions of library files, sometimes additional documentation/examples or even helper apps.
+This all let`s your own application`s based on interface provided by package.
+
+dpkg -l                     # list installed packages
+dpkg -L <package>           # list files installed by package
+apt-file list <package>     # list files installed by package
+
+https://www.debian.org/doc/manuals/maint-guide/advanced.en.html
+https://askubuntu.com/questions/182703/how-and-why-to-create-dbg-dev-doc-packages
+=========================================================================================================
+                  PAM. Linux Pluggable Authentication Modules
+=========================================================================================================
+Mechanism that provide dynamic authentication support for applications and services in Linux system.
+It integrates multiple low-level authentication modules into a high-level API that provides dynamic
+authentication support for applications. This allows developers to write applications that require
+authentication, independently of the underlying authentication system.
+
+All authentication tasks are separated into four independent managment groups:
+1. Account modules. Checks that the specified account is a valid authentication target under current conditions.
+   Possible coniditions include: account expiration, time of day, access to the requested service.
+2. Authentication modules. Verify the user's identity, for example by requesting and checking a password
+   or other secret. They may also pass authentication information on to other systems like a keyring.
+3. password modules. Responsible for updating passwords, and are generally coupled to modules employed
+   in the authentication step. They may also be used to enforce strong passwords.
+4. Session modules. Defines actions that are performed at the beginning and end of sessions.
+   A session starts after the user has successfully authenticated.
+
+NOTE: Erroneous PAM configuration can disable access to your system partially, or completely.
 =========================================================================================================
                                Package managment
 =========================================================================================================

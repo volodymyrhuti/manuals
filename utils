@@ -294,6 +294,37 @@ rbreak file:regex
 commands [list ...]
   ...
 end
+
+
+info source
+    Show information about the current source file—that is, the source file for the function containing the current point of execution:
+
+        the name of the source file, and the directory containing it,
+        the directory it was compiled in,
+        its length, in lines,
+        which programming language it is written in,
+        whether the executable includes debugging information for that file, and if so, what format the information is in (e.g., STABS, Dwarf 2, etc.), and
+        whether the debugging information includes information about preprocessor macros. 
+
+info sources
+    Print the names of all source files in your program for which there is debugging information, organized into two lists: files whose symbols have already been read, and files whose symbols will be read when needed.
+
+
+symbol-file <debug_symbol_file>    # source debug symbols
+directory <path>                   # add source directory, non recursive
+info symbols functions files shared
+symbol-file <path>
+set debug-file-directory <path>    # set directory with dbg symbols
+show debug-file-directory          # get directory with dbg symbols
+add-symbol-file <file> <address>   # add aditional symbols
+https://stackoverflow.com/questions/20380204/how-to-load-multiple-symbol-files-in-gdb/55744855
+
+
+gdbserver :2000 hg6d -d &
+gdbserver :2000 hg6d -d &
+gdbserver :2000 --attach `pgrep hg6d` &
+target remote 192.168.1.254:2000
+
 ---------------------------------------------------------------------------------------------------------
 Gdb uses next init files 
 system.gdbint (somewhere under etc)
@@ -451,3 +482,59 @@ target remote | vgdb
 -a <file>           # batchmod , download all links within file
 
 youtube-dl --extract-audio --audio-format mp3 <video URL>
+=========================================================================================================
+			Random convertions
+=========================================================================================================
+To convert docx to pdf, use doc2pdf
+doc2pdf *.docx
+
+To merge all pdf files to one, issue pdfunite
+pdfunite *.pdf merge_output.pdf
+pdftk <files> cat output <res>.pdf
+convert image1.jpg image2.png text.txt PDFfile.pdf outputFileName.pdf  # will automatically convert .png/.txt
+convert zavdannja.pdf $(ls --sort=v *.jpg) bilet.pdf
+pdftk <files> output <res>
+
+convert $(ls --sort=v *.jpg) bilet.pdf
+pdftk zavdannja.pdf bilet.pdf output _v3.pdf
+
+Split pdf
+pdftk <file>.pdf cat <range> output <res>.pdf
+pdftk full-pdf.pdf cat 12-15 output outfile_p12-15.pdf
+
+=========================================================================================================
+                             Working with binaries
+=========================================================================================================
+During compilation of elf excutables, it get`s mapped to debug symbols with build id that is saved in
+executable header and debug symbols meta data. You can list one of file using `file` command.
+
+
+https://gnu.wildebeest.org/blog/mjw/2016/02/02/where-are-your-symbols-debuginfo-and-sources/
+
+file <executable>                                       # list if debug symbols are present and build id
+objdump
+        --sym <executable>                              # list debug symbols present in executable
+        -d <executable>                                 # display a dissasembly
+        -T <executable>                                 # list a external symbols dynamically linked or RT
+objcopy
+        --only-keep-debug <executable> <saved_symbols>  # save debug symbols from executable to a separate file
+        --add-gnu-debuglink="<symbol_file>" "<striped_executable>"
+
+strip                       <executabe>                 # strip different type of data from executable
+      --strip-debug                                     # strip debug symbols
+      --strip-unneeded 
+
+strings                                                 # looks for printable strings in the executable
+                                                        # at least 4 character long (can be configured)
+
+objdump -s --section .comment <executable>              # list compiler used for compilation
+
+
+
+
+    sysdig is a tool for system troubleshooting, analysis and explo‐ ration. It can be used to capture, filter and decode system calls and other OS events. sysdig can be both used to inspect live systems, or to generate trace files that can be analyzed at a later stage.
+
+    sysdig includes a powerful filtering language, has customizable output, and can be extended through Lua scripts, called chisels.
+
+https://unix.stackexchange.com/questions/418354/understanding-what-a-linux-binary-is-doing
+=========================================================================================================

@@ -1,0 +1,108 @@
+                                     Docker
+========================================================================================================
+Docker is a tool that works like a wrapper (or container) around application making it easy to deploy and
+run applications on different platforms. Another benefit of using containers is that you can package
+everything needed by your application, like libraries and other dependencies, with it. 
+It is close to Virtual Machine, but instead of instantiating an entire OS layer, it allows applications
+to use the same Linux kernel.
+Docker is usually used by developers to avoid porting application of every platform 
+? You write for some generic platform / specify originally used platform in configs and dockers knows
+? how to handle collisions between another platforms
+and devops (why?)
+
+Other possible solutions:
+1. Virtual Machine. High overhead for any application, high minimal cost for usage
+
+One cool use case is making a library from docker image, but instead of linking binary to image, you
+execute binary withing image.
+
+Avarage use case, software delivery pipe line:
+1. You have a CI system, where every time a commit is pushed, Jenkins execute some steps
+2. Mostlikely, Jenkins will checkout a new chagnes, create a container, peform steps necessary
+   to install the dependecies, upload a code into container, compile
+3. Run tests 
+4. Push changes (your servers doesn`t to copy entire project, only checkout the changes)
+Otherwise, your Jenkins would repeat rebuilding/resolving dependencies every time which is not optimal.
+
+--------------------------------------------------------------------------------------------------------
+                                  Space usage
+--------------------------------------------------------------------------------------------------------
+Docker saves deltas describing changes between version like a git does, therefore it takes a couple of
+seconds to update a last version of the image.
+
+========================================================================================================
+                                    Network
+========================================================================================================
+By default, all containers are bridged into your network with bridge interface `docker0`. It`s parameters
+can be changed with options to `dockerd` or from `/etc/docker/daemon.json`, former being the recommended
+one. Note, don`t forget to restart `dockerd` after changing configuration file.
+After your network is configured and some containers are running, you can confirm that containers are
+proparly connected with `brctl show`, under `interfaces` column.
+
+Note, bridge will be a default gateway for containers therefore you need to enable `ip_forward` if you
+want to provide containers with internet access.
+
+Other network interfaces, used by docker, can be inspected with `docker network ls` or `docker network
+inspect`
+
+https://developer.ibm.com/recipes/tutorials/networking-your-docker-containers-using-docker0-bridge/
+https://docs.docker.com/v17.09/engine/userguide/networking/default_network/custom-docker0/
+========================================================================================================
+                                      Tags
+========================================================================================================
+Each image build by docker gets a unique a 12(64) digit code pointing to it, called Image ID.
+To make this more readable, user can tag image with some name, common choise is version, branch,
+feature, latest... By default, all new images get a tag called `latest`.
+There can be multiple tags poiting to the same image.
+Images with all tags pointing to them are saved to repositories. Example of these scheme:
+  REPOSITORY           TAG         IMAGE ID
+  docker/whalesay      latest      fb434121fc77
+  hello-world          latest      91c95931e552
+  hello-world          v1.1        91c95931e552
+  hello-world          v1.0        1234abcd5678
+To reference a specifi image use following name scheme <repo>:<tag>, like `hello-world:latest`
+
+To rename a repo:
+docker tag <old_repo_name/image_id> <new_repo_name>     # create new reference point to old one
+docker rmi <old_repo_name>                              # remove old one
+
+docker images [repo]               # list loaded images 
+
+
+TODO:Naming conventions, full tag form
+
+https://stackoverflow.com/questions/31115098/what-is-the-difference-between-an-image-and-a-repository
+========================================================================================================
+                                     Layers
+========================================================================================================
+TODO: overlayfs
+
+docker history <image>             # list image layers and commands used to generate them
+========================================================================================================
+                                     Usage
+========================================================================================================
+docker images                      # list images (previously used?)
+               <name>              # list images starting with <name>
+docker load -i <name>              # load image
+docker run <image> <command>       # execute the command on the specified image
+                                   # <image> is just copied into a new linux container
+                    -i             # with user input
+                    -t             # allocate a tty
+                                   # difference with exec ?
+docker ps                          # list already running images, their port mappings
+docker diff <process_id from ps>   # list changes within running instance
+                                   # A = Added, D = Deleted, C = Changed
+docker commit <process_id> <name>  # save current state of <image> to a new one
+
+docker push <user/name>            # upploade <image> to `index.docker.io`
+docker pull <name>
+
+Note, there is a convention that images are named in form <user_name/image_name>
+========================================================================================================
+Dependencie injection?
+https://prefetch.net/blog/2018/02/19/how-the-docker-container-creation-process-works-from-docker-run-to-runc/
+https://stackoverflow.com/questions/46649592/dockerd-vs-docker-containerd-vs-docker-runc-vs-docker-containerd-ctr-vs-docker-co
+https://medium.com/@sh.tsang/docker-tutorial-4-exporting-container-and-saving-image-c3a7d792cfb6
+https://tuhrig.de/difference-between-save-and-export-in-docker/
+
+========================================================================================================

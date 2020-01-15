@@ -4620,6 +4620,23 @@ Mixins allow inheritance and use of only the desired features from the parent cl
 of the features from the parent class.
 
 =========================================================================================================
+                                     Random
+=========================================================================================================
+                               C/Cpp interpreter
+---------------------------------------------------------------------------------------------------------
+There are quite a few but most of them are designed to be cross-platform therefore they include only limited
+set of functionality by default. Most likely, you will look for one designed specifically designed for
+single target, e.g. tcc for Linux, so you have all need libraries available.
+In general, there are 2 quite famous interpreters used for physics, `cint` and it`s successor `cling`.
+Some other projects include
+https://github.com/jpoirier/picoc       # picoc
+http://www.ddj.com/cpp/184402054        # ch
+https://www.softintegration.com/
+
+https://root.cern.ch/cint
+https://stackoverflow.com/questions/584714/is-there-an-interpreter-for-c
+https://stackoverflow.com/questions/69539/have-you-used-any-of-the-c-interpreters-not-compilers/72792#72792
+=========================================================================================================
                                     To study
 =========================================================================================================
 https://en.m.wikibooks.org/wiki/More_C%2B%2B_Idioms

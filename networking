@@ -53,6 +53,14 @@ Router => device that knows how to send packets to another nrtwork but it unders
 Modem => de/modulates analog signals
 TODO
 =========================================================================================================
+                           MAC (Media Access Control)
+=========================================================================================================
+MAC address is a unique 48 bit hardware number of a computor that is embded into network card during
+manufacturing.
+
+https://www.iana.org/assignments/ethernet-numbers/ethernet-numbers.xhtml
+https://www.geeksforgeeks.org/introduction-of-mac-address-in-computer-network/
+=========================================================================================================
                                     Ethernet
 =========================================================================================================
 Max frame size => 1518 bytes (including 4byte CRC and 14byte header)
@@ -227,7 +235,7 @@ and send it as unicast response.
 
 Before sending a request we need to know which interface should be used and if the host is in local subnet.
 This is done by interating through interfaces and checking if both interface and host are within one
-subnet. If the endhost is from another subnet, we send requst to default gateway with dst-mac assigned
+subnet. If the endhost is from another subnet, we send requst to default gateway with DST-mac assigned
 to gateway mac.
 
 ARP probe and announcment are part of DAD (Duplicate Address Detection)
@@ -245,6 +253,11 @@ frame out to all ports in the broadcast domain. Host is then remebered, and it`s
 an interface where packet was received. Next time, if some one tries to commonicate to that host, message
 won`t be broadcasted, instead it will be sent to wanted host only.
 
+ARP table is used to associate IP with it`s mac address in case host is within the same network segment.
+Otherwise, it is responsibilty of gateway to resolve destination host, therefore, client will skip ARP
+process and use gateway`s mac as a destination (and it`s own mac as source). Gateway, on it`s behalve,
+replace destination mac with resolved one.
+
 If switch receives a message from already known mac but interface has changed, it will update it`s
 mappings database.
 It is implemented in terms of CAM (Content-addressable memory) which efficently associates packet 
@@ -255,9 +268,7 @@ lookup, therefore, the most common entries are cached into FIB.
 
 FIB (Forwarding Information Base). FIB table appears as a streamlined form of the routing table,
 usually only for commonly used table entries. When a route is required, the FIB table is retrieved first,
-and the routing table is retrieved if it is not found. 
-
-ARP (Address resolution) table. The correspondence between IP and Mac. 
+and the routing table is retrieved if it is not found.
 
 https://topic.alibabacloud.com/a/rib-fib-arp-fdb_8_8_30052435.html
 https://networkengineering.stackexchange.com/questions/34754/same-mac-on-different-interfaces
@@ -759,6 +770,9 @@ broadcast domain, such that every connected device sees every broadcast packet t
 There can be no paths for load balancing or fault tolerance, they are just blocked by STP. This limitation
 can be overcomed by dividing flat network into VLANs. Each vlan creates a separate broadcast domain.
 
+VLAN provides network performance by separating broadcast domain into smaller ones, therefore there is
+less flood in the network, only devices that need/ are expected to receive broadcast are receiving it.
+
 When a VLAN is provided at an access-layer switch, an end user must have some means of gaining membership
 to it. Two membership methods exist:
 1. Static requires an administrator to assign individual ports on the network switch to a virtual network.
@@ -774,9 +788,11 @@ loading the default configuration. This is usually VLAN 1. It has all the featur
 it cannot be renamed or deleted.
 
 Native/Untagged VLAN. Is assigned to trunk port (one that supports traffic comming from many VLANs) and
-used to forward untagged traffic. By default it is VLAN 1 which collides with Default VLAN, therefore it
+used to forward untagged traffic. This traffic is usually used for carrying managment information, such
+as VTP, STP, CDP, etc since they do not need VLANs for functioning and may be broken in case trunking is
+badly configured or not working. By default it is VLAN 1 which collides with Default VLAN, therefore it
 is recommended to configure it as an unused VLAN, distinct from VLAN 1 and other VLANs.
-Note, any traffic the switch forwards out a Trunk port that is associated with the Native VLAN is forwarded
+Note, any traffic forwarded out of a Trunk port that is associated with the Native VLAN is forwarded
 without a VLAN Tag.
 It is crucial to have both sides of a Trunk port configured with the same Native VLAN.
 
@@ -811,33 +827,45 @@ Your network may have devices not aware of VLANs (maybe you haven`t configured i
 generated by them is not tagged. Untagged traffic is placed on Native VLAN, which by default is VLAN 1.
 
 There are 2 types of ports used for VLAN:
+NOTE: Different vendors have different names for ports. Cisco referes to port like Access an Trunk while
+other vendors prefer Untagged and Tagged ports.
 1. Access/Untagged port. End nodes connects to it. Trafic between port and end node is not tagged. This
-   port is attached to some VLAN, sometimes this VLAN parameter is called PVID. Traffic passing through
-   this ports is not tagged.
-   Note, in order to extend a VLAN to the second switch, a connection is made between one Access port on
-   both switches for each VLAN. While functional, this strategy does not scale. Imagine if our topology
-   was using ten VLANs, on a 24 port switch nearly half of the ports would be taken up by the inter-switch
-   links. Instead, there is a mechanism which allows a single switch port to carry traffic from multiple
-   VLANs called Trunk port.
+   port is attached to some VLAN called PVID (Port Vlan ID). Enduser doesn`t know about belonging to a
+   VLAN and the purpose of access port is to tag packets comming from client and untag packets going to
+   client. You can extend a VLAN to another switch by configuring a separate port on both switches for
+   proper VLAN and connectiong them. This needs to be done for each VLAN therefore is not scalable, for
+   instance: if a topology is using 12 VLANs and 24 port switches, then half of the ports would be
+   taken up by the inter-switch links. Instead, there is a mechanism which allows a single switch port
+   to carry traffic from multiple VLANs called Trunk port.
 2. Trunk/Tagged port. Port/Interface that is allowed to receive and send packet frames for multiple VLANs
    (tagged traffic), as well as traffic that does not come from a VLAN(untagged traffic).
+   User should configure wich PVIDs should be accepted and forwarded over such port.
    VLAN trunks allow all VLAN traffic to propagate between switches so that devices that are in the same
    VLAN, but connected to different switches, can communicate without the intervention of a router.
    |Host|  ==> Port 1 | Switch1 | Port 2 ==>  Port 3 | Switch 2 | Port 4 ==> | Host|
    Ports 2 and 3 are trunk ports, they won`t remove tag.
    Trunk ports tag traffic depending on it`s source port.
 
-Different vendors have different names for ports. Cisco referes to port like Access an Trunk while another
-vendors prefer Untagged and Tagged ports.
+General flow:
+- Packets going from client though access port are tagged with PVID
+  If the destination is available on another access port of the switch, tag get`s removed
+  and packet is forwarded
+NOTE: Tagged packets received on access port are droped
+- If destination is not rechable from direclty accessed switch, PVID is saved and packet is sent
+  over trunk.
+- If trunk receives a packet with PVID matching it`s own Native PVID, packet get`s untagged and sent
+- If trunk receives a untaged packet, it get`s tagged with a Native PVID
 
-Note, access port accepts only untagged traffic and drops any tagged. The only case where tagged frames
-(matching VLAN IDs) are accepted is when the port is a hybrid link, which is a link that can receive both
-tagged and untagged traffic. An access port with voice vlan configured is a hybrid link as it can receive
-both untagged traffic (from PC) and tagged traffic from phones.
+The only case when tagged frames (matching VLAN IDs) are accepted on access port is when it is a hybrid
+link, which is a link that can receive both tagged and untagged traffic. An access port with voice vlan
+configured is a hybrid link as it can receive both untagged traffic (from PC) and tagged from phones.
 
-If trunk port receives traffic with VLAN ID that is the same as the native VLANn, it drops the frame.
-Control traffic sent on the narive VLAN  sjould not be tagged????
-
+NOTE: it is not common but fine for end host to be connected to trunk port.
+https://community.cisco.com/t5/switching/why-native-vlan-exists-on-a-trunk/td-p/1363872
+- Endclient may want to prioritize some trafic by using VLANs CoS field, in such case connecting to
+  access port is not applicable.
+- Cases when computer itself is intentionally placed into multiple VLANs
+- Virtualization, separating VMs by VLANs
 
 By default, all switch ports are assigned to VLAN 1, are set to be a VLAN type of Ethernet, and have
 MTU size of 1500 bytes.
@@ -862,12 +890,23 @@ https://community.cisco.com/t5/switching/802-1q-tag-on-access-switchport/td-p/16
 ---------------------------------------------------------------------------------------------------------
                                     Routing
 ---------------------------------------------------------------------------------------------------------
-Packets destined for stations that do not belong to the VLAN must be forwarded through a device that
-supports routing.
+Usually each VLAN has a separate subnet and if you want to have connection between them, you need a
+router which will perform inter VLAN routing. As well, there is another reason when you need routing,
+when packets destined for stations that do not belong to the present VLANs.
+On a smart switch this can be performed by configuring L3 interface called SVI (Switch Virtual Interface)
+When routing get`s enabled, MAC DA of the packet should be the MAC of the internal bridge-router
+interface for the packet to be routed.
 
-VLAN provides network performance by separating broadcast domain into smaller ones, therefore there is
-less flood in the network, only devices that need/ are expected to receive broadcast are receiving it.
+There are two ways to implement inter-VLAN routing:
+- Traditional inter-VLAN routing
+  A router is connected to the switch using multiple interfaces, one for each VLAN
+  In this form of routing, the router has to have as many LAN interfaces as the number of VLANs configured
+  on the switch.
+- Router-on-a-stick
+  Router is connected to the switch using a single physical interface that has a virtual subinterface for
+  each VLAN, switch port is in trunk mode.
 
+https://www.ccnablog.com/inter-vlan-routing/
 ---------------------------------------------------------------------------------------------------------
                                     Examples
 ---------------------------------------------------------------------------------------------------------
@@ -2360,8 +2399,13 @@ The algorithm is basically a combination of two functions – encryption functio
 Message encrypted with publick key can be decrypted only with private key.
 
 ---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                   Websockets
+=========================================================================================================
 
-
+https://hpbn.co/websocket/
+https://javascript.info/websocket
+lucumr.pocoo.org/2012/9/24/websockets-101/
 =========================================================================================================
                                    Debugging
 =========================================================================================================
@@ -3322,3 +3366,4 @@ PVST and trunking protocols
 https://www.practicalnetworking.net/stand-alone/routing-between-vlans/
 www.practicalnetworking.net/series/nat/nat/
 nv/socat
+router on a stick

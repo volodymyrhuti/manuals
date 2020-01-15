@@ -1,0 +1,241 @@
+=========================================================================================================
+                                      Make
+=========================================================================================================
+Make is Unix utility that is designed to start execution of a makefile, special file, containing shell
+commands used to automate some process, like building/testing your project. It consists of rules, their
+dependencies and actions to be performed
+RULE:   DEPENDENCY LINE
+    [tab]ACTION LINE(S)
+Dependency line consists from target file (before column) and source files (after column). This is called
+dependecny because target file depends on source files. There may be multiple target/source files per
+rule, they need to be separated by spaces.
+taget1 target2: src1 src2
+    cmds...
+
+
+make
+    -d          # debug
+    --trace     #
+    -f <name>   # specify which file to execute instead of default Makefile
+    -n          # dry-run
+
+V=1 ??
+http://www.sis.pitt.edu/mbsclass/tutorial/advanced/makefile/whatis.htm
+https://github.com/datamade/data-making-guidelines/blob/master/make.md
+---------------------------------------------------------------------------------------------------------
+                                 Implementation
+---------------------------------------------------------------------------------------------------------
+How does make knows when target should be updated?
+Usually, make expects targets to be real files that have attributes like modification date. This date
+can be compared with last modification date of prerequisits. If prerequisits where updated after last
+make, their last modification date will be newer than targets one. This triggers make to rebuild the
+target.
+
+https://stackoverflow.com/questions/22941948/how-does-gnu-make-keep-track-of-file-changes
+=========================================================================================================
+                                    Namings
+=========================================================================================================
+By default, when make looks for the makefile, it tries the following names, in order: GNUmakefile, makefile
+and Makefile. If you want to use a nonstandard name for your makefile, you can specify the makefile name
+with the ‘-f’ or ‘--file’ option, default files will be skiped. You can chain -f options, files will be
+executed in specified order.
+
+=========================================================================================================
+                                   Variables
+=========================================================================================================
+There are following ways to assign a value to variable
+VARIABLE = value    # value is recursively expanded when variable is used
+VARIABLE := value   # value is expanded at declaration time
+VARIABLE ?= value   # setting variable only if doesnt have value
+VARIABLE += value   # apending or setting if doesn`t has value
+
+Note, variable assignments may take place at any point in the makefile, however you should be aware that
+make reads each makefile twice. The first pass gathers variables, and the second passs resolves dependecies
+defined by the rules. So regardless of where you put your variable difinitions, make will act as though
+they`d all been declared at the top. As well, reference assignment is performed at the moment of usage,
+therefore you may assign variable that is not defined yet. Thus the order of variable assignment isn`t
+really that important.
+
+Variable dereferencing is close to shell way, one difference is that parethesis should be used instead
+of currly braces. The same as in shell, they can be skipped when context is not ambiguos.
+source = main.c
+$source   or   $(source)
+
+If you want to use shell variable, you need to expand it with double dollar sign and parenthesis, like
+$$(HOME)
+
+=========================================================================================================
+                                Special targets
+=========================================================================================================
+There are a special dot prefixed rulles, called dot-rule, that are build in to make. The most famouse one
+is .PHONY:clean which says that there is no files associated with command and it should be executed
+whenever issued.
+
+Leading DASH?
+Make will print commands as it executes them, unless `-s` options is used or .SILENT rule is used.
+If you don`t want to see output of command, prefix it with ATSIGN `@`, this is common thing to do on echo
+since it will be printed twice otherwise.
+
+.PHONY: clean <taget_names ...>  # targets are always executed without checking dependencies
+                                 # phony stands for fake
+.SILENT
+@echo Printing through echo      # displays only once, without printing command that is executed.
+-<cmd>                           # ignore exit status of <cmd>, normally non-zero status will stop build
++<cmd>                           # executes <cmd> while ignoring -n/t/q (dry-run flags)
+
+One more thing about PHONY. If you targets name collisions with a file name present in your directory,
+since target has no dependecies, make will check last timestamp of target file, compare it with dependencie
+list (no present) and will consider target to be up to date. Therefore this target get`s never performed.
+
+=========================================================================================================
+                                Meta characters
+=========================================================================================================
+Automatic Variables
+---------------------------------------------------------------------------------------------------------
+Automatic variables are set by make after a rule is matched. There include:
+$@      # the target filename.
+$*      # the stem with which an implicit rule matches
+$<      # the first prerequisite filename (from left)
+$^      # the filenames of all the prerequisites, separated by spaces, discard duplicates.
+$+      # similar to $^, but includes duplicates.
+$?      # the names of all prerequisites that are newer than the target, separated by spaces.
+$|      # the names of all the order-only prerequisites
+=========================================================================================================
+                                  Conditionals
+=========================================================================================================
+Make evaluates conditions when it reads a makefile. Consequently, you cannot use automatic variables in
+the tests of conditionals because they are not defined until recipes are run.
+
+There are follwoing ways to test a variable value
+  ifeq (arg1, arg2)
+  ifeq 'arg1' 'arg2'
+  ifeq "arg1" "arg2"
+  ifeq 'arg1' "arg2"
+  ifeq "arg1" 'arg2'
+The same can be performed to test for inequality using `ifneq` instead of `ifeq`.
+These can be chained using
+  if cond
+  ...
+  else cond
+  ...
+  else
+  ...
+  endif
+To test for empty string, use following
+  ifeq (arg1,)
+  endif
+
+To check whether variable was defined, you can use `ifdef var_name` declration. It takes variable name
+and not reference to it. `var_name` is expanded before testing so it can be a variable or function that
+expands to the name of a variable.
+bar = true
+foo = bar
+ifdef $(foo)        # `foo` is expanded to `bar` which is then checked for value
+    res = true      # true
+else
+    res = false
+endif
+
+Note that, ifdef check if variable has value without expanding to see if it is nonempty
+bar =
+foo = $(bar)
+ifdef foo           # `foo` was previously defined, even though is has value of ``, test return true
+    res = true      # true
+else
+    res = false
+endif
+
+foo = 
+ifdef foo           # `foo` is defined with nothing and has no value, it`s considered to be notdefined
+    res = true
+else
+    res = false     # false
+endif
+You can test whether variable is not defined with `ifndef`
+
+You have an option to test which options where passed to make by parsiong MAKEFLAGS variable, like:
+ifneq (,$(findstring t,$(MAKEFLAGS)))
+        +touch archive.a
+        +ranlib -t archive.a
+else
+        ranlib archive.a
+endif
+
+Note, there is no logical operators that can be used to chain tests withing if statemnts, like
+ifeq ('1', '2') && ('2', '3')
+This can be simulated with nested if statements or by calling shell and using it`s test utility like
+ifeq ($(shell [[ $(V1) == 15 && $(V2) == 16 ]] && echo true ),true)
+Another option, when performing many tests, you can use additional variables to hold result of tests
+and then check their value for being defined/undefined
+
+https://stackoverflow.com/questions/51517970/combine-multiple-ifeq-and-ifneq-in-a-gnu-makefile
+=========================================================================================================
+                                    Examples
+=========================================================================================================
+For each source file, compile an object file
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
+
+
+
+TEST_OBJECTS=$(patsubst %.c, %.o, $(TEST_SRC))
+SRC=$(wildcard *.c)
+=========================================================================================================
+                            Debugging
+=========================================================================================================
+You can use trace options that enable debugging or use special logging functions that do not require
+target to be executed. This include:
+$(error text...)
+$(warning text...)
+$(info text...)
+Note, don`t forget that these are not commands for target and they don`t require prefixing with tab.
+Most likely, using tab will return an error saying that no target is defined above.
+
+Make flags:
+-n, --just-print, --dry-run, --recon  
+Print the commands that would be executed, but do not execute them.  
+
+-d  Print debugging information in addition to normal processing.  
+The debugging information says  
+which files are being considered for remaking,  
+which file-times are being compared and with what results,  
+which files actually need  to  be  remade,  
+which implicit  rules are considered and which are applied---  
+everything interesting about how make decides what to do.  
+
+--debug[=FLAGS] Print debugging information in addition to normal processing.  
+If the FLAGS are omitted, then the behaviour is the same as if -d was specified.  
+FLAGS may be:  
+'a' for all debugging output same as using -d,  
+'b' for basic debugging,  
+'v' for more verbose basic debugging,  
+'i' for showing implicit rules,  
+'j' for details on invocation of commands, and  
+'m' for debugging while remaking makefiles.
+
+https://stackoverflow.com/questions/54753/tool-for-debugging-makefiles
+https://stackoverflow.com/questions/16467718/how-to-print-out-a-variable-in-makefile/16489377
+=========================================================================================================
+                                 Common targets
+=========================================================================================================
+There are plenty of targets expected to be present by user. Their presence simplifies work need to be
+performed by used to simple command or two. For instance `make install` should move mannual to correct
+directory, move binary somewhere, maybe configure environment. To keep list of directories used, people
+created a standarts:
+The GNU Coding Standards Document
+The Filesystem Hierarchy Standard
+These documents specify expected targets and directories on user machine that should be used.
+
+=========================================================================================================
+                               Remake (debugger)
+=========================================================================================================
+Remake is a patched gnu make that provides tools to debug makefiles.
+There is a mention of ddd used as front-end for remake but it doesn`t work on latest versions any more.
+
+Calling debugger from within makefile
+$(debugger 'arg')
+
+
+https://github.com/rocky/remake
+http://bashdb.sourceforge.net/remake/remake.html/index.html
+=========================================================================================================

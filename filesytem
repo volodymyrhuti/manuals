@@ -446,6 +446,13 @@ ncdu                           # nice cli scanner
 
 
 =========================================================================================================
+                        Debugfs
+=========================================================================================================
+Linux RAM based file system used by kernel developers to hold usefull information. There are no rulles
+affecting it`s usage, it should be used as developer wish. By default it is mounted to /sys/kernel/debug
+
+https://unix.stackexchange.com/questions/377428/how-do-i-generate-the-sys-kernel-debug-tracing-folder-in-kernel-with-yocto-proj
+=========================================================================================================
 Some questions
 ---------------------------------------------------------------------------------------------------------
                                Moving vs copying
