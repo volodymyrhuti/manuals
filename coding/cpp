@@ -1,0 +1,927 @@
+=========================================================================================================
+                                    Pointers
+=========================================================================================================
+                                NULL and nullptr
+---------------------------------------------------------------------------------------------------------
+Pointer may be intialized and point to some valid address but there are cases we don`t want to point somewhere
+or have any object at current moment. To define such pointer, we initiliza it with NULL in C and nullptr
+in C++. NULL has platform dependent definition but usually it is macro for integer 0. Usage of NULL may
+make it not clear if it is value or pointer, therefore breaking some code, for instance function oveloading
+void foo(int *ptr);
+void foo(int value);
+int *x = NULL;
+foo(x);     // calls foo(int*)
+foo(0);     // calls foo(int)
+foo(NULL);  // likely to call foo(int)
+C++11 introduced nullptr and should be used instead of NULL. This value is at the same type keyword and
+r-value, therefore you can assign it to pointer. It is always implicilty converted to pointer.
+There is, aswell, type definining nullpts, std::nullptr_t, it can be used to explicitly define that
+argument should be nullptr (any usage?)
+---------------------------------------------------------------------------------------------------------
+                               Function pointers
+---------------------------------------------------------------------------------------------------------
+Function pointer is flexible mechanism allowing you to define pointer for function prototype and assign
+any valid function to it. The syntax is following
+<return_type> (*pointer_name)(argument_list);
+int foo(){}
+int (*fncPtr)();
+int (*fncPtr)() = foo;
+    fncPtr = foo;
+    fncPtr();
+    (*fncPtr)();
+There is no need to take address of function, it is implicitly done by compiler.
+Common use case is algorithm taking function as predicat. Default function as argument is valid.
+void selectionSort(int *array, int size, bool (*comparisonFcn)(int, int))
+void selectionSort(int *array, int size, bool (*comparisonFcn)(int, int) = ascending);
+bool ascending(int x, int y)
+bool descending(int x, int y)
+selectionSort(array, sizeof(ascending), ascending);
+selectionSort(array, sizeof(ascending));
+
+Syntax is quite ugly, therefore you simplify it with typedef.
+bool validate(int x, int y, bool (*fcnPtr)(int, int)); // ugly
+using validateFcn = bool(*)(int, int);                 // type alias
+bool validate(int x, int y, validateFcn pfcn)          // clean
+
+You can use auto type to simplify pointer declaration.
+auto pFoo = foo;
+---------------------------------------------------------------------------------------------------------
+                                 std::function
+---------------------------------------------------------------------------------------------------------
+C++11 introduced alternative method of defining and storing callable objects called std::function.
+Although this reads a little more verbosely, it’s also more explicit, as it makes it clear what the return
+type and parameters expected are (whereas the typedef method obscures them).
+
+#include <functional>
+bool validate(int x, int y, std::function<bool(int, int)> fcn);
+std::function<int()> fcnPtr = foo;
+fcnPtr = goo;
+std::cout << fcnPtr();
+
+The profit of using it, you can assign any callable, like function pointer or functor, to this.
+struct FooFunctor {
+    void operator()(int i) {
+        std::cout << i;
+    }
+};
+FooFunctor func;
+std::function<void (int)> f(func);
+
+Another reason to use `function` is capturing lambda that has capture, since it can`t be decayed to
+function pointer. The problem is the state contained by lambda, passing it as pointer makes us loose
+state, therefore, it is applicable for lambdas that has no capture/state.
+void do_something_function(std::function<void()> callback) {
+  callback();
+}
+void do_something_pointer(void (*callback)()) {
+  callback();
+}
+auto callback=[&](){ ... };
+do_something_pointer(callback);         // compilation error
+do_something_function(callback);        // Ok, capture info is saved
+
+
+http://bannalia.blogspot.com/2016/07/passing-capturing-c-lambda-functions-as.html
+https://stackoverflow.com/questions/25848690/should-i-use-stdfunction-or-a-function-pointer-in-c/25848890
+https://stackoverflow.com/questions/9054774/difference-between-stdfunction-and-a-standard-function-pointer
+=========================================================================================================
+                            Poointer vs Reference
+=========================================================================================================
+A pointer is a variable that holds memory address of another variable. A pointer needs to be dereferenced
+with * operator to access the memory location it points to.
+A reference variable is an alias, that is, another name for an already existing variable. A reference,
+like a pointer, is also implemented by storing the address of an object.  A reference can be thought of
+as a constant pointer  with automatic indirection, i.e the compiler will apply the * operator for you.
+
+1. Initialization. You can change pointer whenever you want, unless it is constant. Reference must be
+   initialized when delared, unless it class member, then it is initialized through member list.
+2. Reasignment. As previously mentioned, you can change pointer but not reference
+3. Memory Address. Both of them allocate some space on stack. Pointer contains address of pointee and
+   if you take address of reference, it will return address of read variable. To get real address of
+   reference use `&(&ref)`
+4. NULL. You can have pointer pointing to nothing.
+5. Inderection. Pointer may point to another pointer.
+6. Arithmetic operations. You get/change address of pointer by performing addition or substraction.
+
+Use reference:
+1. In function parametes and return types if you want to avoid coppying or pointer decay matters.
+_. Let`s you avoid object slicing
+
+Use pointers:
+1. Use when you need flexibilty of having NULL
+2. To implement data structures like linked-lists
+
+Use references when you can, and pointers when you have to. References are usually preferred over pointers
+whenever you don’t need “reseating”. This usually means that references are most useful in a class’s public
+interface. References typically appear on the skin of an object, and pointers on the inside.
+
+Another example is to use pointers to raw memory for specific memory manipulations. That should be hidden
+and localized in very narrow parts of the code, to help limit the dangerous parts of the whole code base.
+
+---------------------------------------------------------------------------------------------------------
+                              Reference to pointer
+---------------------------------------------------------------------------------------------------------
+If we can define references to simple variables, it would make sense to have references to pointers as
+well. This can be done, one usecase is to avoid ** syntax when you want to change pointer
+
+void foo(int*& ptr) {
+    ptr = new int;
+}
+
+https://www.geeksforgeeks.org/passing-reference-to-a-pointer-in-c/
+---------------------------------------------------------------------------------------------------------
+                                     Notes
+---------------------------------------------------------------------------------------------------------
+Note, that internally it is most likely implemented the same way as pointer, although you shouldn`t rely
+on this. You can find this by disassembling code using references and pointers and comparing executed
+instructions. The profit of using references is stronger guarantees (compiler can assume that it is never
+null) than for pointers, therefore it can be optimized more aggressively.
+
+Reference must be assigned a valid value, therefore following code is illegal even if it compiles
+T* p = nullptr;
+T& r = *p;  // illegal
+
+References were introduced since they make it easier to write safer, cleaner code.
+
+https://stackoverflow.com/questions/7058339/when-to-use-references-vs-pointers
+https://stackoverflow.com/questions/31262942/c-references-are-they-just-syntactic-sugar
+https://stackoverflow.com/questions/3954764/how-is-reference-implemented-internally
+=========================================================================================================
+                               Pointers pitfalls
+=========================================================================================================
+Additive operators. If you try to substract pointers pointing two the same consecutive memory e.g. array,
+result will be not difference in addresses but in indexes
+int arr[10];
+int *s = arr;
+int *e = &arr[9];
+int n = e - s; # result is 9
+
+Pointer decay. There is an issue when passing array to function. Since we pass pointer by value, it is
+just a copy of pointer to the first element, there is no information describing if it is one object or
+the first of an array as well as dimension information. Therefore sizeof will provide wrong result.
+To prevent this:
+1. Pass array size as parameter, so there is no need to calculate it
+2. Pass array into function as reference. This prevents conversion of array to pointer hence no decay.
+
+void by_value(const T* array)           // const T array[] means the same, sizeof gives wrong result
+void by_pointer(const T (*array)[U])    // decays
+void by_reference(const T (&array)[U])  // OK
+
+You may find people defining size of array in function declaration. This does nothing, pointer will still
+decay. This can be used for documnting purpose, e.g. it is expected that array of such size will be
+passed to function.
+
+Note, that there are execeptions for decaying:
+1. When it's the argument of the & (address-of) operator.
+2. When it's the argument of the sizeof operator.
+3. When it's a string literal of type char [N + 1] or a wide string literal of type wchar_t [N + 1]
+   (N is the length of the string) which is used to initialize an array, as in char str[] = "foo";
+   or wchar_t wstr[] = L"foo";.
+And some additional for C11 and C++
+
+https://stackoverflow.com/questions/17752978/exceptions-to-array-decaying-into-a-pointer
+https://stackoverflow.com/questions/39984816/when-subtracting-two-pointers-in-c
+https://stackoverflow.com/questions/5187224/why-should-i-declare-a-c-array-parameters-size-in-a-function-header
+https://stackoverflow.com/questions/1461432/what-is-array-decaying
+=========================================================================================================
+                              Pointer poisoning
+=========================================================================================================
+Pointer poisoning is a technic used to ensure that a poisoned pointer can`t be used without causing a
+crash. You just assign invalid pointer to an easily identified address value out of user space like
+0xdead000000000000. In case, you try to dereference it somewhere, you will have crash, but it will be
+clear from address, which object is resposposible for it. You may was have multiple poisons, used with
+different objects.
+
+https://stackoverflow.com/questions/27801360/what-is-the-meaning-of-0xdead000000000000
+https://www.openwall.com/lists/oss-security/2015/05/07/3
+https://en.wikipedia.org/wiki/Hexspeak
+=========================================================================================================
+                              Function overloading
+=========================================================================================================
+Function overloading is a way to reduce symantic duplications by providing multiple function with
+different funtion declaration and maybe definition but using the same name, e.g.
+bool max(int,int)
+bool max(double,double)
+bool max(int,double,short)
+It is realized by mangling function name and then on compilation phase, put needed call depending on
+arguments. Mangling means encoding additional data into function name, e.g. number of parameters, their
+type, therefore they can be differentiated even with the same code name.
+There are cases when you have changed some types but it doesn`t compile. Return type are not considered
+for uniqieness since it leaves ambiguos which function should be choosen.
+int getRandomValue();       # Won`t compile
+double getRandomValue();
+Another moment, typedefs are not distinct, since they does not introduce a new type but create an alias.
+typedef char *string;       # Won`t compile
+void print(string value);
+void print(char *value);
+---------------------------------------------------------------------------------------------------------
+                        Matching algo
+---------------------------------------------------------------------------------------------------------
+When an overloaded function is called, C++ goes through the following process to determine which version
+of the function will be called:
+1. Compiler looks for an exact match
+   void print(char *value);
+   void print(int value);
+   print(0); // exact match with print(int)
+2. Compiler looks for a match through a promotion
+   void print(char *value);
+   void print(int value);
+   print('a'); // promoted to match print(int)
+3. If no promotion is possible, compiler tries to find a match through standard conversion.
+   Standard conversions include:
+   Any numeric type will match any other numeric type, including unsigned (e.g. int to float)
+   Enum will match the formal type of a numeric type (e.g. enum to float)
+   Zero will match a pointer type and numeric type (e.g. 0 to char*, or 0 to float)
+   A pointer will match a void pointer 
+4. Compiler uses user defined convertions
+   class X; // with user-defined conversion to int
+   void print(float value);
+   void print(int value);
+   X value; // declare a variable named value of type class X
+   print(value); // value will be converted to an int and matched to print(int)
+
+You can expcitly define type of the passed object using cast or literal suffix
+print(static_cast<unsigned int>(x));
+print(0u);
+
+---------------------------------------------------------------------------------------------------------
+                               Default arguments
+---------------------------------------------------------------------------------------------------------
+It is possible to define default value for function argument which is used if user doesn`t provide one.
+It is possible to supply multiple default arguments but they must be the last in argument list
+
+void printValues(int x=10, int y=20, int z=30)
+{
+    std::cout << "Values: " << x << " " << y << " " << z << '\n';
+}
+
+Default argument can be declared only onced and not redefined. The best pracrive is to define function in
+header with default arguments and definiton in source file without it.
+It is possible to overload function with default parameters, but they will not take part overloading
+decision unless explicitly used.
+void print(std::string string);
+void print(char ch=' ');
+print(); // calls one with a default value
+
+void printValues(int x);
+void printValues(int x, int y=20);
+printValues(1);  // Compile time error, ambiguos call
+
+---------------------------------------------------------------------------------------------------------
+Demangling is usually implemented in high level languages, but is not present in low level like C. There
+are some ways to simulate oveloading:
+1. Parsing vararg arguments
+void va_overload2(int p1, int p2) {
+	printf("va_overload2 %d %d\n", p1, p2);
+}
+
+void va_overload3(int p1, int p2, int p3) {
+	printf("va_overload3 %d %d %d\n", p1, p2, p3);
+}
+static void va_overload(int p1, int p2, ...) {
+	if (p2 == 7)
+	{
+		va_list v;
+		va_start(v, p2);
+		int p3 = va_arg(v, int);
+		va_end(v);
+		va_overload3(p1, p2, p3);
+		return;
+	}
+	va_overload2(p1, p2);
+}
+2. Using tagged union as argument
+typedef enum {
+    T_INT,
+    T_FLOAT,
+    T_CHAR,
+} my_type;
+typedef struct {
+    my_type type;
+    union {
+        int a; 
+        float b; 
+        char c;
+    } my_union;
+} my_struct;
+3. Using C11 _Generic()
+
+https://locklessinc.com/articles/overloading/
+=========================================================================================================
+                                Const/Constexpr
+=========================================================================================================
+Const is a reserved keyword meanning that variable cannot be modified.
+For simple variables, keyword be used before type or after, most people prefer to put it before
+const int x == int const x, there is no such syntax for pointers, since it would be ambiguos. To make
+pointer constant, use const specifier after *.
+int const val           # constant variable
+const int val           # 
+int *const val          # constant pointer for modifiable variable
+const int* val          # modifiable pointer for constant variable
+const int* const val    # constant pointer for constant data
+It is quite easy to read such declaration from rigth to left, e.g
+const int* const val    # val is a constant pointer for a constant data
+
+---------------------------------------------------------------------------------------------------------
+                                   Constexpr
+---------------------------------------------------------------------------------------------------------
+There are two kinds of constants: Runtime and compile-time.
+- Run-time, value is not determined at compile time and will be resolved at run-time.
+- Compile-time, those whose initialization values can be resolved at compile-time.
+In most cases, this doesn’t matter, but there are a few odd cases where C++ requires a compile-time
+constant instead of a run-time constant (such as when defining the length of a fixed-size array).
+To help provide more specificity, C++11 introduced new keyword constexpr, which ensures that a constant
+must be a compile-time constant:
+
+constexpr int sum { 4 + 5 }; // ok, the value of 4 + 5 can be resolved at compile-time
+std::cin >> age;
+constexpr int myAge { age }; // not okay, age can not be resolved at compile-time
+
+Best practice: Any variable that should not be modifiable after initialization and whose initializer is
+known at compile-time should be declared as constexpr. Any variable that should not be modifiable after
+initialization and whose initializer is not known at compile-time should be declared as const.
+
+In typicall application you may have multiple constants that are used throught your project. Instead of
+redefining these every time they are needed, it’s better to declare them once in a central location and
+use them wherever needed. Just create a header and namespace for them.
+
+constants.h:
+#HEADER_GUARD...
+namespace constants
+{
+    constexpr double pi { 3.14159 };
+    constexpr double avogadro { 6.0221413e23 };
+    constexpr double my_gravity { 9.2 }; // m/s^2 -- gravity is light on this planet
+    // ... other related constants
+}
+#END
+
+To avoid duplication in each file, forward declare then in header file as extern and define in source file.
+But this following drawback: they are not compile time constants and it`s more heavy in term of optimization.
+But any changes to .cpp file require only it`s recompilation + linkage.
+namespace constants
+{
+    extern const double pi;
+    extern const double avogadro;
+    extern const double my_gravity;
+}
+
+Constexpr for functions will make compiler call it at compile time if it is possible and used somewhere.
+int size() { return 3; }
+contexpr int size() { return 3; }
+int arr[size()];
+If first definition is used, code will not compile since it is not valid to define automatic stack at
+runtime. The second definitons fixes the issue.
+
+https://www.learncpp.com/cpp-tutorial/42-global-variables/
+https://www.learncpp.com/cpp-tutorial/const-constexpr-and-symbolic-constants/
+---------------------------------------------------------------------------------------------------------
+                                    Probles
+---------------------------------------------------------------------------------------------------------
+Note that making variable const is contract with compiler, if it notices that you change const variable
+it will stop compilation with error. But if it doesn`t notice it, you can easily modify the value, for
+instance, through pointer.
+
+// Compiler with warning about pointer casting
+int main() 
+{ 
+    const int var = 10; 
+    int *ptr = &var; 
+    *ptr = 12; 
+    printf("var = %d\n", var);  // 12
+    return 0; 
+} 
+
+---------------------------------------------------------------------------------------------------------
+                                    Typedef
+---------------------------------------------------------------------------------------------------------
+There is a small pitfall when using typedef with pointer
+typedef char *string;
+const string astring;
+char * const    astring     # expended
+const char *    astring     # expected
+
+This cone be avoided by avoiding typedef with pointers, using alaiasing?, or by putting const after type.
+
+---------------------------------------------------------------------------------------------------------
+                            Const-correctness: semantic and syntactic
+---------------------------------------------------------------------------------------------------------
+There are two components about using the keyword const in C++: syntactic and semantic:
+Syntactic is what the compiler figures out at compile time. If declare a const variable, compiler won`t
+let us modify it.
+int const cantModify = 42;
+cantModify = 33; //ERROR
+
+
+---------------------------------------------------------------------------------------------------------
+
+Const object can call only const methods.
+
+https://stackoverflow.com/questions/1143262/what-is-the-difference-between-const-int-const-int-const-and-int-const
+=========================================================================================================
+                                  Declaration
+=========================================================================================================
+There is a technique known as the ``Clockwise/Spiral Rule'' which lets any C programmer to parse in their
+head any C declaration! 
+1. Starting with the unknown element, move in a spiral/clockwise direction;
+2. Keep doing this in a spiral/clockwise direction until all tokens have been covered. 
+3. Always resolve anything in parenthesis first! 
+http://c-faq.com/decl/spiral.anderson.html
+
+=========================================================================================================
+                                 Linkage/Duration Scopes
+=========================================================================================================
+An identifier’s scope determines where it is accessible. An identifier that is out of scope can not be
+accessed.
+Variables with block scope / local scope can only be accessed within the block in which they are declared
+(including nested blocks). This includes: Local variables, Function parameters, Locally-defined types.
+Variables and functions with global scope / file scope can be accessed anywhere in the file. This includes:
+Global variables, Regular functions (the kind we’ve discussed so far), Globally-defined types
+
+A variable’s duration determines when it is created and destroyed.
+- Variables with automatic duration are created at the point of definition, and destroyed when the block
+  they are part of is exited. This includes:
+  Local variables. Variables with static duration are created when the program begins and destroyed when
+  the program ends. This includes: Global variables, Static local variables.
+- Variables with dynamic duration are created and destroyed by programmer request. This includes: Dynamically
+  allocated variables.
+
+Each variable has a scope in which it is defined. Each scope has a set of variables it can access:
+- variables define in its scope
+- those defined in global or file scope
+- definitions within class or within wrapping namespace
+- corner case is closures which may capture variables from scope and be executed when there is no scope
+It is possible to hide outer scope variables by iner scope ones (called shadowing).
+There is a way to get outerscope variables even if they shadowed using `::` scope operator.
+There are ways to prevent user to access you variables, you can change linkage of symbol by using
+static/const/extern modifiers.
+
+By default all globally defined symbols (functions, defined variables) are globally accessible. You can
+just prefix it with extern within another compilation unit and linker will relocate need symbol.
+If you want to make global variable local to a file, we can use static or const keyword to do so:
+
+static int g_x;             // g_x is static, and can only be used within this file
+const int g_x = 10;
+
+But you can still make const variable globally accessible by explicilty defining extern, this doesn`t for
+static since they mean staitic and extern are oposite things:
+extern static g_x;          // won`t compile?
+extern const ing g_x = 10;  // variable will be globally accessible even through const
+
+https://www.learncpp.com/cpp-tutorial/4-3a-scope-duration-and-linkage-summary/
+https://www.learncpp.com/cpp-tutorial/42-global-variables/
+---------------------------------------------------------------------------------------------------------
+                                     Extern
+---------------------------------------------------------------------------------------------------------
+Extern is a reserved keyword used to declare objects in scope of one object file that is defined is scope
+of another or to clarify demangling behaviour for compiler, i.e. if you call C function from cpp code,
+it should be called without mangling.
+
+Imagine having global variable that you want to use among multiple source failes. If you put it to header,
+its defenition get duplicated into each source file and you are getting separate copy whithin each file
+or multiple definiton error, behaviour is compiler dependant. What you want, is linker allocationg space
+for one variable and just fixing up references to it.
+To solve this issue, just define it in one source file and declare as extern in all others. Or a more
+maintainable solution is to put extern declaration in header file and include it where needed. If you
+include this to file with definition, it is not considered to be an error.
+
+NOTE: declaration can be done multiple types with only one definition.
+This is precisely how the global errno variable is implemented in the standard library. The errno.h header
+file contains the declaration: extern int errno;
+
+NOTE: anything defined in global scope is by default extern accessible.
+
+It is valide to declare and define at the same moment a variable
+extern int var = 0;
+int main(void) {
+ var = 10;
+ return 0;
+}
+
+Order of declaration/usage of global variables doesnt matter
+int main(void) {
+ var = 10;
+ return 0;
+}
+extern int var = 0;
+
+Extern ca be used to prevent variable definition and start lookup process
+int y = 2;
+int main(){
+    extern int y;
+    printf("%d" ,y); //2
+}
+
+---------------------------------------------------------------------------------------------------------
+                                   Demangling
+---------------------------------------------------------------------------------------------------------
+Use extern "C" in following cases:
+1. Need to use some C library in C++
+   extern "C" int foo(int);
+2. Need export some C++ code to C
+   extern "C" int foo(int) { something; }
+3. We need an ability to resolve symbol in shared library -- so we need to get rid of mangling
+   extern "C" int foo(int) { something; }
+   ///
+   typedef int (*foo_type)(int);
+   foo_type f = (foo_type)dlsym(handle,"foo")
+4. When linking to a library that was compiled as C code
+   extern "C" {
+     #include "c_only_header.h"
+   }
+
+https://stackoverflow.com/questions/1292138/when-to-use-extern-c-in-c
+---------------------------------------------------------------------------------------------------------
+https://www.quora.com/Whats-the-use-of-extern-with-variable-in-C
+http://www.goldsborough.me/c/c++/linker/2016/03/30/19-34-25-internal_and_external_linkage_in_c++/
+=========================================================================================================
+                                     Static
+=========================================================================================================
+static is a reserver keyword that can be used to change behaviour of variable allocation, function call,
+program linkage. If function/variable is declared on file scope as static, it is visible for this file
+only. 
+---------------------------------------------------------------------------------------------------------
+                                   Functions
+---------------------------------------------------------------------------------------------------------
+Static functions can be called without objects. Example usage, you may want to count number of class object
+created. If we used nonstatic function there is a problem when no object was no created, and we have no
+instance of which to call such function. Another common usage is the `Singleton` pattern. Compiler won`t
+pass `*this` to such functions.
+
+class Test{ 
+    static int x; 
+    Test() { x++; } 
+    static int getX() {return x;} 
+};
+    cout << Test::getX() << " ";    // 0
+    Test t[5]; 
+    cout << Test::getX();           // 5
+
+Since you have no object constructed, during such function call, you can`t access non static members/functions.
+
+---------------------------------------------------------------------------------------------------------
+                                 Class members
+---------------------------------------------------------------------------------------------------------
+Static may be used for class members meaning that it is shared among all instances. Since there may be
+no instance at all, or at current moment, this variable can be used without instance. You may query class
+for such member using scope operator.
+
+NOTE:
+declaration of static member, won`t allocate/define it, consider it to be a forward declration, it should
+be done explicitly outside of class body. If you haven`t defined such member, expect a linker error. As
+well, it doesn`t care about access controls. Even if it is private member, you can still define and
+initialize it outside of class.
+
+class foo {
+    static int x;
+    foo();
+}
+int foo::x = 1; // Initialization
+cout << foo::x;
+foo f;
+cout << f.x;   // Same as above
+
+There are some shortcuts for initialization. If a static member is as well const integral type, it can be
+initialized inside the class definition.
+
+---------------------------------------------------------------------------------------------------------
+                                    Problems
+---------------------------------------------------------------------------------------------------------
+There is no easy way to use purely static class (called monostate). There is no easy way to have copy of
+it used for different purpose (maybe somehow calling clone on it). It`s instance would be a global object
+making it more hard to maintain/debug. It is not possible to have static constructor.
+What if you need to execute some code to initialize such values.
+
+https://www.learncpp.com/cpp-tutorial/812-static-member-functions/ TODO Monostate
+---------------------------------------------------------------------------------------------------------
+Static keyword before function is supposed to be used in class body and not outside, otherwise cimpilation
+error
+
+class Test {
+    void fun();
+};
+static void Test::fun(){
+    std::cout<<"fun() is static\n";
+}
+int main() {
+    Test::fun();
+    return 0;
+}
+[Error] cannot declare member function ‘void Test::fun()’ to have static linkage [-fpermissive]
+
+=========================================================================================================
+                                   Namespaces
+=========================================================================================================
+Namespace defines an area of code in which all identifiers are guaranteed to be unique. By default, global
+variables and normal functions are defined in the global namespace which may result in name collision if
+multiple identifiers with the same name are used. In order to help avoid issues where two independent
+pieces of code have naming collisions with each other when used together, C++ allows us to declare our
+own namespaces via the namespace keyword. You need to use scope operator `::` to get symbols from namespace.
+namespace <name>{
+    .. code ..
+}
+<name>::<local_symbol_name>;
+
+It’s legal to declare namespace blocks in multiple locations (either across multiple files, or multiple
+places within the same file). All declarations within the namespace block are considered part of the namespace.
+
+---------------------------------------------------------------------------------------------------------
+                                    Aliases
+---------------------------------------------------------------------------------------------------------
+Namespaces can be nested. Because typing the fully qualified name of a variable or function inside a nested
+namespace can be painful, C++ allows you to create namespace aliases.
+
+namespace Inner_Allias = Outer::Inner
+Inner_Allias::symbol;
+
+Note, that they were not designed to implement information hierarchy, but to avoid naming collisions.
+As evidence of this, note that the entirety of the standard template library lives under the singular
+namespace std::. Some newer languages (such as C#) differ from C++ in this regard.
+
+You can simplify namespace expansion for often occuring symbols using `using` declaration e.g.
+`using std::cout; using std::cin`. When compiler sees `cout` it will assume that we mean `std::cout`.
+You can include entire namespace with `using namespace <name>`. This declaration follows scoping rules.
+
+=========================================================================================================
+                                    Casting 
+=========================================================================================================
+Cast is a process of type convertsion which can happen in many different cases:
+1. Assigning to or initializing a variable with a value of a different data type
+2. Passing a value to a function where the function parameter is of a different data type
+3. Returning a value from a function where the function return type is of a different data type
+4. Using a binary operator with operands of different types.
+
+In all of these cases (and quite a few others), C++ will use type conversion to convert data from one type
+to another. There are two basic types of type conversion: implicit type conversion, where the compiler
+automatically transforms one fundamental data type into another, and explicit type conversions, where
+the developer uses a casting operator to direct the conversion.
+
+Implicit type conversion (also called automatic type conversion or coercion) is performed whenever one
+fundamental data type is expected, but a different fundamental data type is supplied, and the user does
+not explicitly tell the compiler how to perform this conversion. There are two basic types of implicit
+type conversion: promotions and conversions.
+
+Numeric promotion or widening. Whenever a value from one type is converted into a value of a larger similar
+data type. For example, an int can be widened into a long, or a float promoted into a double. This is
+further subdivide into:
+- Integral promotion involves the conversion of integer types narrower than int  to an int (if possible)
+  or an unsigned int (otherwise).
+- Floating point promotion involves the conversion of a float to a double.
+Promotions are save and no data loss will result. Under the hood, promotions generally involve extending
+the binary representation of a number (e.g. for integers, adding leading 0s).
+
+Numeric conversions. When we convert a value from a larger type to a similar smaller type, or between
+different types. Unlike promotions, which are always safe, conversions may or may not result in a loss of
+data. Because of this, any code that does an implicit conversion will often cause the compiler to issue a
+warning (on the other hand, if you do an explicit conversion using a cast, the compiler will assume you
+know what you’re doing and not issue a warning). Under the hood, conversions typically require converting
+the underlying binary representation to a different format.
+double d = 3; // convert integer 3 to a double (between different types)
+short s = 2;  // convert integer 2 to a short (from larger to smaller type)
+
+=========================================================================================================
+                                  Enumerations
+=========================================================================================================
+An enumerated type (also called an enumeration or enum) is a data type where every possible value is
+defined as a symbolic constant (called an enumerator). Enumerations are defined via the enum keyword.
+Enumerated types are used for code documentation and readability purposes when you need to represent
+a specific, predefined set of states.
+
+// Define a new enumeration named Color
+enum Color
+{
+    // Here are the enumerators
+    // These define all the possible values this type can hold
+    // Each enumerator is separated by a comma, not a semicolon
+    COLOR_RED,
+    COLOR_BLUE,
+    COLOR_GREEN,
+    COLOR_MAGENTA, // trailing comma not allowed before C++11
+}; // however the enum itself must end with a semicolon
+
+By defaul, the first symbolic constant is set to 0 and any non-defined enumerator equals to previous+1.
+These integer values can be positive or negative and can share the same value as other enumerators
+Best practice: Don’t assign specific values to your enumerators.
+Rule: Don’t assign the same value to two enumerators in the same enumeration unless there’s a good reason.
+
+Complier won`t inplicitly conver value to enumerator, therefore explicit cast is required
+Animal animal = 5; // will cause compiler error
+
+Each enumerated type is considered a distinct type. Consequently, trying to assign enumerators from one
+enum type to another enum type will cause a compile error:
+Animal animal = COLOR_BLUE; // will cause compiler error
+
+Enum types are considered part of the integer family of types, and it’s up to the compiler to determine
+how much memory to allocate for an enum variable. The C++ standard says the enum size needs to be large
+enough to represent all of the enumerator values. Most often, it will make enum variables the same size
+as a standard int.
+
+Because the compiler needs to know how much memory to allocate for an enumeration, you cannot forward
+declare enum types. However, there is an easy workaround. Because defining an enumeration does not allocate
+any memory, if an enumeration is needed in multiple files, it is fine to define the enumeration in a header,
+and #include that header wherever needed.
+
+---------------------------------------------------------------------------------------------------------
+                                  Classes
+---------------------------------------------------------------------------------------------------------
+Scalar value can`t be implicitly casted to enum but enum to scalar is allowed. This result in some ambiguos
+code that is considered valid by compiler.
+
+Color color = RED;
+Fruit fruit = BANANA;
+if (color == fruit) ...     // Not cool
+
+C++11 provide mechanism to make enum strongly typed and strongly scoped, called enum class (scoped enum).
+To make an enum class, we use the keyword class after the enum keyword.
+
+enum class Fruit {...}
+enum class Color {...}
+Color color = Color::RED;
+Fruit fruit = Fruit::BANANA;
+if (color == fruit) ...         // Doesn`t compile
+if (color == Color::RED) ...    // Ok
+
+Note, it is possible to use struct instead of class but it is not recommended not commonly used.
+
+https://www.learncpp.com/cpp-tutorial/4-5a-enum-classes/
+=========================================================================================================
+                                Typedef vs Using
+=========================================================================================================
+Typedefs allow the programmer to create an alias for a data type, and use the aliased name instead of the
+actual type name. By convention, typedef names are declared using a “_t” suffix to idicate that they are
+types and not variables. Typedef does not define a new type, rather, it is simply an alias 
+Reasons to use typedef:
+1. It can be used to describe purpose of a value
+   typedef int testScore_t;
+   testScore_t GradeTest();
+2. Code maintance. You can use typedef around code and change underlying type whenever it is needed.
+   This saves your time.
+3. Hiding platform dependent types
+   #ifdef INT_2_BYTES
+   typedef int int16_t;
+   typedef long int32_t;
+   #else
+   typedef short int16_t;
+   typedef int int32_t;
+   #endif
+4. Making comples names simpler
+   typedef std::vector<std::pair<std::string, int> > pairlist_t; // simple name
+
+However, it is quite ugly and there are problems with typedefin a pointer that developer should be aware
+of. To help address this issues, C++11 presented impoved syntax for typedef called type alias.
+One important reason to use new syntax is templates. You can`t have templated typedef but can have using.
+NOTE: this one and one used for namespaces are different.
+
+typedef double distance_t; //
+using distance_t = double; // C++11
+template<class T>
+using Vec = vector<T, Alloc<T>>;
+
+=========================================================================================================
+                            Variable Initialization
+=========================================================================================================
+There are 3 types of initialization supported by C++: direct, uniform and copy initialization.
+The most simple and cumbersome is copy initialization.
+
+struct foo {
+   int i;
+   double f;
+}
+stuct foo obj;
+obj.i = ...;
+obj.f = ...;
+
+C++ introduced more easy to use initialization syntax using {}. Initially, it came from C where you could
+use it to initialize members directly, there it was called aggregate initialization. It still applicable
+for C++ classes/structs without constructor. If constructor is present, parameter will be used as arguments
+for that constructor. Then, C++11 introduced initalization_list, which is the type deduced for {}.
+If there is a constructor taking initalization_list, it will be prefered over others for such initialization.
+So many use cases for this syntax gave it a name, uniform initialization.
+
+struct foo obj = { 1, 1.0 };
+struct foo obj { 1, 1.0 };          // Or using another form called uniform initialization
+class foo {
+    int x;
+    string y;
+};
+foo f = { 1, "1" };                 // no constructor defined therefore aggregate initialization
+vector<int> v = {1, 2, 3, 4};       // initializer_list
+
+There may be some profit of using uniform intialization over direct
+1. Minimizes redundant typenames
+vec3 GetValue()             |     vec3 GetValue()
+{                           |     {
+  return vec3(x, y, z);     |       return {x, y, z};
+}                           |     }
+2, Parssing issues, unifrom initialization is never interpreted as function prototype.
+class Bar;
+void Func() {
+  int foo(Bar());  // foo is a function, taking as parameter function, returing a Bar
+  int foo{Bar{}};  // foo is a variable
+}
+
+Arguments against
+1. It is not clear what type will be constructed without looking for declration
+DoSomething("A string.");
+DoSomething({strValue, strLen});
+2. No narrowing support, otherwise there would many ways to cast argument and find fitting function
+int val{1.1};       // doesn`t compile
+vector<int> v{100}; // vector with the one element 100
+
+https://softwareengineering.stackexchange.com/questions/133688/is-c11-uniform-initialization-a-replacement-for-the-old-style-syntax
+---------------------------------------------------------------------------------------------------------
+                Static variables
+---------------------------------------------------------------------------------------------------------
+Starting with C++11, it`s possible to give non-static members a default value, but it is incompatible with
+the initializer list and uniform initialization syntax. In C++14 this restriction was removed.
+
+struct foo {
+   int i = 1;
+   double f = 1.1;
+}
+struct foo obj1; // Ok
+obj1.i = 2;      // Ok
+struct foo obj2 { 1, 1.0 } // C++11 Nok, won`t compile
+                           // C++14 Ok
+
+---------------------------------------------------------------------------------------------------------
+As well, this syntax can be used to initialized value after declaring/defining (C++11 only?)
+struct foo obj2;
+obj2 = { 1, 1.0 }
+
+Direct initialization is less preferable over uniform initialization.
+Rule: Use uniform initialization to initialize class objects
+int x(5);
+struct foo obj (1, 1.0);    // will compile?
+class foo obj (1, 1.0);
+
+---------------------------------------------------------------------------------------------------------
+                             Designated initializer
+---------------------------------------------------------------------------------------------------------
+It is a quick way to initialize specific elements/ranges of an array, or struct/union members
+int foo[10] = { [3] = 1, [5] = 2 };
+int a[] = {[0 ... 9] = 1, [10 ... 99] = 2, [100] = 3 };
+int whitespace[256] = { [' '] = 1, ['\t'] = 1, ['\h'] = 1, ['\f'] = 1, ['\n'] = 1, ['\r'] = 1 };
+struct Foo { int a, b; };
+struct Foo foo { .a = 1, .b = 2 }
+struct Foo foo { a: 1, b: 2 }
+struct Foo foo { 1, 2 }
+struct point ptarray[10] = { [2].y = yv2, [2].x = xv2, [0].x = xv0 };
+All explistly non initialized members are zero initialized.
+Note, that array gets length of the highest index, therefore in previous example it will have 6 items.
+
+https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.3.0/com.ibm.zos.v2r3.cbclx01/designators.htm
+https://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html
+https://stackoverflow.com/questions/47202557/what-is-a-designated-initializer-in-c
+---------------------------------------------------------------------------------------------------------
+https://mbevin.wordpress.com/2012/11/16/uniform-initialization/
+=========================================================================================================
+                               Most Vexing Parse
+=========================================================================================================
+C++ has a rule, anything that could be considered as a function declaration, the compiler should parse it
+as a function declaration.
+struct B {
+    explicit B(int x){}
+};
+struct A {
+    A (B const& b){}
+    void doSomething(){}
+};
+struct C {
+    void doSomething(){}
+};
+int main()
+{
+    int x = 42;
+    A var(B(x));  // doesn`t compile, var is a function, taking function, taking x and returning B
+    A var(B());   // wouldn`t compile if there was a default constructor in B for the same reason
+    C c();        // doesn`t compile
+}
+Usually it is fixed using uniform initialization, but before C++11, you would wrap arguments into
+parenthesis.
+
+https://en.wikipedia.org/wiki/Most_vexing_parse
+https://www.fluentcpp.com/2018/01/30/most-vexing-parse/
+=========================================================================================================
+                                     Inline
+=========================================================================================================
+Function defined in class body are considered implicitly inlined, therefore they are not considered to
+result in multiple defitions when such class in included with header.
+
+=========================================================================================================
+                                    To study
+=========================================================================================================
+https://en.m.wikibooks.org/wiki/More_C%2B%2B_Idioms
+http://codexpert.ro/blog/2014/10/17/c-gems-ref-qualifiers/      ref qualifiers
+https://foonathan.net/2018/03/rvalue-references-api-guidelines/
+https://stackoverflow.com/questions/130117/throwing-exceptions-out-of-a-destructor
+https://stackoverflow.com/questions/136880/sell-me-on-const-correctness
+https://www.cprogramming.com/tutorial/const_correctness.html
+http://www.possibility.com/Cpp/const.html
+https://habr.com/ru/company/infopulse/blog/341264/
+https://stackoverflow.com/questions/105014/does-the-mutable-keyword-have-any-purpose-other-than-allowing-the-variable-to
+https://arne-mertz.de/2017/10/mutable/
+https://arne-mertz.de/2016/07/const-correctness/
+relase/commit semantics
+constness and lambdas
+=========================================================================================================

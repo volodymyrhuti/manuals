@@ -1,0 +1,396 @@
+=========================================================================================================
+                                    General
+=========================================================================================================
+Hub              ## device that receives information at one port and duplicates to other
+Unmanaged switch ## device that knows topology of the network and sends only to requested devices, however
+                    you cannot configure it
+Managed switch   ## allows you to configure/program it to do certain things?
+Virtual switch   ## program that allows one virtual machine to communicate with another
+---------------------------------------------------------------------------------------------------------
+internet - global network, connects many networks using the tcp/ip stack
+           The arpanet was origin of internet
+intranet - private tcp/ip network => accessible for people from within one 
+           organization
+extranet - intranet that can be accessed by trusted organizations
+=========================================================================================================
+                                   Interfaces
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                               Virtual interfaces
+---------------------------------------------------------------------------------------------------------
+Virtual network kernel interface is an interface simulated in software without need for hardware to
+operate. They can be created and cleaned on exit by specific program, such interfaces is called transient.
+Other option is using special utility that will initialize such interface and provide access to it for
+other user space programs, such one is called persistent.
+
+TUN, network TUNel, simulates a network layer device and operates in layer 3 carrying IP packets.
+TAP simulates a link layer device and operates in layer 2 carrying Ethernet frames.
+TUN is used with routing while TAP with bridging.
+
+Once a tun/tap interface is in place, it can be used just like any other interface, meaning that IP
+addresses can be assigned, its traffic can be analyzed, firewall rules can be created, routes pointing to
+it can be established, etc.
+
+tunctl or openvpn --mktun               # create a persistent virtual interface
+ip tuntap help
+
+https://backreference.org/2010/03/26/tuntap-interface-tutorial/
+---------------------------------------------------------------------------------------------------------
+                               Binding vs Bonding
+---------------------------------------------------------------------------------------------------------
+TODO
+
+binding - assigning ip for nic
+bonding - using >1 nic behind 1 ip
+to assign >1 ip to interface from /etc/network
+auto #intf_name:#sequence_number_of_ip
+then ifup #name:#number
+
+=========================================================================================================
+                                Modem VS Router
+=========================================================================================================
+Router => device that knows how to send packets to another nrtwork but it understands only discreat signals
+Modem => de/modulates analog signals
+TODO
+=========================================================================================================
+                                   Websockets
+=========================================================================================================
+
+https://hpbn.co/websocket/
+https://javascript.info/websocket
+lucumr.pocoo.org/2012/9/24/websockets-101/
+=========================================================================================================
+                                 WiFi standarts
+=========================================================================================================
+                                    802.11ac
+=========================================================================================================
+                           VHT (Very High Throughput)
+---------------------------------------------------------------------------------------------------------
+Also known as Very High Throughput (VHT), 802.11ac is positioned as the successor to 802.11n, known as High Throughput (HT)
+
+=========================================================================================================
+                                Data Offloading
+=========================================================================================================
+                                      TODO
+=========================================================================================================
+                                     Random
+=========================================================================================================
+https://www.edrawsoft.com/cisco-networks-symbols.php => cisco network diagaram legend
+
+
+---------------------------------------------------------------------------------------------------------
+		       SFP (Small Form-Factor Pluggable)
+---------------------------------------------------------------------------------------------------------
+There may be a situation when you have a device with network interface that should be capable to
+communicate over either fiber optic or copper networking cable, depending on the situation. This can
+be done with SFP. Your network device should have a special port where you can plugin SFP.
+SFP transceivers are hot-swappable and have the capability to allow modifications which can be added
+after the initial purchase
+
+https://blog.cablesandkits.com/what-is-a-sfp-and-how-is-it-used/
+---------------------------------------------------------------------------------------------------------
+RDMA (Remote DMA)
+---------------------------------------------------------------------------------------------------------
+RDMA enables more direct data movement in and out of a server by implementing a transport protocol in the
+network interface card (NIC) hardware. The technology supports a feature called zero-copy networking that
+makes it possible to read data directly from the main memory of one computer and write that data directly
+to the main memory of another computer.
+
+RDMA is the standard protocol for high-speed InfiniBand network connections.
+
+https://searchstorage.techtarget.com/definition/Remote-Direct-Memory-Access
+---------------------------------------------------------------------------------------------------------
+https://wiki.archlinux.org/index.php/InfiniBand
+---------------------------------------------------------------------------------------------------------
+                               Network simulators
+---------------------------------------------------------------------------------------------------------
+EVE NG (Emulated Virtual Environment)  http://www.eve-ng.net/
+Looks cool but requires separate VM, as result, can be used on any OS
+https://www.brianlinkletter.com/how-to-set-up-the-eve-ng-network-emulator-on-a-linux-system/.
+
+gns3
+
+http://www.brianlinkletter.com/open-source-network-simulators/
+
+---------------------------------------------------------------------------------------------------------
+                                      BSP
+---------------------------------------------------------------------------------------------------------
+BSP (Board support package) => base code on hardware device containing bootloader to load device drivers
+into memory. It perfomrs next taks:
+- Initialize the processor, bus, interrupt controller, clock, RAM
+- Configure segments if applicable
+- Run bootloader
+
+---------------------------------------------------------------------------------------------------------
+                        Multiplexing and Demultiplexing
+---------------------------------------------------------------------------------------------------------
+Multiplexing is the process in which multiple data streams, comming from different sources, are combined
+and transmitted over a single data channel or stream. Demultiplexing is process reverse to multiplexing
+which routes the separated signals to their corresponding receivers or destinations.
+
+Signal Sources
+S3 S2 S1
+ |1|4|7|
+ |2|5|8|
+ |3|6|9|
+  1 4 7 2 5 8 3 6 9
+==========================>
+     Transmission Channel
+      9 6 3 8 5 2 7 4 1
+    >==========================
+                        |1|4|7|
+                        |2|5|8|
+                        |3|6|9|
+                       R3 R2 R1
+
+http://macao.communications.museum/eng/exhibition/secondfloor/moreinfo/2_8_6_Multiplexing.html
+=========================================================================================================
+                                      GPON
+=========================================================================================================
+PON     => Passive Optical Network , is network featuring one-to-multiple-point architecure
+GPON    => Gigabit-capable Passive Optical Networks
+GE-PON  => Giga-bit Ethernet Passive Optical Networks
+APON    => ATM Passive Optical Network
+EPON    => Ethernet Passie Optical Network
+
+
+PSTN     -- /---------\
+        |             |         -- -------                --------| ONU |-| Client| 
+Internet -- |   OLT   |--------/  \------- More Splitters --------| ONU |-| Client| 
+        |             |--------\  /-------                --------| ONU |-| Client| 
+CATV     -- \---------/         -- -------                --------| ONU |-| Client| 
+        Optical Line         Passive                          Optical Network
+         Terminator          Optical                                Unit
+                     Spliter
+    
+What is usage of ONU/ONT 
+How ports are working
+
+
+Optical splitters, passive optical devices that divide a single optical signal into multiple equal but
+lower-power signals, distribute the signals to users. An optical network unit (ONU) terminates the PON at
+the customer’s home. The ONU usually communicates with an optical network terminal (ONT), which may be 
+a separate box that connects the PON to TV sets, telephones, computers, or a wireless router.
+The ONU/ONT may be one device.
+
+
+Downstream from OLT goes in broadcast manner
+Upstream TDMA (Time Division Multiple Access) manner.This divides the bandwidth so each user gets a
+fraction such as 100 Mbits/s depending upon how the service provider allocates it.
+
+TDM (Time Division Multipleing) where each user is assigned a timeslot on a different wavelength of light
+With this arrangement, the splitters act as power combiners.
+
+TODO, rework
+
+=========================================================================================================
+                                     Docsis
+=========================================================================================================
+DOCSIS (Data Over Cable System Interface Specification)
+RG (Radio Guide) used to specify Coaxial cables.
+
+CMTS (Cable Modem Termination System) => component that exchanges digital signals with cable modems on a
+cable network. It is usually locate at local office of a cable television company. When a CMTS receives
+signals from a cable modem, it converts these signals into IP packets which are then sent to an IP router
+for transmission across the Internet. Before sending signal to a cable modem, it modulates signal for
+receiving cable modem.
+
+CM (Cable Modem).
+
+MTA (Message/Mail Transfer Agent). A software that transfers electronic mail messages from one computer
+to another using SMTP.
+
+---------------------------------------------------------------------------------------------------------
+                  EMTA (Embedded Multimedia Terminal Adapter)
+---------------------------------------------------------------------------------------------------------
+Combination of cable modem and telephone adapter.
+
+?Telephone adapter means that it converts digital signals to analog and vice versa, for VOIP?
+
+=========================================================================================================
+                         DSL (Digital subscriber line)
+=========================================================================================================
+Type of service where your data is transmited as sound ? to your phone service provider
+You have a dedicated line to your home, not like in another technologies where there is one
+line split to many users
+Max speed is 12 Mb/s
+
+---------------------------------------------------------------------------------------------------------
+               DSLAM (Digital subscriber line access multiplexer)
+---------------------------------------------------------------------------------------------------------
+Device that aggregates individual subscriber lines into high capacity uplink
+Computor =>  Modem => DSLAM => Switch => Router => ISPs
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                      FTTX
+=========================================================================================================
+H => Home
+P => Premise
+B => Building / Buisness
+N => Node
+C => Curb of cabinet
+TODO
+
+
+=========================================================================================================
+                           QOS(trafic prioritization)
+=========================================================================================================
+Marking  - tagging a packet ,therefore there is no need in deep packet inspection
+Policing - creating rules , like max bandwith for some type of trafic
+Shaping  - queing outgoing trafic if service is not cappable of receiving
+at speed of clint sending
+buffering traffic so its flow is results in requested shape, done by shaper
+Queing   - whithin queue , some packets will be go in front of less important one
+Dropper => tool deciding whether packet will be queued or droped
+Congestion Avoidance 
+TCP will increase window size on every packet ,therefore, at some moment
+u want to drop some random packet (TCP will shrink window) so entire line 
+is not filled with TCP
+
+CIR => committed information rate
+PIR => peak information rate
+Green => input rate < CIR => should assure bandwidth across the network
+Yellow => PIR > input rate > CIR => shouldnt assure
+Rer => input rate > PIR => should be discarded
+
+
+=========================================================================================================
+                      MPLS (MultiProtocol Label Switching)
+=========================================================================================================
+Somewhere around 90s there was an idea to avoid inspecting packet to find further routing and instead
+somehow tag packet. Cisco came first to this idea and names it TAG Switching. It was aimed to make high
+speed routers route packets by hardware. However at that point hardware IP routing wasn`t highly
+affordable as well FIB apeared and there was no much use of such mechanism any more.
+
+At some point it became clear that such mechanism doesn`t care about type of protocol behind tag as well
+as it is not attached to IP routing. Now this functionality is provided by some bigger ISPs.
+
+
+# SDN (Software Defined Networking)
+=========================================================================================================
+                                  Maybe once?
+=========================================================================================================
+### PPP
+LCP (Link Control Protocol) => protocol used by ppp to determine if link is acceptable
+and establish session between computer and an ISP.
+
+### Voip
+
+Basic operation =>
+- Power over Ethernet (PoE)
+- DHCP
+- TFTP if implemented
+- Signaling protocol
+- Transport protocol
+- Signaling protocol
+
+Signaling protocol =>
+# Hanles registration and calls
+- H.323
+- SIP
+- Skinny
+
+### SIP (Session Initiation Protocol)
+# port 5060, tcp
+
+# Components =>
+- User agent - initiates or respondes to SIP transactions
+  User agent client (UAC) => initiates and accepts responses (phone)
+  User agent server (UAS) => accepts requests and sends back responses (call manager)
+- Proxy - handles requests on behalf of clients
+- Redirect and registrar server (often build in UAC/UAS)
+
+# Addressing =>
+- Can use IP but prefers SIP URI
+- URI - uniform resource identifier (similar to email)
+
+# Messages
+- Register => connects with the call server
+- Invite => endpoint attempts to call the other party
+- Trying => call server informs source of status
+- Ringing => 
+- SDP => session description protocol
+  Provides parameters for call, specified the media content, codec, ...
+
+#SIP trunk => voice gateway
+
+# Codecs => trasfroms signals from analog to digital and vice-versa
+- From caller => analog to digital
+- To calle => digital to analog
+
+---------------------------------------------------------------------------------------------------------
+                    PSTN | Public Switched Telephone Network
+---------------------------------------------------------------------------------------------------------
+PSTN is commonly known as a ‘telephone line’. This is the most commonly used method by all users that only
+have the need to use one line for one conversation at a time using only one phone number. PSTN uses an old
+technology whereby circuit-switched copper phone lines are used to transmit analogue voice data.
+PSTN line cannot be used for any other purpose while a call is being made. A PSTN phone number is equivalent
+to one phone line.
+
+The phones themselves are known by several names, such as PSTN, landlines, Plain Old Telephone Service
+(POTS), or fixed-line telephones.
+
+PSTN phones are widely used and generally still accepted as a standard form of communication. However,
+they have seen a steady decline over the last decade.
+
+https://www.nextiva.com/blog/what-is-pstn.html
+---------------------------------------------------------------------------------------------------------
+                   ISDN | Integrated Services Digital Network
+---------------------------------------------------------------------------------------------------------
+Network providing digital transmission of voice and data services. It is primarily used for Voice as it
+give you the options of having more than one Channel (line). They come in many ‘flavours’… 2, 10, 20 and
+30 and you can also increase the number of Channels as your business expands by multiple ISDNs to meet
+your requirements.
+
+---------------------------------------------------------------------------------------------------------
+                         PBX | Private Branch Exchange
+---------------------------------------------------------------------------------------------------------
+PBX is a private telephone network used within a company or organization. The users of the PBX phone system
+can communicate internally (within their company) and externally (with the outside world), using different
+communication channels like Voice over IP, ISDN or analog. PBX also allows you to have more phones than
+physical phone lines (PSTN) and allows free calls between users. Additionally, it provides features like
+transfer calls, voicemail, call recording, interactive voice menus (IVRs) and call queues.
+
+https://www.nextiva.com/blog/what-is-pstn.html
+---------------------------------------------------------------------------------------------------------
+Both PSTN and ISDN are quite outdated and will be replaced soon with cloud versions. This will require
+replacing of old hardware PSTN phones with a new ones.
+
+---------------------------------------------------------------------------------------------------------
+                                  MGCP vs SIP
+---------------------------------------------------------------------------------------------------------
+
+
+https://community.cisco.com/t5/telepresence-and-video/difference-between-h-323-mgcp-sip-sccp/td-p/2416741
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                               Studying resources
+=========================================================================================================
+https://mrncciew.com/                   # blog by CWNE && CCIE
+http://www.practicalnetworking.net
+http://www.omnisecu.com                 # CCNA preparation blog
+=========================================================================================================
+                                    To study
+=========================================================================================================
+https://bidsarmanish.blogspot.com/2017/01/rib-vs-fib.html
+https://networkengineering.stackexchange.com/questions/38588/rib-vs-fib-differences
+https://learningnetwork.cisco.com/thread/39646
+https://blog.packagecloud.io/eng/2016/10/11/monitoring-tuning-linux-networking-stack-receiving-data-illustrated/
+https://blog.packagecloud.io/eng/2016/06/22/monitoring-tuning-linux-networking-stack-receiving-data/
+https://blog.packagecloud.io/eng/2016/06/22/monitoring-tuning-linux-networking-stack-receiving-data/
+https://en.wikipedia.org/wiki/TCP_offload_engine
+https://www.juniper.net/documentation/en_US/junos/topics/topic-map/spanning-tree-loop-protection.html
+https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/10556-16.html
+https://stackoverflow.com/questions/6128598/find-ip-address-of-directly-connected-device
+policy-based routing
+http://linux-ip.net/html/routing-tables.html
+PVST and trunking protocols
+https://www.practicalnetworking.net/stand-alone/routing-between-vlans/
+www.practicalnetworking.net/series/nat/nat/
+nv/socat
+router on a stick
+
+ipv6
+https://sathya4techinn.wordpress.com/2014/11/11/ipv6-for-starters-to-understand-the-operation-at-cpe-side-and-creation-of-global-ipv6-addresses-on-end-devices/
+minicom alternatives
+/etc/modprobe.d/*.conf

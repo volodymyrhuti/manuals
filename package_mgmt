@@ -1,0 +1,152 @@
+                           APT. Advanced Package Tool
+=========================================================================================================
+Apt is a frontend for package installation by the enduser of the system. All it does, is asking user what
+to install, monitoring dependencies to avoid confilcts with other applicatons, and installing them when
+needed.
+
+Package files are maintained in a special archive called deb (Debian binary package format). Such package
+contains files to be installed and a control file (mainteiner scripts), containing scripts that packaging
+system should execute in a specific situation. These are split in:
+preinst  | before the file installation 
+postinst | after the installation
+prerm    | before the uninstallation
+postrm   | after the uninstallation
+
+Note, you can unpack .deb using `ar x <package>`, where you will find 2 archives - `control.tar.gz`
+and `data.tar.gz`. Here, `control ` contains maintainer scripts and additional information, like
+md5sum for data integriti verification and error templates
+
+Repository contains a list file that contains all available packages. User get some already configured
+with distribution, and the list of all can be found `/var/lib/apt/lists`. These are downloaded and
+upgraded using `apt-get update`.
+
+Each Ubuntu version has its own official set of four repositories:
+Main       | Canonical-supported free and open-source software
+Uiverse    | Community-maintanined free and open-source software
+Restricted | Proprietary drivers for devices
+Multiverse | Software restricted by copyrigh or legal issues
+
+List of known repositories is saved to `/etc/apt/sources.list`
+
+http://archive.ubuntu.com/ubuntu/dists/
+---------------------------------------------------------------------------------------------------------
+                               Package structure
+---------------------------------------------------------------------------------------------------------
+Common files include:
+- Contents-<arch>.gz. Index containing a directory listing of all pacakges for this architecture
+- main/Contents-<arch>.gz. Index for the main component
+- Release. The primary index, contains the locations and checksums of the arch-specific Packages files
+- Release.gpg. 
+- InRelease.
+- main/binary-<arch>/Packages. Lists metadata about each pacakage available for a given arch.
+
+---------------------------------------------------------------------------------------------------------
+                         PPA. Personal Package Archive
+---------------------------------------------------------------------------------------------------------
+Using only official repositories contains a range of drawbacks:
+- It may take multiple months before package gets integrated, or you may even get refused for legal or
+  other reasons
+- Integrated packages will not be updated untill the following destribution release
+- Even if stable release is present, the developer may want the enduser to test the upcoming release
+- Not sure if backporting is preset
+Note, it is possible to compile/install .deb files manually but this will not check the dependencies
+between other packages and probably won`t upgrade the already installed one. Therefore we wan`t the way
+which will use common package managment approaches.
+
+The Ubuntu provides a platform called Launchpad  that enables developers to create their own (Personal)
+repositories. As an end user, you can add PPA repository to your `sources.list` and you system would see
+the new provided packages.
+        1. sudo add-apt-repository ppa:<dir>/<package>
+        2. sudo apt-get update
+Here 1. creates a file in `/etc/apt/sources.d` and 2. syncronizes .list files for it.
+
+PPA can be official and unofficial. The former means that application was packaged by the original developer
+and latter that another person has packaged sources of some package, in case developer was not interested
+or whatever.
+
+Note, you should delete software installed from PPA before remove the original PPA, otherwise, it stays
+on system and never gets updated.
+
+# Removing
+sudo apt-add-repository -r ppa:package
+sudo apt update -q
+
+https://itsfoss.com/ppa-guide/
+https://askubuntu.com/questions/4983/what-are-ppas-and-how-do-i-use-them
+https://www.debian.org/doc/manuals/distribute-deb/distribute-deb.html#non-native-packaging
+---------------------------------------------------------------------------------------------------------
+                                Random commands
+---------------------------------------------------------------------------------------------------------
+To list currently used repos
+egrep -v '^#|^ *$' /etc/apt/sources.list /etc/apt/sources.list.d/*
+
+dpkg-deb -c <package.deb>       # list files withing .deb file
+apt-file list <package>         # no need to download .deb to see files
+dpkg -L <package>               # list files of install package
+dpkg -s <package>               # list installed
+apt-cache showpkg  <package>    # list available for installation
+
+dpkg -x <package.deb> <dst_dir> # unpack .deb
+ar -xv <package.deb>            # another way to unpack
+
+apt-file search <filename>                    # determine packages providing file
+sudo apt-cache search <package> | grep dev    #
+
+sudo dpkg -l | vim -                         # list installed packages
+dpkg --listfiles <pkg_name>                  # list files installed with package
+
+Install package dependencies
+apt-get install `apt-cache depends pkgname | awk '/Depends:/{print$2}'
+apt-get build-dep <package name>
+
+apt-cache policy <pkg>                       # list versions and remote locations
+apt-cache madison <pkg>
+rmadison <pkg>                               # from devscripts package
+
+apt purge <pkg>                         # remove everything related to the package + configs
+apt remove <pkg>                        # remove the binaries of a package
+
+If you wan`t to install package with a dpkg but you have unmet dependencies, these can be downloaded with
+  sudo dpkg -i <package_with_dependecies>.deb
+  sudo apt-get -f install
+Or alternative way
+  sudo gdebi <pakage>.deb
+  sudo apt install <pakage>.deb
+
+# List of packages
+debian.pkgs.org
+
+https://askubuntu.com/questions/40011/how-to-let-dpkg-i-install-dependencies-for-me
+---------------------------------------------------------------------------------------------------------
+                        Proxy
+---------------------------------------------------------------------------------------------------------
+sudo vim /etc/apt/apt.conf
+Acquire::http::proxy  "http://ip:port/";
+Acquire::https::proxy "https://ip:port/";
+---------------------------------------------------------------------------------------------------------
+                                Troubleshooting
+---------------------------------------------------------------------------------------------------------
+error processing archive  ...  trying to overwrite shared  ...  which is different from other instances of
+package ...  Errors were encountered while processing: Sub-process /usr/bin/dpkg returned an error code (1)
+Probably ur trying to overwrite currently installed package. If you want to force overwrite package =>
+sudo dpkg -i --force-overwrite /var/cache/apt/archives/<pkg>
+? sudo apt-get -f install
+
+=========================================================================================================
+                                      Snap
+=========================================================================================================
+Proxy configuration
+
+sudo systemctl edit snapd.service
+[Service]
+Environment=http_proxy=http://ip:port/
+Environment=https_proxy=http://ip:port/
+
+sudo systemctl daemon-reload
+sudo systemctl restart snapd.service
+
+=========================================================================================================
+Apt details https://www.debian.org/doc/manuals/debian-reference/ch02.en.html
+Installing dbg package https://michael.stapelberg.ch/posts/2019-02-15-debian-debugging-devex/
+                       http://kylenubuntu.blogspot.com/2013/02/dbg-versus-dbgsym.html
+                       https://alex.dzyoba.com/blog/gdb-source-path/

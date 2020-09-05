@@ -1,0 +1,268 @@
+=========================================================================================================
+                                   Assertions
+=========================================================================================================
+Assertion is mechani sm allowing to detect a violated assumtion, along with printing error message and
+terminating the program if condition is false.
+
+An assert statement is a preprocessor macro that evaluates a conditional expression at runtime. If the
+conditional expression is true, the assert statement does nothing. If the conditional expression evaluates
+to false, an error message is displayed and the program is terminated. This error message contains the
+conditional expression that failed, along with the name of the code file and the line number of the assert.
+This makes it very easy to tell not only what the problem was, but where in the code the problem occurred.
+
+int getArrayValue(const std::array<int, 10> &array, int index)
+{
+    assert(index >= 0 && index <= 9 && "Index out of range");
+    return array[index];
+}
+
+Syntex is following `assert( condition [ && message ] )`. Failing assert prints condition statement,
+if the first condition of && failt, entire statement is considered failed and printer, otherwise
+condition is not failed and messaged is converted to valid pointer.
+
+Assert makes creates some efficience penalty to perform condition checking therefore it should be enabled
+on debug builds but not production one. Some IDE`s come with special macro to enable/disable asserts,
+like `#define NDEBUG`.
+
+---------------------------------------------------------------------------------------------------------
+                                Static_assert
+---------------------------------------------------------------------------------------------------------
+C++11 introduce method of performing compile time assert, calles static_assert, It should use trick
+as C assert with logical operators, instead it takes two parameters: condition and message.
+It has one limit, condition is supposed to be applicable for compile time check;
+static_assert(sizeof(long) == 8, "long must be 8 bytes");
+static_assert(sizeof(int) == 4, "int must be 4 bytes");
+std::cin >> var; static_assert(var == 123, "Message")  // Won`t compile
+
+=========================================================================================================
+                                   Exceptions
+=========================================================================================================
+When writing reusable code, error handling is a necessity. One of the most common ways to handle potential
+errors is via return codes. The primary virtue of this approach is that it is extremely simple but it has
+plenty of drawbacks:
+1. Returned value. like -1, is cryptick and you need to look through entire function to find what it may
+   mean. Don`t forget, it could be use in multiple places through function.
+2. Usually it is hard to return both result and error.
+3. Error code should be checked constantly, after each command.
+4. Functions that have no return value. You can`t return from constructor if something goes wrong.
+5. If caller doesn`t handle an error, it is lost.
+
+Exception handling provides a mechanism to decouple handling of errors or other exceptional circumstances
+from the typical control flow of your code. This allows more freedom to handle errors when and how ever
+is most useful for a given situation, alleviating many (if not all) of the messiness that return codes cause.
+
+Exceptions are implemented using three keywords that work together: throw, try, and catch.
+
+Throw is used to signal an exception or error case has occurred. It is commonly called raising an exception.
+To use thow statement, use the thow keyword, with a value of any data type you wish to signal exception.
+throw -1;                                           // throw a literal integer value
+throw ENUM_INVALID_INDEX;                           // throw an enum value
+throw "Can not take square root of negative number";
+throw dX;
+throw MyException("Error");
+
+Exception should be handled in some block. If nobody does it, program terminates.
+Try block is defined in following way:
+try {
+ ... code ...
+ throw -1;
+}
+This doesn`t handle exception, but sends it to catch block.
+Catch block is defined try block but it takes arguments. There may be multiple catch blockes chained
+together.
+catch(int x) {
+    ... handle ...
+}
+catch(double) { ... }
+Exceptions of fundamental types can be caught by value, but exceptions of non-fundamental types should be
+caugh by const reference to avoid making an unnecessary copy. As well, compiler won`t promote or covert
+values to match catch block.
+
+If exceptions gets to catch block, even if it is empty, considered to be handled, however, usually you
+are supposed to do something usefull: print/log error, return error, throw error again.
+
+When exception is not handled in current scope, stack get`s unwinded, and next scope tries to handle an
+exception. This is done untill somebody handles it or entire program terminates. This is quite flexible,
+meaning you can avoid handling exception and instead pass it to somebody higher in the stack.
+
+Exception handling is best used when all of the following are true:
+The error being handled is likely to occur only infrequently.
+The error is serious and execution could not continue otherwise.
+The error cannot be handled at the place where it occurs.
+There isn’t a good alternative way to return an error code back to the caller.
+
+---------------------------------------------------------------------------------------------------------
+                    Catch-all handlers
+---------------------------------------------------------------------------------------------------------
+There may be to many types of object passed as signal or maybe you are not interested at exception at all.
+Maybe you are using new library and don`t know what exceptions are possible at all. For such cases you can
+use special catch that will accept anything but won`t provide handle to signal. This is called catch-all
+handler. 
+try {
+    throw 5; // throw an int exception
+} catch (double x) {
+    std::cout << "We caught an exception of type double: " << x << '\n';
+} catch (...) { // catch-all handler
+    std::cout << "We caught an exception of an undetermined type\n";
+}
+It should be last in catch list, some compiler may warn you about this.
+
+---------------------------------------------------------------------------------------------------------
+                              Exception specifiers
+---------------------------------------------------------------------------------------------------------
+Exception specifiers are a mechanism that allows us to use a function declaration to specify whether a
+function may or will not throw exceptions. This can be useful in determining whether a function call needs
+to be put inside a try block or not. As well, compiler may be more aggressive in optimization of function
+that won`t throw.
+int function() throw() => implies that function won`t throw outside. It may throw but it is fine if handled
+internally. If exception is thrown to external scope, program should terminate.
+int function() throw(double) => function will throw only doubles.
+int function() throw(...) => function may throw anything
+int function() noexcept => same as thow() ?
+
+---------------------------------------------------------------------------------------------------------
+                             Exception classes
+---------------------------------------------------------------------------------------------------------
+Default signals that are used are often vague and tell not much of usefull information. You may use
+strings everywhere but this won`t know exact reason that should be described in message before handling it
+most of the tiems. 
+One wat to solve this problem is using of exception classes. It is a normal class that is designet
+specifically to be theown as an exception. But there may be multiple types of exceptions, therefore you
+will design an entire tree of inheritance. However how to handle defaul ones like bad reference cast.
+Actually, there is an already define class that is used as base for all default excpetions, and ,probably,
+you should use it as well.
+
+class ArrayException: public std::exception {
+    std::string m_error;
+public:
+    ArrayException(std::string error) : m_error(error) {}
+    const char* what() const noexcept { return m_error.c_str(); } // C++11 version
+};
+class IntArray {
+    int m_data[3]; // assume array is length 3 for simplicity
+public: IntArray() {} 
+    int getLength() { return 3; }
+    int& operator[](const int index)
+    {
+        if (index < 0 || index >= getLength())
+            throw ArrayException("Invalid index");
+        return m_data[index];
+    }
+};
+ 
+int main() {
+    IntArray array;
+    try {
+        int value = array[5];
+    }
+    catch (ArrayException &exception) // derived catch blocks go first
+    {
+        std::cerr << "An array exception occurred (" << exception.what() << ")\n";
+    }
+    catch (std::exception &exception)
+    {
+        std::cerr << "Some other std::exception occurred (" << exception.what() << ")\n";
+    }
+}
+---------------------------------------------------------------------------------------------------------
+                                    Rethrow
+---------------------------------------------------------------------------------------------------------
+Occasionally you may run into a case where you want to catch an exception, but not want to (or have the
+ability to) fully handle it at the point where you catch it. This is common when you want to log an error,
+but pass the issue along to the caller to actually handle.
+There are couple tipical mistaces with doing this.
+1. Taking exception by value
+try{ ... }
+catch (int exception) {
+     throw exception;
+}
+2. Slicing an object
+try{ ... }
+catch (Base &exception) {
+    throw exception;   // it is copy initialized by Base copy constructor under hood
+}
+The proper way is calling throw again without parameters
+try{ ... }
+catch (Base &exception) {
+    throw;
+}
+---------------------------------------------------------------------------------------------------------
+                               Function try block
+---------------------------------------------------------------------------------------------------------
+Function try blocks are designed to allow you to establish an exception handler around the body of an
+entire function, rather than around a block of code. They are used to handle exception during parent
+class constructions, if child is expect to do so. They can be used for other member functions but it is
+rare.
+class A
+{
+    int m_x;
+public: A(int x) : m_x(x) {
+        if (x <= 0)
+            throw 1;
+    }
+};
+
+class B : public A {
+public:
+    B(int x) try : A(x) // note addition of try keyword here
+    { }
+    catch (...) // note this is at same level of indentation as the function itself
+    {
+         // Exceptions from member initializer list or constructor body are caught here
+         // If an exception isn't explicitly thrown here, the current exception will be implicitly rethrown
+    }
+};
+
+try {
+    B b(0);
+}
+catch (int) {
+    return -1;
+}
+Note the addition of the “try” keyword before the member initializer list. This indicates that everything
+after that point (until the end of the function) should be considered inside of the try block. Any exception
+thrown between the try keyword and the end of the function body will be eligible to be caught here.
+if either A or B’s constructor throw an exception, it will be caught by the try block around B’s constructor.
+Unlike normal catch blocks, which allow you to either resolve an exception, throw a new exception, or
+rethrow an existing exception, with function-level try blocks, you must throw or rethrow an exception.
+---------------------------------------------------------------------------------------------------------
+                                    Pitfalls
+---------------------------------------------------------------------------------------------------------
+Variabled declared in try block is not available in catch block, therefore it may be impossible to clean
+leaked resource.
+try {
+    Person *john = new Person("John", 18, PERSON_MALE);
+
+catch (PersonException &exception)
+{}  // john is not accessible here
+
+Simple solution is to declare variables above block.
+Person *john = nullptr;
+try {
+    john = new Person("John", 18, PERSON_MALE);
+}
+catch (PersonException &exception) { 
+    free(john);
+}
+Another way is to use variables that can clean themselfs after leaving scope, e.g. smart pointers
+try {
+    Person *john = new Person("John", 18, PERSON_MALE);
+    unique_ptr<Person> upJohn(john);
+}
+catch (PersonException &exception)
+{}
+---------------------------------------------------------------------------------------------------------
+You should never throw in destructor. The problem occurs when an exception is thrown from a destructor
+during the stack unwinding process. If that happens, the compiler is put in a situation where it doesn’t
+know whether to continue the stack unwinding process or handle the new exception. The end result is that
+your program will be terminated immediately.
+---------------------------------------------------------------------------------------------------------
+Perfomance concerns.
+Exceptions require additional space in a executable as well as addition time to perform error checking
+and all other generated code. Main perfomance issue appears when exception is thrown and you need to
+find handler as well as unwind stack which may be deeply nested.
+
+Some modern computer architectures support an exception model called zero-cost exceptions. Zero-cost exceptions,
+if supported, have no additional runtime cost in the non-error case (which is the case we most care about
+performance). However, they incur an even larger penalty in the case where an exception is found.
+=========================================================================================================

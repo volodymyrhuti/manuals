@@ -1,0 +1,400 @@
+=========================================================================================================
+                       Ways of passing value to functions
+=========================================================================================================
+1. By value
+extern std::vector<int> test;        // Writable global variable
+extern const std::vector<int> test2; // Read-only global variable
+extern std::vector<int> somefunc();  // A function that returns a temp value
+
+void testfunc(std:vector<int> val)
+{
+    test = val;         // Readign from val
+    val = {1,2,3};      // Writing into val
+}
+
+void caller()
+{
+    testfunc(test);         // Pass a variable
+    testfunc(somefunc())    // Pass a temp
+    testfunc(test2)         // Pass a read-only variable
+}
+
+It is fine for primitives and simple structures ,however it is quite slowe in case
+of something more complex, since value will be compied from caller to callee
+---------------------------------------------------------------------------------------------------------
+2. By reference
+extern std::vector<int> test;        // Writable global variable
+extern const std::vector<int> test2; // Read-only global variable
+extern std::vector<int> somefunc();  // A function that returns a temp value
+
+void testfunc(const std:vector<int>& val)
+{
+    test = val;         // Readign from val
+    //val = {1,2,3};    // writing to const val is not permited
+                        // can only access const methods of const object
+}
+
+void caller()
+{
+    testfunc(test);         // Pass a variable
+    testfunc(somefunc())    // Pass a temp
+    testfunc(test2)         // Pass a read-only variable
+}
+
+You can read but you cannot write, therefore no copying of data is needed.
+This allows to pass in place allocated, temporary variables by caller.
+---------------------------------------------------------------------------------------------------------
+3. By L-value reference
+extern std::vector<int> test;        // Writable global variable
+extern const std::vector<int> test2; // Read-only global variable
+extern std::vector<int> somefunc();  // A function that returns a temp value
+
+void testfunc(std:vector<int>& val)
+{
+    test = val;
+    val = {1,2,3};
+}
+
+void caller()
+{
+    testfunc(test);            // Pass a variable
+    // testfunc(somefunc())    // Pass a temp, not permitted, there is no
+                                  sense to pass temporary variable if you want
+                                  to rewrite it
+    // testfunc(test2)         // writing to const val is not permited
+}
+
+More effective then coppying but since callee is allowed to overwrite value, it
+is not alloved to send const values, and ther is no sense to pass temporary values
+which live only during a call
+---------------------------------------------------------------------------------------------------------
+4. By R-value reference
+extern std::vector<int> test;        // Writable global variable
+extern const std::vector<int> test2; // Read-only global variable
+extern std::vector<int> somefunc();  // A function that returns a temp value
+
+void testfunc(std:vector<int>&& val)
+{
+    test = std::move(val);         // Readign from val
+    val = {1,2,3};      // writing to const val is not permited
+                        // can only access const methods of const object
+    val.clear();
+}
+
+void caller()
+{
+    testfunc(std::move(test)); // Pass a variable (transfer ownership of data)
+                               // variable is now expacted to be cleared
+    testfunc(somefunc())       // Pass a temp
+    // testfunc(test2)         // passing a read only not possible
+}
+
+It is not possible to use named arguments without cast with std::move.
+Rvalue is used when you don`t need value no more and want to transfer responsibility.
+Best practice, clear object before returning unless forwarding responsibility.
+
+=========================================================================================================
+                                Value categories
+=========================================================================================================
+Every expression in C++ has two properties: a type (which is used for type checking), and a value category
+(which is used for certain kinds of syntax checking, such as whether the result of the expression can be
+assigned to). Eexpression has some non-reference type, and each expression belongs to exactly one of the
+three primary value categories: prvalue, xvalue, and lvalue.
+---------------------------------------------------------------------------------------------------------
+Glvalue (generalized lvalue). An expression whose evaluation determines the identity of an object,
+bit-field, or function; lvalue or an xvalue. lvalues are defined as all glvalues which are not xvalues.
+If expression returns reference (T&), or refers to the variable by it’s name, or rvalue reference (T&&)
+to the object it’s a glvalue expression.
+
+All expressions, that are glvalues actually yield a handle to some variable with some value. Thus it’s
+not possible to have the expression of glvalue type, that would have (const volatile) void type (it’s not
+possible to have object of type void). Glvalues are references to the objects.
+
+---------------------------------------------------------------------------------------------------------
+Prvalue (pure rvalue). An expression whose evaluation either
+-  Computes the value of the operand of an operator (no result object)
+-  Initializes an object or a bit-field.
+Class and array prvalues have a result object even if it is discarded.
+Temporary materialization occurs to create a temporary as the result object;
+int x = class_constructor().member;
+An rvalue that is not an xvalue.
+
+The result of the prvalue expression is a value, that can be stored in the variable. At the same time,
+it’s possible to have the prvalue of type (const volatile) void. Prvalue is different from lvalue and
+xvalue with the fact that it does not refer to any kind of object, but it is just a value. Meaning in
+short, that if expression yields type, which is a value (T) not a reference (T& or T&&) and expression
+is not a name of a variable, then it’s a prvalue expression.
+
+struct Foo {};
+Foo(); // prvalue
+Foo test(){/*implementation*/};
+test(); // prvalue
+
+---------------------------------------------------------------------------------------------------------
+Xvalue (eXpiring value). Refers to an object, usually near the end of its lifetime (so it can be moved)
+It is an result of certain kinds of expressions involving rvalue references (returned rvalue is an xvalue).
+
+Xvalues are glvalues, so if expression yields a xvalue reference, then this reference references some
+concrete instance of the object. The xvalues have one important attribute: an xvalue is a glvalue that
+denotes an object or bit-field whose resources can be reused (usually because it is near the end of its
+lifetime). In other words, xvalue used to be an lvalue but was marked that its resources can be reused or
+in other words, the object should be moved instead of copied. 
+
+---------------------------------------------------------------------------------------------------------
+L-value references to const objects can be initialized with l-values and r-values alike. However, those
+values can’t be modified. L-value references to const objects are particularly useful because they allow
+us to pass any type of argument (l-value or r-value) into a function without making a copy of the argument.
+
+R-value references have two properties that are useful. First, r-value references extend the lifespan of
+the object they are initialized with to the lifespan of the r-value reference (l-value references to const
+objects can do this too). Second, non-const r-value references allow you to modify the r-value!
+Test &&t1 = Test(1,2,3...);
+
+As an anonymous object, Test() would be copied into object and dissapear, copying may be skipped. In C++11
+this type of intialization is mandatory to skip copying and instead performs direct intialization. This
+can be considered as extending lifetime of anonymous object. However it is not ofter used for simple
+variables but commonly for function arguments.
+
+Functions can be overloaded based on whether argument is rvalue/lvalue parameter
+void foo(const Test &lvalue){}
+void foo(Test &&foo){}
+Test t1;
+Test &&t2 = Test();
+foo(t1);     // lvalue
+foo(t2);     // lvalue
+foo(Test()); // rvalue
+Note, && for named variables collapses into single &, therefore lvalue variant is called. The confusion
+stems from the use of the term r-value in two different contexts. Think of it this way: Named-objects are
+l-values. Anonymous objects are r-values. The type of the named object or anonymous object is independent
+from whether it’s an l-value or r-value. Or, put another way, if r-value reference had been called anything
+else, this confusion wouldn’t exist.
+
+You shouldn`t return rvalue reference, for the same reason you should not return lvalue reference. In most
+cases, you`ll end up returning a hanging reference when the referenced object goes out of scope at the
+end of the function.
+
+Expressions that refer to memory locations are called "l-value" expressions. An l-value represents a storage
+region's "locator" value, or a "left" value, implying that it can appear on the left of the equal sign (=).
+L-values are often identifiers.
+R-value is an expression that provides some data that may have no memory address, e.g. in place constructed
+variable or result of arithmetic expression. You can assign lvalue from rvalud but not otherside, therefore
+everything that is on the right side of assignment operator can be considered an rvalue. All lvalue can
+be an rvalue but not otherside. Usually it`s value is usable during one operation e.g. `int x = 1+2`,
+result of `1+2` is present and accessible during assignment, but you may extend it lifespan for current
+scope with rvalue reference.
+
+---------------------------------------------------------------------------------------------------------
+                                   Reasoning
+---------------------------------------------------------------------------------------------------------
+Every expression in language is requires to have value category, making it clear which operations we
+can perform on it and don`t. This categoryes describe some charectistics of expression, like it`s life
+time, if we can assign value to it or can use it for assignment.
+Before C++11, 2 categories l/rvalue were enough to describe semantics. Then C++11 introdeced move semantics.
+This is a way to write code that can avoid copying therefore reducing overhead. To support this, language
+introduced new categorie xvalue that is going to be freed unless some one is taking responsibily for it.
+Xvalue is somewhere between rvalue and lvalue, therfore, their combinations were generalized into two
+separate categories l+x into gl and x+pr into r
+
+
+TODO 
+---------------------------------------------------------------------------------------------------------
+
+You have option whether you want to oveload function for both l/rvalue cases and then maintain them, or
+define and maintain one universal reference function.
+
+https://stackoverflow.com/questions/3601602/what-are-rvalues-lvalues-xvalues-glvalues-and-prvalues
+=========================================================================================================
+                                Move semantics
+=========================================================================================================
+C++11 introduces 2 new special functions to class: move constructor and move assignment operator. These
+are used to move ownership from one instance to another while intializing it. They work preatty much the
+same way, but take nonconst rvalue reference instead of const reference. Instead of deep copying, we
+move(steal) the source object`s resources. This involves shallowing copying ,then setting source pointer
+to null.
+
+class Test {
+    public:
+    int *data;
+    Test(int *ptr) {
+        data = new int;
+        *data = *ptr;
+    }
+    ~Test() { delete ptr; }
+    Test(const Test&) { .. deep copy, data is cleaned, allocated and initialized .. };
+    Test& operator=(const Test& t) {  .. deep copy, data is cleaned, allocated and initialized .. };
+    Test(Test&& t) {
+        std::cout << "Move constructed" << std::endl;
+        delete data;
+        data = t.data;
+        t.data = nullptr;
+    }
+    Test& operator=(Test&& t){
+        std::cout << "Move assigned" << std::endl;
+        if(this == &t)
+            return *this;
+
+        delete data;
+        data = t.data;
+        t.data = nullptr;
+    }
+    Test() {
+        std::cout << "Test allocated" << std::endl;
+    }
+    ~Test() {
+        std::cout << "Test deallocated" << std::endl;
+    }
+};
+
+Test generateResource() {
+   Test t(new int);
+   return t;
+}
+int main(){
+    Test t;
+    t = generateResource();
+}
+
+Expected result with copying:
+1. Test is allocated
+2. If there is no copy elision, it is copied to return temporary value      // Deep copy constructor
+3. Local variable is cleened withing function
+4. Temporary value is copied to real variable                               // Deep copy constructor
+5. Test is dealocated
+
+Expected result with moving:
+1. Test is allocated
+2. Copying is elisioned
+3. Local variable is freed
+4. Resource is moved into value                                             // Shallow copy
+5. Test is dealocated
+
+The flow of the program is exactly the same as before. However, instead of calling the copy constructor
+and copy assignment operators, this program calls the move constructor and move assignment operators.
+
+The move constructor and move assignment are called when those functions have been defined, and the
+argument for construction or assignment is an r-value. Most typically, this r-value will be a literal or
+temporary value.
+
+Note, default move constructor and move assignment do the same thing as the default copy constructor and
+copy assignment (make copies, not do moves).
+
+NOTE: move is not applicable for const objects, since, we can`t take ownership proparly from const object.
+---------------------------------------------------------------------------------------------------------
+                                  Logic behind
+---------------------------------------------------------------------------------------------------------
+If we construct an object or do an assignmemt where the argument is an l-value, we can`t change an argument
+since you woudn`t expect expression `a=b` have a side effect on b. Therefore we copy initialize.
+
+However if construct from an r-value or an temporary object, which is a temporary object and is valid in
+the scope of expression, you can steal resource without having side effects. This is much cheaper then
+doing deep copy.
+
+However, this should be carefully and move should leave object in a well-defined state. Object passed for
+move may be a lvalue, and it won`t end it`s life after expression.
+---------------------------------------------------------------------------------------------------------
+                                 Implicit move
+---------------------------------------------------------------------------------------------------------
+The C++ standard specifies situations where an implicit move operation is safe and the compiler can use it
+in cases were the (Named) Return Value Optimization) can't be used. There are three things that may happen
+when returning by value, in following order: Elision (no move/copy), Move, Copy.
+
+T demo(T arg) {
+  T local;
+  return T();              // guaranteed elision as of C++17,
+                           // commonplace optimization since 1990s ("URVO")
+  return local;            // commonplace optimization since 1990s ("NRVO")
+                           // if disabled (-fno-elide-constructors), it's a move
+  return std::move(local); // elision prohibited (!), it's a move
+  return arg;              // elision prohibited; it's a move
+
+}
+
+The specification has a special rule that says automatic objects returned from a function by value can be
+moved even if they are l-values. Note, that entire copy/move can be elided.
+https://www.quora.com/Does-C-always-move-a-temporary-local-object-in-a-return-statement-or-does-it-copy-it-What-are-the-rules-for-the-general-implicit-move-without-using-std-move
+---------------------------------------------------------------------------------------------------------
+                                 Explicit move()
+---------------------------------------------------------------------------------------------------------
+Sometimes, you want to pass owneship from one lvalue to another but it doesn`t fit move argument tipe.
+Additional reference can be appended using static_cast, but it is not really readable, istead, you want
+to use move()  
+
+string str="123";
+vector<string> v;
+v.push_back(str);       // calls copy constructor
+cout << str << endl;    // str == 123
+v.push_back(move(str)); // v has 2 string elements
+cout << str << endl;    // str ==
+
+This can be usefull for some operations involving object exchange, e.g. sorting algorithms with moving.
+
+---------------------------------------------------------------------------------------------------------
+                       T&& vs const T&& vs const T& vs T
+---------------------------------------------------------------------------------------------------------
+You can overload function with all of these parameters at the same time. Following pairs are ambiguos
+const T& | T&& | T      # all may take an rvalue
+const T& | T&           # both may take an lvalue
+
+Note T as parameter can be intialized with though explicit move and not sure about implicit?
+const T&& is the most rare one, it can be used during overloading, possible usage is disabling usage of
+temporary values.
+foo(const X&)            => takes modifiable/const lvalues
+foo(const X&&) = delete; => rejects modifiable/const rvalues
+template <typename T> foo(const T&&) = delete;
+
+
+https://www.bfilipek.com/2017/01/const-move-and-rvo.html
+https://stackoverflow.com/questions/4938875/do-rvalue-references-to-const-have-any-use
+https://www.youtube.com/watch?v=dTeKf5Oek2c&feature=youtu.be&t=2501
+https://www.codesynthesis.com/~boris/blog/2012/07/24/const-rvalue-references/
+---------------------------------------------------------------------------------------------------------
+                               Perfect forwarding
+---------------------------------------------------------------------------------------------------------
+When you pass an rvalue to function, you expect it to be forwarted to other functions as rvalue too.
+This is not a case, when argument is passed to function, since named rvalues are treated as lvalues. You
+need help of compiler to save information about value categorie. This is done with special `forward`
+function and some rules when templates are used.
+
+Reference collapsing rules:
+T&  &   => T&
+T&  &&  => T&
+T&& &   => T&
+T&& &&  => T&&
+T&& is called a universal reference since it can take both an rvalue and an lvalue
+
+template<typename T>
+void relay(T&& arg){
+    foo( forward<T>(arg));
+}
+
+Type is deduced from argument therefore
+relay(1) => T = int && => T&& = int&& && => int&&
+relay(x) => T = int & => T&& = int&& & => int&&
+
+---------------------------------------------------------------------------------------------------------
+Implementation of `forward` and `move`
+template<class T>
+T&& forward(typename remove_reference<T>::type& arg) {
+    return static_cast<T&&>(arg);
+}
+
+template <typename T>
+typename remove_reference<T>::type&& move(T&& arg) {
+  return static_cast<typename remove_reference<T>::type&&>(arg);
+}
+---------------------------------------------------------------------------------------------------------
+As you can see, return type differes. move always return an rvalue while forward return value depens on
+deduced argument type.
+
+---------------------------------------------------------------------------------------------------------
+                                    Pitfalls
+---------------------------------------------------------------------------------------------------------
+Don`t forget to use move in move constructor when performing constructor forwarding or constructing parent
+class.
+Derived(Derived&& rhs): Base(move(rhs)) {
+    ...
+}
+http://thbecker.net/articles/rvalue_references/section_05.html
+---------------------------------------------------------------------------------------------------------
+http://thbecker.net/articles/rvalue_references/section_01.html
+=========================================================================================================

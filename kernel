@@ -55,9 +55,11 @@ One way to provide reentrancy is to write functions so that they modify only loc
 alter global data structures. Such functions are called reentrant functions. Another way is to protect
 critical sections/resources with some synchronization algorithm.
 
+Note, there a  notion of reentrance which describes whether function handles the situation when it gets
+bloked during which it gets called again.
+
 https://stackoverflow.com/questions/5283501/what-does-it-mean-to-say-linux-kernel-is-preemptive
 https://unix.stackexchange.com/questions/5180/what-is-the-difference-between-non-preemptive-preemptive-and-selective-preempti
-
 =========================================================================================================
                            Interrupts and Exceptions
 =========================================================================================================
@@ -127,6 +129,12 @@ software interrupts.
 Each interrupt/exception is identified by a number 0..255, 8 bit unsigned number called vector.
 The vectors of nonmaskable interrupts and exceptions are fixed, while those of maskable interrupts can be
 altered by programming the Interrupt Controller.
+
+TODO:
+https://www.tldp.org/LDP/khg/HyperNews/get/devices/exceptions.html
+https://binarydebt.wordpress.com/2018/11/16/try-catch-in-linux-kernel/
+https://www.linuxjournal.com/article/2135
+http://mammon.github.io/Text/linux_hooker.txt
 ---------------------------------------------------------------------------------------------------------
                               IRQs and Interrupts
 ---------------------------------------------------------------------------------------------------------
@@ -193,14 +201,56 @@ Types of IDT descriptors used by linux =>
 
 # The process on behalf of which an interrupt handler is executed must always stay in
 
-signal send can lag
-  the TASK_RUNNING state, or a system freeze can occur.
+signal send can lag the TASK_RUNNING state, or a system freeze can occur.
 
 SMP (Symmetric Multiprocessing model) => model in which kernel should not have any bias toward one CPU
 with respect to the others (used in Linux).
 
 TPR (Task Priority Register) => register of CPU initialized during setup_local_APIC call, initialized to
 static value meaning that CPU is eilling to handle every kind of IRQ signal regardless pf its priority
+
+---------------------------------------------------------------------------------------------------------
+                                 Context types
+---------------------------------------------------------------------------------------------------------
+- CPU context.
+  Every CPU architecture has a mechanism for interrupt handling, like interrupt vector or dispatching CPU
+  to handler address based on interrupt source. As well CPU has it`s own state not associated with kernel,
+  like it`s own hidden stack and registers.
+- Linux context.
+
+https://stackoverflow.com/questions/22453739/why-do-we-need-interrupt-context
+---------------------------------------------------------------------------------------------------------
+                                Bottom-Top half 
+---------------------------------------------------------------------------------------------------------
+Interup context has a range of constraints on it usage like which operation are available and how much
+they should use but the main issue is handling all interupts in a fair fashion since all other interrupts
+are dissabled when one is handled. Therefore it`s common approach to divide an interrupt handling in two
+phases bottom/top when the interrupt handler itself is a top half which saves hardware request to buffer
+and schedules a work for main logic, which is called a bottom half.
+Bottom Half has an accronym that is used through kernel source code - bh
+
+One thing to keep in mind with bottom-half processing is that all of the restrictions that apply to
+interrupt handlers also apply to bottom halves. Thus, bottom halves cannot sleep, cannot access user space,
+and cannot invoke the scheduler. Reasoning:
+- Sleep. Under the hood, sleeping means save current state to stack and switching to another proccess.
+  This requires a scheduler which can change currently active tasks and this routing should an associated
+  entity that schedulet knows how to use, like a process. However interrupt handler is just a routine and
+  has no assoctiated process or entity. 
+  Another problem, interrupt could be called during executing of the proccess that can`t sleep, in such
+  case handler couldn`t not sleep, or user-space code and kernel space might dead lock on shared resource.
+  Note, the page fault handler can sleep because it is associated with the user-space process which is
+  managed by the scheduler.
+- User space -> may result in a new interrupt however interrupts are disabled ?
+- Scheduling. As it was already said, interrupt has no asscociated process or any other entity that could
+  scheduler can manage.
+
+Bh handling is impelented in two ways, using softirqs and tasklets (another form of softirq).
+- Allocation. Softirq are statically allocated at compile time, while tasklets can be dynamically alocated.
+- Reentrance. Tasklets are not reentrant, while softirqs are, therefore the same softirq can be runed
+  on different CPUs.
+- Processing.
+
+https://stackoverflow.com/questions/1053572/why-kernel-code-thread-executing-in-interrupt-context-cannot-sleep
 =========================================================================================================
                           Multiple Kernel Mode stacks
 =========================================================================================================
@@ -358,22 +408,6 @@ into virtual cores, which are known as threads. This is done in order to increas
 each core to run two instruction streams at once.
 ---------------------------------------------------------------------------------------------------------
 =========================================================================================================
-                                    Modules
-=========================================================================================================
-Utilities for module inserion/removing
-- insmod => try to insert module but fails on any undefined symbol
-- modprobe => insmod, but will try to find module with undefined symbol and load it first
-- rmmod => remove module unless it is busy
-
-To export symbol from your module, u need to issue
-EXPORT_SYMBOL(name) / EXPORT_SYMBOL_GPL(name)
-
-Any module should be started with next includes
-#include <linux/module.h>   # function declarations
-#include <linux/init.h>     # init/finish callback registration
-
-
-=========================================================================================================
                            Understanding oops message
 =========================================================================================================
 When an invalid pointer is dereferenced, the paging mechanism fails to map the pointer to a physical address
@@ -381,6 +415,8 @@ and the processor signals a page fault yo the OS. If the address in not valid, t
 'page in' the missing address, it usually generates an oops id this happens while the processor is in kernel
 space
 
+https://opensourceforu.com/2011/01/understanding-a-kernel-oops/
+https://stackoverflow.com/questions/16731570/how-to-interpret-addresses-in-a-kernel-oops
 =========================================================================================================
                                  Kernel dont`s
 =========================================================================================================
@@ -398,29 +434,9 @@ The smallest unit of addressible memory in block device is called sector It is s
 The smallest unit of addressible memory in file system is called block. Block is abstraction used in
 filesystem and is usually bigger than sector but smaller then page. Usual size 512B/1K/4K.
 =========================================================================================================
-                              Kernel build config
+                                   Debugging
 =========================================================================================================
-In-kernel .config support, also known as IKCONFIG, allows users to build a copy of the configuration the
-kernel was built with inside the kernel itself. This allows them to inspect the configuration of the kernel
-while it is running, without having to worry whether they changed or cleaned the source directory after it
-was built.
-
-Why is it important?
-This can assist users with debugging things like if a particular driver was compiled when the kernel was
-built, whether a networking option was enabled, or any other configuration option when they built the kernel,
-and is often asked for when looking for support on the forums or IRC channels. 
-
-Usage:
-cp /proc/config.gz /tmp/config.gz
-gunzip /tmp/config.gz
-cat /home/user/config
-
-https://wiki.gentoo.org/wiki/Kernel/IKCONFIG_Support
-http://kbdatabase.org/article.php?id=17
-https://stackoverflow.com/questions/45654291/how-to-extract-the-config-from-a-kernel-image-file-when-config-ikconfig-is-set-a
-=========================================================================================================
-                    Debugging
-=========================================================================================================
+                                    Logging
 ---------------------------------------------------------------------------------------------------------
 One of ways to troubleshoot kernel, is printk logging. It`s limited by ratelimit, therefore some faulty
 module doesn`t fills it up with trash. Limit can be configured with `printk_ratelimit()` or from
@@ -459,6 +475,110 @@ reconfigure dmesg, like `dmesg -s <buf_size in bytes?>`
 
 https://elinux.org/Debugging_by_printing
 ---------------------------------------------------------------------------------------------------------
+                                     Ftrace
+---------------------------------------------------------------------------------------------------------
+Ftrace in a tracing utility in the Kernel that can be used for debugging/analuzing latencies and performance
+issues that take place outside of user-space. It uses debugfs file system to hold the control files as
+well as the files to display output. Mounting
+    /etc/fstab: tracefs       /sys/kernel/debug/tracing       tracefs defaults        0       0
+    $ mount -t tracefs nodev /sys/kernel/debug/tracing
+Key files `ls /sys/kernel/debug/tracing` include:
+ available_tracers | list of available tracers
+ tracing_on        | enter 0/1 to enable/disable
+ trace             | output of currently active tracer
+ current_tracer    | display the current tracer that is configured
+
+Use example
+  mount -t tracefs nodev /sys/kernel/tracing
+  cd /sys/kernel/tracing
+  sysctl kernel.ftrace_enabled=1
+  echo function > /sys/kernel/debug/tracing/current_tracer
+  echo 10 > max_graph_depth
+  echo '*:mod:your_kernel_mod' >> set_ftrace_filter
+  echo 1 > /sys/kernel/debug/tracing/tracing_on
+  sleep 1
+  echo 0 > /sys/kernel/debug/tracing/tracing_on
+  echo nop > current_tracer
+  cat /sys/kernel/debug/tracing/trace
+
+Trace filters
+set_ftrace_filter   | enabling or disabling specific functions to be traced
+set_ftrace_notrace  | any function that is added here will not be traced
+set_ftrace-pid      | only traces functions executed by a task with the given pid
+set_graph_function  | functions listed in this file will cause the function graph tracer to only trace
+                    | these functions and the functions that they call.
+set_graph_notrace   | disable function graph tracing when the function is hit until it exits the function.
+
+These are function calls, but there are special debug events that can be monitored as well. Tracepoints
+placed in code provides a hook to call a function (probe) that you can provide at runtime can be used
+without creating custom kernel modules to register probe functions using the event tracing infrastructure.
+  cat /sys/kernel/debug/tracing/available_events
+  echo 0 > /sys/kernel/debug/tracing/tracing_on
+  echo 1 > /sys/kernel/debug/tracing/events/syscalls/enable
+  echo 1 > /sys/kernel/debug/tracing/events/exceptions/enable
+  sh -c 'echo $$ > /sys/kernel/debug/tracing/set_event_pid;
+         echo 1 > /sys/kernel/debug/tracing/tracing_on;
+         exec echo ftrace'
+  cat /sys/kernel/debug/tracing/trace
+  echo 'neigh:*' > /sys/kernel/debug/tracing/set_event
+
+The ftrace has a front-end utility to avoid messing up with a filesystem called `trace-cmd`
+  echo ‘*sched*’ > set_ftrace_filter | trace-cmd start -p function -l ‘*sched*’
+  echo function > current_tracer     | trace-cmd start -p function
+  echo nop > current_tracer          | trace-cmd start -p nop
+  echo 0 > tracing_on                | trace-cmd stop
+  cat trace                          | trace-cmd show
+  cat trace_pipe                     | trace-cmd show -p
+  cat available_filter_functions     | trace-cmd list -f
+  ls /sys/kernel/debug/tracing/events | trace-cmd list -e
+
+NOTE?: you can filter out your driver calls using following
+  echo $$ >> /sys/kernel/debug/tracing/set_ftrace_pid
+  insmode <your_driver>
+
+Related configs:
+CONFIG_FUNCTION_TRACER
+CONFIG_FUNCTION_GRAPH_TRACER
+CONFIG_STACK_TRACER
+CONFIG_DYNAMIC_FTRACE
+
+https://lwn.net/Articles/365835/
+https://www.andreasch.com/2017/12/06/ftrace/
+https://events.static.linuxfound.org/sites/events/files/slides/linuxconjapan-ftrace-2014.pdf
+---------------------------------------------------------------------------------------------------------
+                                 Debugging oops
+---------------------------------------------------------------------------------------------------------
+In Linnux, the System.map file is a symbol table used by the kernel. It is used to resolve function address
+to its human readable name, note, this may require having CONFIG_KALLSYMS enabled. The function that is
+displayed is the closest one from address where crash was executed.
+1. Look for an PC value, this is expected to look like
+   PC : is at function+offset/length
+   pc : [<adderss>]
+2. Now you can disasemble objct file where the function is and look at `+offset` from function start to
+   identify issue line. The same can be done using vmlinux file, identify function address from System.map
+   or by substracting offset from pc, disasemble vmlinux and give a look at the calculated address.
+     objdump -D -S --show-raw-insn --prefix-addresses --line-numbers vmlinux > objdump
+   Note, to simplify the process of detecting line, you can open object file in gdb and execute
+     list *(function_name+offset)
+
+
+In case, you code get`s inline or optimized in other ways making backtrace not very infromative, you can
+try to dissable them from makefile, like following
+ccflags-y += -fno-default-inline -fno-inline -fno-inline-small-functions \
+             -fno-indirect-inlining -fno-inline-functions-called-once
+
+Debug configs:
+CONFIG_RELOCATABLE=y
+CONFIG_KEXEC=y
+CONFIG_CRASH_DUMP=y
+CONFIG_DEBUG_INFO=y
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_PROC_VMCORE=y
+
+cat /proc/kallsyms  # list of loaded symbols and their address.
+
+USE_KDUMP ? won`t system journals hold needed info?
+https://sanjeev1sharma.wordpress.com/tag/debug-kernel-panics/
 =========================================================================================================
                                      SysRq
 =========================================================================================================
@@ -583,12 +703,6 @@ This makes syslog-ng more suitable for sites with diverse platforms.
 
 
 ---------------------------------------------------------------------------------------------------------
-Logrotate
----------------------------------------------------------------------------------------------------------
-Utility to rotate/compress logs,
-
-
----------------------------------------------------------------------------------------------------------
 https://www.linuxjournal.com/article/4036
 https://annvix.com/syslog_and_klog
 https://habr.com/ru/post/321262/
@@ -596,30 +710,12 @@ https://en.wikipedia.org/wiki/Syslog
 https://serverfault.com/questions/692309/what-is-the-difference-between-syslog-rsyslog-and-syslog-ng
 https://web2.clarkson.edu/class/cs457/security.sp06/classInput/syslog.html
 =========================================================================================================
-                                   Menuconfig
+                                    To Study
 =========================================================================================================
-Menuconfig is a user interface used to configure kernel before the compilation. Resuling configuration
-is converted to Kconfig language and saved to .config. Kconfig is also used in U-Boot, Buildroot,
-BusyBox. It is issued with `make menuconfig`. There are multiple versions of menu, depending on your system
-applications, there include:
-- xconfig (Qt)
-- gconfig (GTK+)
-- nconfig (ncurses)
-
-Note, you can change .config directly, but menuconfig provides more interactive interface with descriptions,
-dependecie checking and search functionality.
-
-Compilation options:
-y - compile and include feature inside of the kernel
-m - compile feature as a module separate from the kernel
-n - do not compile
-
-Dependecie symbols
-< > - no dependencies
-[ ] - dependency requires this to be compiled-in (y), or not compiled (n)
-{ } - dependency requires this to be a module (m) or compiled-in (y)
-- - - dependency requires this to be compiled-in (y)
-
-https://en.wikipedia.org/wiki/Menuconfig
-https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt
-========================================================================================================
+Kernel testing qemu
+https://github.com/cirosantilli/linux-kernel-module-cheat#getting-started
+Ftrace implementation:
+https://www.apriorit.com/dev-blog/544-hooking-linux-functions-1
+https://www.apriorit.com/dev-blog/546-hooking-linux-functions-2
+https://www.apriorit.com/dev-blog/547-hooking-linux-functions-3
+=========================================================================================================

@@ -825,3 +825,21 @@ using gpg, the tracked files with the public keys of all the users that you trus
 decrypt these files using only their personal secret key.
 
 =========================================================================================================
+                                    Markdown
+=========================================================================================================
+There are many options for previewing your .md file:
+- typora. Text editor with a live rendering of markdown
+- grip. Server for the file preview, supports page autorefresh
+- mdless. less for .md
+- markdow. Convers .md into html
+- remarkable. Text editor with decent GUI and life preview
+- gitbook. Documenting tool
+
+Or using some shell scripting
+pandoc -s filename.md | lynx -stdin
+
+=========================================================================================================
+
+git update-ref -m 'mark: whatever' HEAD HEAD
+git update-ref -m 'mark: another thing' refs/heads/branch branch
+git update-ref -m 'mark: third thing' refs/heads/branch refs/heads/branch

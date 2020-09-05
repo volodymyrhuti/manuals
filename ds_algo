@@ -1,0 +1,480 @@
+                                Data Structures
+=========================================================================================================
+Data structure can be categorized as:
+- linear: arrays, linked list, stack, queue
+- non-linear: tree, graph
+
+Memory units. Different technologies and spheres count the memory in a different way. This creates an
+issue when converting KB... to smaller units of data, since mathmetitions used to have a K for 10^3 while
+computer engineer can mean 2^10B which is by 24 units higher. To resolve this ambiguity, a new range of
+names were developed like kibibype, mebibyte, gibibyte ... but the old naming scheme got too rooted into
+the international culture.
+Therefore, if the unit is mebibyte or megabyte depends on the sphere:  SI units e.g. k:
+- measures of secondary memory devices: hard-disks, SSDs
+- network speed
+- CPU/memory/bus speed
+- all others
+While Ki is used for:
+- measures of primary memory: RAM, cacche
+- measures of file sizes, partition sizes, and disk sizes withing OS
+
+
+8 bits      | 1 byte (B)
+1024 bytes  | 1 KiloByte (KB)
+1024 KB     | 1 MegaByte (MB)
+1024 MB     | 1 GigaByte (GB)
+1024 GB     | 1 TeraByte (TB)
+1024 TB     | 1 PetaByte (PT)
+            | ExaByte
+            | ZettaByte
+            | YottaByte
+
+https://www.aqua-calc.com/page/powers-of-two
+https://www.thecalculatorsite.com/articles/units/is-a-kilobyte-1000-or-1024-bytes.php
+https://cseducators.stackexchange.com/questions/4425/should-i-teach-that-1-kb-1024-bytes-or-1000-bytes/4426
+=========================================================================================================
+                                     Trees
+=========================================================================================================
+Tree can be defined as a collection of entities (nodes) linked together to simulate a hierarchy.
+Common applications include: storing hierarchy of filesystem
+Metrics:
+- Internal/Leaf. Nodes with no children are called leaves or external nodes.
+  Nodes which are not leaves are called internal nodes
+- Siblings. Nodes that are childrens of the same parent
+- Degree of node. Number of childer of that node (non-recrusing, a single level)
+  Leaf node -> degree = 0
+- Degree of tree. The maximal degree of the node in the tree
+- Depth of node. The length of the path from root to node; number of edges from root to the node
+  Depth of a root is zero.
+- Height of node. The maximal length of the path from the node to its leaf.
+  Height of the tree - the longest path from root to the leaf
+- Level of node - the same as depth of the node
+  Level of tree - the same as heigh of the tree (root node)
+
+NOTE: Tree having N node has N-1 edges; if you have N or more edges, then there is a cycle and it is not a
+tree any more but a graph
+
+Binary tree. A tree where each node has at most 2 children. This has some implications
+Max number of nodes possible at any level `i` is 2^i
+Max number of nodes of height `h`: n = 2^(h+1) - 1
+                                       2^0 + 2^1 + 2^2 .. + 2^h
+Min number of nodes of heigh `h`: n = h + 1
+Minimal height while knowing the max number of nodes
+                 n = 2^(h+1) - 1
+               n+1 = 2^(h+1)
+        log2_(n+1) = log2_2^(h+1)
+        log2_(n+1) = h+1
+    [log2_(n+1)-1] = h      # ceilling
+Min height while knowing the max number of nodes
+                n = h + 1 =>
+                h = n - 1
+
+Binary Tree types:
+- Full/Proper/Strict. Each node contains either 0 or 2 children
+  Number of leef nodes = Number of internal nodes + 1
+- Compelete. All levels are completly filled, except possibly the last level; the last level has nodes
+  as left as possible
+          O
+        /   \
+       /     \
+      O       O
+     / \     / \
+    O   O   O   O
+   / \  /|   \
+  O  O O X    O
+         ^
+         | Is not a complete, since not fullfills the condition about last level fillment
+
+         O
+        / \
+       /   \
+      O     O
+     / \   / \
+    O   O  O  O
+   / \ / \ \
+  O  O O O O
+  This is a complete one, there is not requirement for the last level being filled
+- Perfect. All internal nodes have 2 children & all leaves are at same level.
+  Every perfect binary tree is Full and Complete at the same time but not otherway
+- Degenerate. All internal nodes have only a single child (left/right scew tree)
+- Balanced (AVL)
+
+            | Max nodes          | Min nodes
+----------------------------------------------------
+Binary tree | 2^(h+1) - 1        |  h + 1
+Full Binary | 2^(h+1) - 1        | 2h + 1
+Complete    | 2^(h+1) - 1        |  2^h
+
+
+            | Min height          | Max height
+----------------------------------------------------
+Binary tree | [log2_(n+1) - 1]    |  n - 1
+Full Binary | [log2_(n+1) - 1]    | (n - 1)/2
+Complete    | [log2_(n+1) - 1]    | log n
+---------------------------------------------------------------------------------------------------------
+                                   Traversal
+---------------------------------------------------------------------------------------------------------
+Names are comming from the positing of parent order in the traversal
+- InOrder: Left Root Right
+- PreOrder: Root Left Right
+- PostOrder: Left Right Root 
+
+void inOrder(node *node) {
+    if (node != NULL)
+        return;
+    inorder(node->left);
+    visit(node);
+    inorder(node->right);
+}
+
+void preOrder(Node *node) {
+    if (node != NULL)
+        return;
+    visit(node);
+    inOrder(node->left);
+    inOrder(node->right);
+}
+
+void preOrder(Node *node) {
+    if (node != NULL)
+        return;
+    inOrder(node->left);
+    inOrder(node->right);
+    visit(node);
+}
+
+void levelOrderTraversal(Node *node) {
+
+}
+
+---------------------------------------------------------------------------------------------------------
+                           Sequential representation
+---------------------------------------------------------------------------------------------------------
+Implementing as a linked list is called a dynamic representation.
+A binary tree can be represented as an array, which is known as a sequential representation.
+For this you need to have a complete binary tree, if your one doesn`t fill this requiremenet, just use
+a placeholders for the lacking nodes. Fill an array by filling values from the tree to array using pre
+order traversal. Now, to find childs/parent of the node, you need to know some formulas:
+If a node is at ith index:
+- left child would be at: 2i + 1
+- right child would be at: 2i + 2
+- parent would be at: floor[ (i-1)/2 ]
+NOTE: scew trees require alot of spaceholder to make a complete tree therefore it is quite unefective
+to hold them in the sequential representation
+
+---------------------------------------------------------------------------------------------------------
+                            BST. Binary Search tree
+---------------------------------------------------------------------------------------------------------
+Deletion of the node with two children has 2 possible solutions:
+- Node replacement with inorder predecessor - the largest element in the left subtree
+- Node replacement with inorder successor - the smallest element is the right subtree
+         5          ||       4        ||       6
+      3     7       ||    3     7     ||    3     7
+    1   4  6   8    ||  1   x  6   8  ||  1   4  x   8
+
+---------------------------------------------------------------------------------------------------------
+                AVL Tree. Self Balancing BST. Adelson-Velsky and Landis
+---------------------------------------------------------------------------------------------------------
+1. It is a BST
+2. Balance factor: Height of left subtree - height of right subtree = {-1; 0; 1}
+3. Duplicate elements are not allowed
+
+There are 4 possible rotations to rebalance the tree: RR, LL, RL, LR
+You delete an item the same way as from the simple BST but perform rebalancing afterwards.
+---------------------------------------------------------------------------------------------------------
+                                 Red-Black Tree
+---------------------------------------------------------------------------------------------------------
+The issue with an AVL Tree is that insertion of a single element may prowoke multiple rotations at the
+different tree levels. Whenever you insert an element into a Red-Black tree, it takes at most 2 rotations
+or just a recoloring between red and black. This makes insertion and deletion faster, but it is less
+balanced and the element lookup may be slower then in AVL.
+The Red-Black is roughly height balanced while AVL are strictly height balanced, altough, worst case
+operation time complexity is guaranteed to be O(log2_n)
+
+- Every node is either Black or Red
+- Root is always Black
+- Every NULL leaf is Black
+- If node is Red then its children are Black
+- Every path from a node to any of its descendent NULL node has same number of Black nodes
+
+Insertion:
+1. If tree is empty, create newnode as root node with color Black
+2. If tree is not empty, create newnode as leef node with color Red
+3. If parent of newnode is Black then exit
+4. If parent of newnode is Red, then check the color of parent`s sibling of newnode:
+- if color is Black or NULL then do suitable rotation and recolor
+- If color is Red then recolor and also check if parent`s parent of newnode is not root node then recolor
+  it  and recheck
+
+Deletion should preserve characteristics of the RB tree
+1. Perform BST deletion
+2. Handle following cases
+- If node to deleted is red, just delete it
+- If root is DB, just remove DB
+- If DB sibling is black, and both its children are black
+
+---------------------------------------------------------------------------------------------------------
+                                     B-Tree
+---------------------------------------------------------------------------------------------------------
+A balanced m-way (m-order) tree; a generalization of BST in which a node can have more than one key & more
+than 2 children. Requires all leaf node to be at same level.
+This tree has following properties:
+- Every node has max. m children
+- Min children:
+ leaf           | 0
+ root           | 0
+ internal nodes | ceil(m/2)
+- Every node has max (m-1) keys
+- Min keys:
+  root node     | 1
+  all other     | ceil(m/2) - 1
+
+---------------------------------------------------------------------------------------------------------
+                                   Splay Tree
+---------------------------------------------------------------------------------------------------------
+This is a roughly balanced, as an RB, binary search tree. The main idea is additional operation of `splaying`,
+which means making the last accessed node to be a root of the tree. This way, the most oftenly accessed
+nodes are always at the top of the tree.
+
+---------------------------------------------------------------------------------------------------------
+
+# Jenny's lectures CS/IT NET&JRF -> check comments before watching, there are timestamps with mistakes
+https://www.youtube.com/watch?v=zDlTxrEwxvg&list=PLdo5W4Nhv31bbKJzrsKfMpo_grxuLl8LU&index=52
+=========================================================================================================
+                                  Binary Heap
+=========================================================================================================
+A min-heap is a complete binary tree (all levels are filled other then the rightmost elements on the last
+level) where each node is smaller than its children. The root, therefore, is the minimum element in the
+tree. There are two key operations on a min-heap: insert and extract_min.
+
+Insertion. O(log(n))
+- Add a new node at the lowest level, the most left position (needed to maintain complete tree)
+- Compare it with parent, if element is smaller, buble up
+- Repeat untill the element is bigger or is root
+
+Removal. O(log(n))
+- Replace the removed element with the last inserted one (needed to maintain complete tree)
+- Compare the updated element with its childer, from left to right, if any of them is smaller, bubble it
+  down
+- Repeat untill the element is smaller or is leef
+
+https://www.youtube.com/watch?v=g9YK6sftDi0&list=PLiQ766zSC5jMZgWWdqy_6TpLivRGQaFD-&index=15
+=========================================================================================================
+                                     Graphs
+=========================================================================================================
+There are 2 main ways to represent graph in programming:
+1. Adjacency matrix. Is more efficient, in terms of space, for dense graphs
+2. Adjacency list. -||- for sparse graphs
+
+Vertices have following attributes:
+- Indegree. Number of vertices connect and pointing to it
+- Outdegree. Number of vertices it is connected and pointing to
+
+The edges we traverse as we execute a depth-first search can be classified into four edge types.
+During a DFS execution, the classification  of  edge(u, v),  the  edge  from  vertex `u` to vertex `v`,
+depends on whether we have visited `v` before in the DFS and if so, the relationship between `u` and `v`.
+1. If `v` is visited for the first time as we traverse the edge(u, v), then the edge is a tree edge.
+2. Else, `v` has already been visited
+-  If `v` is an ancestor of `u`, then edge (u, v) is a back edge
+-  Else, if `v` is a descendant of `u`, then edge (u, v) is a forward edge.
+-  Else, if `v` is neither an ancestor or descendant of `u`, then edge (u, v) is a cross edge.
+
+https://courses.csail.mit.edu/6.006/fall11/rec/rec14.pdf
+---------------------------------------------------------------------------------------------------------
+- Tree Edge. Edge which is present in the tree obtained after applying DFS on the graph
+- Forward Edge. A non-tree edge from a vertex to one of its descendants
+- Back Edge. From a vertex to one of its ancestors
+- Cross Edge. From a vertex `u` to a vertex `v` such that the subtrees rooted at `u` and `v` are distinct
+
+Connected components are a set of vertices which are reachable from each other. You can find the number
+of components by calculating how many BFS/DFS calls you need to perform in order to travers each node.
+Bridge is an edge, removal of which will increase the number of components in the graph.
+
+---------------------------------------------------------------------------------------------------------
+                            DFS. Depth First Search
+---------------------------------------------------------------------------------------------------------
+void search(Node *root) {
+    if (root == NULL) return;
+    visit(root)
+    root.visited = true;
+    for (Node *node : root.adjacent)
+        if (!node->visited)
+            search(n)
+}
+
+---------------------------------------------------------------------------------------------------------
+                           BFS. Breadth First Search
+---------------------------------------------------------------------------------------------------------
+void search(Node *root) {
+    Queue queue;
+    root.visited = true;
+    queue.push_back(root);
+    while(!queue.is_empty()) {
+        Node tmp = queue.pop_front();
+        visit(tmp);
+        for (Node *node : tmp.adjacent) {
+            if (node->visited)
+                continue;
+            node->visited = true;
+            queue.push_back(node);
+        }
+    }
+}
+---------------------------------------------------------------------------------------------------------
+                              Bidirectional Search
+---------------------------------------------------------------------------------------------------------
+Is used to find the shortest path between a source and destination node. It operates by essentially running
+two simultaneous BFS, one from each node. When their searches collide, we have found a path. This approach
+may be faster then a single BFS by a factor of k^(d/2), where k - max number of adjacent nodes, d - the
+shortest path.
+
+---------------------------------------------------------------------------------------------------------
+                               ST. Spanning Trees
+---------------------------------------------------------------------------------------------------------
+Minimal Spanning Tree of a graph G is a subset of G that covers all of its vertices using the minimum
+number of edges. It has the following features:
+- Removing one edge from the ST will make it disconnected
+- Adding one edge to the ST will create a loop
+- If each edge has distinct weight then there will be only one & unique MST
+- Complete undirected graph can have n^(n-2) nodes of ST
+- Any connected & undirected graph has atleast one ST
+- Disconnected graph does not have any ST
+- From a complete graph by removing max (e-n+1) edges we can construct a ST
+
+There are two algorithms for finding an MST: Kruskals and Prim`s
+Prim`s algorithm for finding the MST:
+1. Remove loops
+2. Remove parallel edges, leave the cheapes one of them
+3. Choose arbitrary node as a root
+4. Checkout all the outgoing edges from that node, choose one with the lowest weight
+5. Checkout all the outgoing edges from the new node and the previous one, choose the cheapest one
+6. Perform all steps starting with 4. every time adding a new node to the MST and it neighbours to
+   candidate list
+
+Kruskals algorithm for finding the MST:
+1. Remove loops
+2. Remove parallel edges, leave the cheapes one of them
+3. Wright out all of the edges in increasing value order
+4. Choose an edge having the minimal weight for the set and connect it
+ - if connection results in loop, remove this connection
+
+---------------------------------------------------------------------------------------------------------
+                                Topological Sort
+---------------------------------------------------------------------------------------------------------
+Topological Sort is a linear ordering of its vertices such that for every directed edge uv for vertex
+u to v, u comes before vertex v in the ordering. NOTE, graph is required to be DAG.
+Every DAG will have atleast one topological ordering
+1. Find the indegree of each vertix
+2. Start from a node with the indegree of 0
+-  If you have multiple such nodes, choose any one
+3. Delete it and decrease indegree of adjuscent vetices
+4. Goto 2.
+
+---------------------------------------------------------------------------------------------------------
+                                  Path Finding
+---------------------------------------------------------------------------------------------------------
+Dijkstra Algorithm. An greedy algorithm for single source shortest path problem. Doesn`t work with a graph
+having negative weights.
+Bellman-Ford Algorithm. Dynamic approach. Works with a graph having negative weights.
+=========================================================================================================
+                                    Hashing
+=========================================================================================================
+Hashing is a searching technic which allows to find elements in amortized constant time based on some
+search key.
+There are 3 methods of calculating the hash:
+- Division method
+- Folding method
+- Midsquare method
+- Modulo multiplication method
+
+A good hash function has following properties:
+1. Easy to compute O(1)
+2. Even distribution
+   H(x) = x mod 10 => for 10, 20, 100, 200, 1000
+   Such function will hit the same buckets therefore creating a collisions
+3. Less collision
+
+It is possible to have a collisions while hashing and it is not possible to remove it, only to minimize.
+There are 2 technics of such minimization:
+1. Open Hashing (Closed Addressing). Chaining
+2. Closed Hashing (Open Addressing). Linear Probing; Quadratic Probing; Double Hashing
+
+
+=========================================================================================================
+                               Bit Manipulations
+=========================================================================================================
+Common bit manipulations:
+- Get bit
+  bool getBit(int num, int i) {
+      return ((num & ( 1<<i )) != 0);
+  }
+- Set bit
+  int setBit(int num, int i) {
+      return num || (1 << i);
+  }
+- Clear bit
+  int clearBit(int num, int i) {
+      return num & ~(1 << i);
+  }
+- Clear range from left upto i
+  int clearLUptoI(int num, int i) {
+     int mask = ~( (1<<i) - 1)
+     return num & mask;
+  }
+- Clear range from right upto i
+  int clearRUptoI(int num, int i) {
+     int mask = (-1 << (i + 1));
+     return num & mask;
+  }
+- Clear the lowest set bit
+  x & (x - 1)
+  15 1111 => 1110 => 1110 => 14
+  14 1110 => 1101 => 1100 => 12
+  12 1100 => 1011 => 1000 => 8
+- Get the lowest set bit
+  x & ~(x - 1)
+  15 1111 => 1110 => 0001 => 0001 => 1
+  14 1110 => 1101 => 0010 => 0010 => 2
+  12 1100 => 1011 => 0100 => 0100 => 4
+
+
+=========================================================================================================
+                                    Sorting
+=========================================================================================================
+                                 Quick vs Merge
+---------------------------------------------------------------------------------------------------------
+- Memory
+  Merge sort requires an additional storage, where it will hold a temporary results, which means higher
+  space complexity. On oposit, this is fine if object`s doesn`t fit into the memory and you need to swap
+  them from harddrive
+  Quick is inplace algorithms, therefore there is no additional memory consumption. However it get`s
+  significantly slower when objects for sorting do not fit the memory and you need to get them from disk
+- Locality
+  Quick, If objects fit into memory, then operations are fast and local
+  Merge, doesn`t care if object is in memory or not, since it will allocate additional buffer any way
+- Access requirements
+  Quick. is designed for an arrays and will not work well with structures like a linked list that do not
+  support random access.
+  Merge, swaps are sequential, therefore can work well with linked lists
+
+https://stackoverflow.com/questions/5222730/why-is-merge-sort-preferred-over-quick-sort-for-sorting-linked-lists
+---------------------------------------------------------------------------------------------------------
+                                 Counting Sort
+---------------------------------------------------------------------------------------------------------
+Counting sort works by iterating throught the input, counting the number of time each item occurs, and
+using those counts to compute an item`s index in the final sorted array. Example is radix sort where values
+are sorted into buckets based on binary digits.
+
++ Linear time. Runs O(n) time, making it asymptotically faster than comparison-based sorting like quick/merge
+- Restricted Inputs. The range of potential items must be known ahead of time
+- Space cost. If the range of potential values is big, then counting sort requires a lot of space, maybe
+  even more than O(n)
+
+Radix sort has complexity of O(D*(N+B)) where D - number of visits per number (the highest number of bits),
+N - number of elements, B - number base
+
+https://www.interviewcake.com/concept/java/counting-sort
+---------------------------------------------------------------------------------------------------------
+Why comparison based sorting takes O(n logn)
+https://www.youtube.com/watch?v=WffUZk1pgXE&list=PLiQ766zSC5jMZgWWdqy_6TpLivRGQaFD-
+=========================================================================================================

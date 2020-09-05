@@ -46,6 +46,11 @@ eSATA         # External SATA, an extension of, or improvement on, the SATA, mak
                 popularity due to advancements in USB speeds.
 
 https://www.makeuseof.com/tag/computer-cable-types-user/
+---------------------------------------------------------------------------------------------------------
+                                     USB-C
+---------------------------------------------------------------------------------------------------------
+https://remontka.pro/usb-type-c-thunderbolt-3-monitors/
+https://medium.com/@TIRIAS_Research/what-you-need-to-know-about-usb-c-and-thunderbolt-3-2047171cfe4a
 =========================================================================================================
                       GPIO (General Purpose Input Output)
 =========================================================================================================
@@ -100,25 +105,482 @@ of the wire around a component lead or a socket pin. It is old techology used fo
 later used for prototyping since it can be well automated and easily fixed by hand.
 
 =========================================================================================================
-                                  CPU sockets
+                                      CPU 
+=========================================================================================================
+  ISA
+=========================================================================================================
+Instruction Set Architecture is an abstract model of a computer, commonly refererred to as architecture;
+the part of the processor that is visible to the programmer or compiler writer;  boundary between software
+and hardware;
+In general, ISA defines following
+- supported data types (words, strings, characters)
+- CPU states (main memory and registers)
+- state semantics (memory consistence, addressing modes)
+- instruction set (set of machine instructions)
+- endianness
+
+Let`s consider the design of an ISA as an engineering problem.
+ISA specifies how programs are to be encoded for a family of computers sharing that architecture. Once
+coded in a specific ISA, a program can generally be run on various machines sharing that ISA provided
+sufficient memory and I/O resources are available. In this respect, an ISAN is engineering abstraction:
+it specifies an interface between hardware and software, and -- like other engineering abstractions --
+allows both technologies to evolve independetly.
+There is a range of requirements:
+- Cost/performance
+- Cost/performance scalling
+- Model of computation
+- Backward compatibility
+- Future compatibility
+
+The ISA of a processor can be described using 5 categories:
+- Operand Storage in the CPU
+- Number of explicit named operands - how many operands are named in a typical instruction
+  Maximal number of operands, like a three-operand bs two-operand architecture ?
+
+RTL (Register Transfer Language). Assembly like language used to describe data flow at the register-transfer
+leverl of an architecture. Academic papers and textbooks often use a form of RTL as an architecture-neutral
+assembly language.
+
+ISA implementation for a specific processor is called a microarchitecture.
+For instance, x86 ISA was implemented in following microarchitectures:
+8086       | the first x86 processor
+286        | the first with protected mode including segmentation based virtual memory managment.
+i386       | the first 32bit x86 processor
+i486       | intoduced built-in FPU
+P5         | original Pentium microprocessor
+Intel Core | reengineered P6-based microarchitecture
+Haswell    | 22nm microarchitecture
+Skylake    | 14nm microarchitecture
+
+Examples of ISA are: load-store architecture, 
+
+https://computationstructures.org/notes/isas/notes.html
+https://en.wikipedia.org/wiki/List_of_Intel_CPU_microarchitectures
+=========================================================================================================
+  Chipset
+=========================================================================================================
+Chipset acts like a motherborad`s communications center and traffic controller, and detemnies what
+components are compatible with the motherboard. It defines what expansion options you have and how hard
+you can overclock your system.
+
+=========================================================================================================
+  Soket
 =========================================================================================================
 A CPU socket (or slot) is a single connector between a microprocessor and motherboard. It is a distinct
 mount used only for the CPU on the motherboard to ensure correct circuit chip insertion. It facilitates
 CPU access and prevents damage when a unit is inserted or removed. A CPU socket also has a lock to prevent
 CPU movement, and its design helps secure heat sink placement above the CPU.
+---------------------------------------------------------------------------------------------------------
+                                  Socket types
+---------------------------------------------------------------------------------------------------------
+The CPU socket design is exposed to frequent changes as the result of frequent changes to the CPU
+architecture.
+
+---------------------------------------------------------------------------------------------------------
+                           Common processor families
+---------------------------------------------------------------------------------------------------------
+x86 started with 16bit instruction set for 16bit processors (8086 and 8088 processors). Later x86 was
+exteded with 32bit inststruction set for 32bit processors (80386 and 80486) and was commonly referred as
+80x86, where x stands for variable chip model number. Later x86 was extended with 64bit instruction and
+somewhere along the line the 80 in the front was dropped, leaving just x86. The first 64bit extension to
+the x86 was made by AMD, initially called x86-64.
+
+https://superuser.com/questions/179919/x86-vs-x64-why-is-32-bit-called-x86
+---------------------------------------------------------------------------------------------------------
 
 Modern CPU sockets and processors are based on a pin grid array (PGA) architecture. PGA is a type of
 packaging used for integrated circuits (IC), such as a microprocessor. It is basically a square with pins
 that are organized below the packaging. Pins are spaced approximately 0.1 inches (2.54 mm) apart to cover
 a portion or entire underside of the package.
+=========================================================================================================
+  General
+=========================================================================================================
+                                   Structure
+---------------------------------------------------------------------------------------------------------
+Some outdeted terminology:
+Frontside Bus. When L2 cache was developed, the connection between the data bus (CPU, MCC, RAM) + address bus 
+were lumped into a single term called the frontside bus.
+Backside Bus. The connection between the CPU and the L2 cache.
+
+IMC. Integrated Memory Controller
+Old CPUs had MMC (memory controller connection CPU to the RAM) on the motherboard.
+All current microprocessors have an Integrated Memory Controller moved into CPU to optimize the flow of
+information into and out from the CPU. It enables faster control over things like the large L3 cache
+shared among multiple cores.
+Just like in many other areas of computing, most manufacturers have different ways of implementing it,
+therefore, CPUs support different types an capacities of RAM.
+
+---------------------------------------------------------------------------------------------------------
+                                     Metrics
+---------------------------------------------------------------------------------------------------------
+Here is what to look for when you choose a CPU:
+1. Clock speeds. Measured in gigahertz (GHz), this is the speed at which the chip operates, so higher is
+   faster. Most CPUs change speed dynamically depending on type/amount of work it is dooing therefore it
+   should be mention min/max speed.
+2. Cores. Amout of processors withing the CPU. Each one is capable of handling its own tasks in parralel
+   with others.
+3. Threads. How many proccesses can be runned at once. In theory, it is expected to have one core running
+   one process at a time, however it may support hyper threading when some part of core can executed
+   independantly from other.
+4. TDP. The Thermal Design Profile/Power. How much heat a busy CPU generates, measured in watts.
+   The maximum amout of heat that chip generates at stock speed. You need to care about this to choose
+   proper CPU cooler. Don`t forget about overcloking wich may create more heat then you expect.
+   Typicall TDP for smartphone is 2-15 watts, laptop 7-65 watts, desctops 50-140 watts.
+5. Cache.
+6. IPC. Instructions Per Cycle. You may have two CPUs that have the same clock spped, amount of cores and
+   threads but from different companies which really makes their perfomance different.
+
+Different processors require different socket types, therefore, if you already have an motherboard and
+don`t want to replace it, you`ll need to purchase a CPU that matches you board`s socket.
+
+https://www.tomshardware.com/reviews/cpu-buying-guide,5643.html
+---------------------------------------------------------------------------------------------------------
+                                CPU Clocks
+---------------------------------------------------------------------------------------------------------
+In a computer, clock speed refers to the number of pulses per second generated by an oscillator that are
+used to synchronize the operations of its components, and is used as an indicator of the processor`s speed.
+
+CPU clock speed, or clock rate, is measured in Hertz — generally in gigahertz, or GHz. A CPU’s clock speed
+rate is a measure of how many clock cycles a CPU can perform per second. For example, a CPU with a clock
+rate of 1.8 GHz can perform 1,800,000,000 clock cycles per second.
+It can be used to compare similar CPUs in the same family but it is not applicable for CPU`s of different
+families. This may not seem obvious at first, but it is present because of difference in architecture.
+Newer chips may perform operations faster, therefore it takes less clock cycles to perform then on another
+chip.
+
+It’s important to look not just at clock cycles but at the amount of work a CPU can do per clock cycle.
+All other things being equal, fewer clock cycles with more work are better than more clock cycles with
+less - fewer clock cycles means the CPU requires less power and produces less heat.
+
+Modern CPUs aren`t fixed at a single speed. It runs at a slower speed when idle (or not doing much) and
+a faster speed under load. he CPU dynamically increases and decreases its speed when needed. This should
+be taken to consideration when choosing a new device. Maybe it may run only some time on it top speed
+for overheating considerations, or it may only be able to run at its top speed for a certain amount of
+time before running at a lower speed because it can’t be properly cooled.
+On the other hand, a computer with the exact same CPU but better cooling may have better, more consistent
+performance at top speeds if it can keep the CPU cool enough to run at those top speeds for longer.
+
+---------------------------------------------------------------------------------------------------------
+                                    Cooling
+---------------------------------------------------------------------------------------------------------
+Almost every CPU uses a combination of a heat sink and fan assembly to wick heat away from the CPU.
+
+Heat Sink. A copper or other metal device designed to dissipate heat from whatever it touches.
+Before inserting the heat sink you need to add a small amount of thermal paste, note, you can have too
+much thermal paste
+
+Cooling options:
+- OEM (Original Equipment Manufacturer) CPU coolers. Means that Inter/AMD sell you a CPU which comes
+  already with sink+fan. You buy jsut the OAM CPU, meaning without cooling, from retailor but using original
+  means that it 100% works.
+- Specialized CPU coolers. Third-party heat sink and fan assemblies for a variety of CPUs.
+  Usually, more eye catching design and higher efficiency.
+  Opens more unusual options, like liquid cooling.
+
+Note, in some instances you can create a system that has no fan for the CPU, what`s called fanless cooling.
+Aside from mobile devices (like an Apple iPad) that have no fans, the term can be misleading. No fan can
+mean using an alternative mechanism like ducts.
+
+---------------------------------------------------------------------------------------------------------
+                                  Overclocking
+---------------------------------------------------------------------------------------------------------
+In general overclocking stands for configuring CPU to run faster, but it may make your system less stable.
+Almost all processors ship with a speed rating. For example, an Intel Core i7 860 runs at 2.80GHz out of
+the box. Overclocking a Core i7 860 means pushing it to a clock speed higher than 2.80GHz.
+The CPU won`t meld instantly since preconfigured speed is usually lower then maximall possible.
+
+Overclocking will void the warranty of your retail CPU. Overclocking may destroy your CPU, your motherboard,
+or your system memory. It may corrupt your hard drive. Be careful when overclocking. You have been warned.
+Note, that extreme overclocking may require additional colling which may involve replacing of the old
+mechanism.
+
+All CPUs have a fundamental clock rate, from which all of the other clock rates inside the CPU are derived.
+Various sections of the processor take this fundamental clock rate, which acts as a kind of standard
+timekeeper, and multiply it to get an internal clock speed for a particular section of the CPU.
+This clock rate is called the base clock or BCLK (usually 133MHz) for Intel Core i5/7 series of CPUs.
+AMD calls this the CPU bus frequency (usually 200MHz).
+
+Rated speed for i750 is 2.66 Ghz even though clock rate is 133MHz. The main processor takes the BLCK
+number and multiplies it by CPU multiplier, which is 20 in this case, to get 2.66GHz. Some processor are
+clock-locked meaning you can`t unlock the multiplier. This is useful tool to help with overclocking.
+
+---------------------------------------------------------------------------------------------------------
+                                     Issues
+---------------------------------------------------------------------------------------------------------
+CPU throttling (also known as dynamic clock or dynamic frequency scaling) is a mechanism that is
+responsible for managing amount of resources used by CPU under differrent loads. This means, that if there
+is no much load on CPU, there is no purpose to use all cores and spend resources like electirc charge.
+This is done on devices like mobile phones to preserve battery when you don`t use device, increasing it`s
+usage time.
+
+Sometimes, you may face unwanted throttling. Current CPUs have a so high power density that if cooling
+system fails, CPU will self-destruct. To prevent this, or if your fan just got blocked with dust, your
+CPU will decrease it`s performance, possibly shut it down completely if the throttling doesn`t cool it
+enough.
+The same problem may be seen when there is lack of power. You need more power to up-clock a processor,
+this is done by increasing frequency and voltage, and probably by engaging a fan. If you have problem
+with power supply, your devince may run slower that it may run.
+
+https://www.quora.com/What-is-CPU-throttling
+=========================================================================================================
+                                  Intel vs AMD
+=========================================================================================================
+  Intel CPUs
+---------------------------------------------------------------------------------------------------------
+Major processor models released by Intel:
+- Pentium 1,2,3,4
+- Celeron
+- Pentium M and Celeron M for mobile devices
+- Pentium Dual Core
+- Core Solo
+- Core Duo
+- Core 2 Duo
+- Core 2 Quad
+- Core i3/5/7
+
+Processor families/brands:
+Core     # 3D, advanced video and photo editing, complex games, hires 4k displays
+Xeon     # cloud computing, datacenters, high scaling
+Xeon Phi # optimized foor highly-paralllel workloads
+Atom     # for mobile devices and energy-efficient servers
+Pentium  # 2-in-1s, laptops, desktops
+Celeron  # basic consumer application
+Itanium  # breakthrough performance, reliability, scalabillity, mission critical applications
+Quark    # IoT2-in-1s, laptops, desktops
+Celeron  # basic consumer application
+Itanium  # breakthrough performance, reliability, scalabillity, mission critical applications
+Quark    # IoT, low power consumption
+
+Note, these are models and not generations, as well as i3 and i5 are different models.
+The concept of generation came after the release of Core i series, main difference is the used
+microarchitecture. These are used to simplify brending into entry/mid/high-level -> 3/5/7, and
+signla different features and benefits. For instance, chip Lynnfield is available as i5 and i7
+depending on feature set and capability.
+There is another way of branding, where entry/mid/high maps into Celeron/Pentium/Atom
+
+Intel processor generations:
+1  | 2010? 2008 | 45nm |  Nehalem
+   | Had certain limitations like inability to increase the clock speed, inefficient pipeline.
+   | Introduced hyper-threading technology
+2  | 2011 | 32nm | Sandy Bridge | Smaller transistors result in 11% performace increase
+3  | 2012 | 22nm | Ivy Bridge. 
+   | Consudem 50% less energy and had 25-68% increased performance
+   | The only problem it that it could emit more hear compared to Sandy Bridge
+4  | 2013 | Haswell
+   | Small performace increase 3-8%
+   | Introduced support for new sockets (LGA 1150, BGA 1364, LGA 2011-3)
+   |                                     new cache design, DDR4 support ?
+5  | 2015 | 14nm | Broadwell
+   | Performance increase 37%, increased battery life up to 1.5 hours
+   | Faster wake time and improved graphics performance
+   | Supports socket with DDR3
+6  | 2015 | Skylake | Redesign of Broadwell | Socket with DD3
+7  | 2016 | Kaby Lake
+   | Refresh of Skylake, the first micro-architecture that does not come with an official driver? for OS
+   | older than Windows 10
+   | New graphics architecture to improve 3D graphics performance and 4K video playback
+   | Socket supports DDR3 and DDR4 slots
+8  | 2017 | Kaby Lake R (Refreshed)
+   | Faster DDR4 support, no DDR3 support
+9  | 2017 | Coffe Lake
+   | Breaks the limit of 4 cores/CPU, supporting 8 cores/CPU
+   | More heat required to attched the IHS (integrated head spreader) instead of the thermal paste
+   | Uses 1151 LGA sockets with altered pinouts to support more than 4 cores
+10 | 2017/2018 | 10nm | Cannon/Ice Lake
+   | Ice Lake is produced as the 2nd generation of 10nm processors
+   | The first CPU architecture that comess with integrated support for Wi-Fi 6 (802.11ax) and Thunderbolt 3
+11 | Not released yet | Tiger Lake
+   | Will have 30% higher performance.
+   | Will introduce L4 cache
+12 | Sapphire Rapids | Refinement of 10nm or an all new 7nm process
+   | May introduce DDR5 support
+
+Letters in processor names:
+G  | CPU has high power graphics hardware, power is measured from G1 to G7
+   | Older generations used "U", "HQ", "Y"
+K  | Unlocked for overclocking
+F  | No integrated graphics
+T  | Power optimized
+S  | Special edition, performance-optimized lifestyle
+H  | High performance graphics
+HK | High performance graphics, unlocked for overclocking
+HQ | High performance graphics, quad core
+U  | Ultra low power
+Y  | Extremely low power
+M  | Mobile
+QM | Quad core mobile
+R  | High end mobile
+X  | High end, unlocked, consumer i9+ CPU 
+
+TODO: altered pinouts?
+https://www.intel.com/content/www/us/en/processors/processor-numbers.html
+https://www.itechtics.com/processor-generations/
+https://en.wikipedia.org/wiki/List_of_Intel_CPU_microarchitectures
+---------------------------------------------------------------------------------------------------------
+  AMD
+---------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------
+ Intel vs AMD
+---------------------------------------------------------------------------------------------------------
+There is a question - why AMD is so popular even if Intel was one the first and biggest companyes.
+In 1976, Intel couldn`t manufacture as many CPU`s as was requested by IBM, therefore they signed
+cross-license agreement with AMD so they could preatty much clone Intel CPU`s without being sued.
+When Intel got big and didn`t want the AMD still producing the CPUs - they could as the result of license
+agreement. In January 1995, they have settled and decided to end the licensing agreements. As a result of
+this, AMD chops are no longer compatible with sockets or motherboards made for Intel CPUs. If you want to
+use an Intel CPU
 
 =========================================================================================================
                                   Peripherals
 =========================================================================================================
-PCI (Peripheral Component Interconnect) => common connection interface for attaching computer peripherals
-to a PC`s motherboard. This interface was popular between 1995 and 2005 and now is changed for PCIe, some
-PCI can be present on motherboard for backward compatibility, but the devices that used to be attached as
-PCI expansion cards are now either integrated onto motherboards or attached by other connectors like PCIe.
+There are plenty of peripheral devices needed for comfort work with computer, such as mouse and keyboard.
+To controll them and send/receive command they need to be connected to the CPU. The simplest way is just
+to extend data/address bus through the motherboard, connecting all of the computer`s conntollers to the
+CPU. Therefore, ealy motherboards where coverd in controller chips.
+
+Over time, multiple contollers were packerd into specifically designed chipsets. Early chipsets consisted
+of two paired chops called the northbridge and southbridge.
+
+Today`s CPUs have controllers, such as the memory and display controllers, built in. Other are packed into
+a single chip called Platform Controller Hub by Intel and just chipset by others.
+The chipset extends the data bus to every device on the PC.
+
+Note, the CPU doesn`t know how to automatically talk with any device; it needs some support program loaded
+into memory that teaches it about a particular device. The BIOS (Basic Input/Output services) is a program
+that loads other programs dedicated to teaching CPU to communicate with devices and these are called
+services (or device drivers).
+
+Having BIOS creates a new set of probles. The main one is where to store all those programs for device
+communication. Possible solution is to keep it withing OS, which is fine when OS already installed on the
+device and is up running. But what to do when new system is built and there is not OS installed yet.
+You still need to have access to display and the keyboard so you can do at least something. These can
+be on the harddrive but where do we store the driver for that hardrive or it is not present at all. 
+The perfect place to store them is on the motherboard but type of memory is under a question. Some form of
+RAM is not valid, since it will loose all data on the reset. It should be peprmanent that does not depend
+on other peripherals to work and that needs to sit on the board. 
+
+ROM (Read Only Memory) chip is the solution to the previous problem.
+Motherboards use a type of ROM called flash ROM. Such chip is called the system ROM chop because it
+contains code that enables your CPU to talk to the basic hardware of your PC. All the utilities stored on
+the system ROM chip are called, collectively, the system BIOS or firmware since it is directly stored
+on the hardware ROM.
+
+This approche works fine for devices that are always present and never change like a keyboard but things
+get ore complicated when you want to change something in your device, like add more RAM or change hard.
+In this case, you would hold additional drivers on a harddrive which would be loaded on a boot.
+Modern systems use firmware grogramming called the UEFI (Unified Extensible Firmware Interface) instead
+of BIOS.
+
+All of the BIOS setting are saved to a tiny bit of RAM hooked up to a small battery to keep it
+working with the PC off, called CMOS. In addition to BIOS settings it holds an RTC value.
+The information stored in CMOS is necessary for the PC to function. If the data stored in CMOS about a
+piece of hardware is different from the specs of the actual hardware, the computer cannot access that
+piece of hardware.
+Note, MacOS machines are usually designed form the ground up as unified systems so there is not much
+flexebility in changing however you have less headache with CMOS configuration.
+
+To modify CMOS, every PC ships with a system setup utility built into the system ROM. These look different
+from vendor to vendor but all contain basically the same settings. The latest ones even support mouse
+usage.
+---------------------------------------------------------------------------------------------------------
+                                      PCI
+---------------------------------------------------------------------------------------------------------
+- PCI (Peripheral Component Interconnect). Common connection interface for attaching computer peripherals
+  to a PC`s motherboard. This interface was popular between 1995 and 2005 and now is changed for PCIe.
+  Some PCI can be present on motherboard for backward compatibility, but the devices that used to be
+  attached as PCI expansion cards are now either integrated onto motherboards or attached by other
+  connectors like PCIe.
+  One of the reasons behind it`s popularity was that Intel released PCI to the public domain.
+  Another is the capability to coexist with other expansion buses so you could buy a motherboard with
+  both old slots and a new PCI, therefore slowly migrating to the PCI
+- Mini PCI. Laptops variant of PCI, designed to use low power and to lie flat.
+- PCI Express, PCIe. The same PCI but it uses a point-to-point serial connection instead of PCI`s shared
+  parallel communication. It is more easy to use in high speed cases as well it is not shared by all devices
+  instead each one has a separate connection to the CPU.
+  
+Transfer rate. The number of operations happening per second.
+PCI uses one wire for sending and one for receiving, such pair is called a lane.
+Each ptp connection can use 1,2,4,8,12,16 lanes to achive a max theoretical bandwidth of up to 256 GTps.
+PCIe has following speed per lane
+    1.x | 2.5 GTps
+    2.x | 5   GTps
+    3.x | 8   GTps
+    4.0 | 16  GTps
+
+The most common PCIe slot is the 16-lane (x16) version most often used for video cards.
+=========================================================================================================
+                                  Power Suply
+=========================================================================================================
+Electricity works essentially the same way as water through pipes. Electric companies gather or generate
+electricity and then push it to your house under pressure through wires.
+
+Voltages. Measure of the electrons pressure in the wire, measured in volts.
+Current/Amperage. The amount of electrons moving past a certain point on a wire, measured in amperes.
+Wattage. The amps and volts needed so that a particular device will function. 
+ V | Presure, voltage
+ A | Volume, ampers
+ W | Work, wattage
+ Q | Resistence, ohms
+ W = V x A
+
+The voltage from the power supply tends to sag (drop well below) and surge/spike the standard. These sags
+and spikes usually don`t affect lamps and refrigeratos but they can keep your PC from running or can even
+destroy a PC or peripheral device. Spikes can be handled at the supply of AC using surge suppressors and
+uninterruptible power supplies.
+
+Surge Supperssors. Any surge can harm your computer, and a strong can destroy components, therefore, every
+PC should use a surge suppressor device that absorbs the extra voltage from a surge to protect the PC.
+The power supply may handle small surges but it takes a lot of damage from this and will eventually fail.
+To protect your power supplu, a dedicated surge suppressor works between the power supply and the outlet
+to protect the system from power surges. Note, they have grades and you need to research before buying.
+
+UPS. Uninterruptible Power Supply.Contains a big battery that provides AC power to your computer regardless
+of the power coming from the AC outlet.
+
+---------------------------------------------------------------------------------------------------------
+                                   Connectors
+---------------------------------------------------------------------------------------------------------
+Mother boards use 20/24 pin P1 power connectors, some may require special 4/6/8 pin connectors to supply
+extra power. 
+
+The typical PC power supply has at least three types of connectors that plug into peripherals:
+- Molex. Supplies 5/12-V current for fans and older drives. Require a firm push to plug in properly, and
+  a strong person can defeat the chamfers (notches) plugging a Molex in uppside down. Always check for
+  proper orientation before you push it in.
+- Mini. A few power supplies still support it.
+- SATA. Serial ATA drives need a 15pin SATA power connector. The large pin count supports the SATA
+  hot-swappable feature and 3.3/5/12 V devices.
+Another connectors include:
+- PCIe 6/8pin connector. Higher-end video cards have one or two sockets that require specific 6/8pin
+  PCIr power connectors.
+
+ATX power supplies.
+Had two distinguishing physical features: the motherboard power connector and soft power.
+Motherboard power came from a single cable with a 20pin P1 motherboard power connector.
+Also had at least two other cables each populated with two or more Molex or mini connectors for peripheral
+power.
+
+Rails. AC is conerted to DC by the power supply into three main voltage rails: 3.3/5/12V and groups of
+wires run from each of these voltage rails to the various connectors. Each rail has a maximum amount of
+power it can supply which is usually quite above needed for simple PC but can be not enough for some high
+end ones. The most popular solution is to include multiple rails in the power supply and an OCP (over
+current protection) which prevents overusage of the single rail.
+
+
+Splitters. If you don`t have enough connectors to power all of the devices inside your PC, you can use
+spllitiers to create more connections.
+
+Adapters. You may need a SATA connectors but having only a spare Molex. Because the voltages on the wires
+are the same, a simple adapter will take of the problem.
+
+---------------------------------------------------------------------------------------------------------
+                                    Cooling
+---------------------------------------------------------------------------------------------------------
+Fans sizes are measured in millimeters (mm) or centimeters (cm). Traditionally, the industry used 80mm
+power supply and cooling fans, but today you`ll find 100/120mm and even larger fans in power supplies and
+cases.
+
+TODO: sleeve-bearing vs ball-bearing fans.
 =========================================================================================================
                                      Busses
 =========================================================================================================
@@ -147,116 +609,62 @@ access to the CPU.
 https://stackoverflow.com/questions/1723481/relation-between-usb-and-pci
 https://electronics.stackexchange.com/questions/24077/difference-between-busses
 =========================================================================================================
-                                      CPU
+                                   Video card
 =========================================================================================================
+The display adapter, or video card, processes information for the CPU and sending it to othe display.
+Although many new systems have the display adapter circuity built into the CPU and motherboard, it is still
+commonly refered to as video card, since intial computers had no video support, and you would use expansion
+video card.
+Video card is defined by five aspects: motherboard slot, graphics processor, video memory, integrated GPUs
+and connections.
 
 ---------------------------------------------------------------------------------------------------------
-                                     Specs
+  Motherboard slot
 ---------------------------------------------------------------------------------------------------------
-Here is what to look for when you choose a CPU:
-1. Clock speeds. Measured in gigahertz (GHz), this is the speed at which the chip operates, so higher is
-   faster. Most CPUs change speed dynamically depending on type/amount of work it is dooing therefore it
-   should be mention min/max speed.
-2. Cores. Amout of processors withing the CPU. Each one is capable of handling its own tasks in parralel
-   with others.
-3. Threads. How many proccesses can be runned at once. In theory, it is expected to have one core running
-   one process at a time, however it may support hyper threading when some part of core can executed
-   independantly from other.
-4. TDP. The Thermal Design Profile/Power. The maximum amout of heat that chip generates at stock speed.
-   You need to care about this to choose proper CPU cooler. Don`t forget about overcloking wich may create
-   more heat then you expect.
-5. Cache.
-6. IPC. Instructions Per Cycle. You may have two CPUs that have the same clock spped, amount of cores and
-   threads but from different companies which really makes their perfomance different.
-
-Different processors require different socket types, therefore, if you already have an motherboard and
-don`t want to replace it, you`ll need to purchase a CPU that matches you board`s socket.
-
-https://www.tomshardware.com/reviews/cpu-buying-guide,5643.html
+There are four main ways that display adapters connecct to a motherboard:
+- PCI. Not used any more. Limited to 32bit transfers at roughly 33MHz makeing maximum bandwidth of 132MBps.
+  Almost every system had more than one PCI device, each requiring part of that bandwidth.
+- AGP. Not used any more. Intel has developed a separate port, similar to a PCI slot, dedicated to video.
+  No motherboard had 2 AGP slots and you`ll encounter these on ancient systems only.
+- PCIe. 
 ---------------------------------------------------------------------------------------------------------
-                                CPU Clocks
+ GPU. Graphical Processing Unit
 ---------------------------------------------------------------------------------------------------------
-In a computer, clock speed refers to the number of pulses per second generated by an oscillator that 
-are used to synchronize the operations of its components, and is used as an indicator of the processor`s
-speed.
-
-CPU clock speed, or clock rate, is measured in Hertz — generally in gigahertz, or GHz. A CPU’s clock speed
-rate is a measure of how many clock cycles a CPU can perform per second. For example, a CPU with a clock
-rate of 1.8 GHz can perform 1,800,000,000 clock cycles per second.
-It can be used to compare similar CPUs in the same family but it is not applicable for CPU`s of different
-families. This may not seem obvious at first, but it is present because of difference in architecture.
-Newer chips may perform operations faster, therefore it takes less clock cycles to perform then on another
-chip.
-
-It’s important to look not just at clock cycles but at the amount of work a CPU can do per clock cycle.
-All other things being equal, fewer clock cycles with more work are better than more clock cycles with
-less - fewer clock cycles means the CPU requires less power and produces less heat.
-
-Modern CPUs aren`t fixed at a single speed. It runs at a slower speed when idle (or not doing much) and
-a faster speed under load. he CPU dynamically increases and decreases its speed when needed. This should
-be taken to consideration when choosing a new device. Maybe it may run only some time on it top speed
-for overheating considerations, or it may only be able to run at its top speed for a certain amount of
-time before running at a lower speed because it can’t be properly cooled.
-On the other hand, a computer with the exact same CPU but better cooling may have better, more consistent
-performance at top speeds if it can keep the CPU cool enough to run at those top speeds for longer.
+The GPU takes commands from the CPU and translates them into coordinates and color information that the
+monitor understands and displays.
+Many companies make the hundreds of different video cards on the market, but only three companies produce
+the vast majority of graphics processors found on video cards: NVIDIA, AMD, and Intel.
+NVIDIA and AMD make and sell GPUs to third-party manufacturers who then design, build, and sell video cards
+under their own branding. Intel contrates on GPUs built into motherboards.
 
 ---------------------------------------------------------------------------------------------------------
-                                  Overclocking
+  Video Memory
 ---------------------------------------------------------------------------------------------------------
-In general overclocking stands for configuring CPU to run faster, but it may make your system less stable.
-Almost all processors ship with a speed rating. For example, an Intel Core i7 860 runs at 2.80GHz out of
-the box. Overclocking a Core i7 860 means pushing it to a clock speed higher than 2.80GHz.
-The CPU won`t meld instantly since preconfigured speed is usually lower then maximall possible.
+When you`re working with heavy-duty apps, video memory can prove to be a serious bottleneck in three ways:
+data throughput speed, access speed, and simple capacity.
+- Video display memory uses a wider bus
 
-Overclocking will void the warranty of your retail CPU. Overclocking may destroy your CPU, your motherboard,
-or your system memory. It may corrupt your hard drive. Be careful when overclocking. You have been warned.
-Note, that extreme overclocking may require additional colling which may involve replacing of the old
-mechanism.
-
-All CPUs have a fundamental clock rate, from which all of the other clock rates inside the CPU are derived.
-Various sections of the processor take this fundamental clock rate, which acts as a kind of standard
-timekeeper, and multiply it to get an internal clock speed for a particular section of the CPU.
-This clock rate is called the base clock or BCLK (usually 133MHz) for Intel Core i5/7 series of CPUs.
-AMD calls this the CPU bus frequency (usually 200MHz).
-
-Rated speed for i750 is 2.66 Ghz even though clock rate is 133MHz. The main processor takes the BLCK
-number and multiplies it by CPU multiplier, which is 20 in this case, to get 2.66GHz. Some processor are
-clock-locked meaning you can`t unlock the multiplier. This is useful tool to help with overclocking.
-
+The main difference between DRAM and VRAM is that it can both write and read data at the same time.
+The most common type of such VRAM is GDDR5+, although DDR3 is still the most popular memory on low-end
+non-gaming cards. 
+HBM2 (High Bandwidth Memory V2) offers a different stly of memory by using stacked DRAM connected via
+super-wide buses, for instance: GDDR has a 32-bit bus, while HBM supports 1024-bit bus.
+It is common to have 8-24GB of VRAM used for games.
 ---------------------------------------------------------------------------------------------------------
-                                     Issues
+  Integrated GPUs
 ---------------------------------------------------------------------------------------------------------
-CPU throttling (also known as dynamic clock or dynamic freqquency scaling) is a mechanism that is
-responsible for managing amount of resources used by CPU under differrent loads. This means, that if there
-is no much load on CPU, there is no purpose to use all cores and spend resources like electirc charge.
-This is done on devices like mobile phones to preserve battery when you don`t use device, increasing it`s
-usage time.
+Some motherboards have Integrated GPU, and quite a few can support a CPU with an integrated GPU.
 
-Sometimes, you may face unwanted throttling. Current CPUs have a so high power density that if cooling
-system fails, CPU will self-destruct. To prevent this, or if your fan just got blocked with dust, your
-CPU will decrease it`s performance, possibly shut it down completely if the throttling doesn`t cool it
-enough.
-The same problem may be seen when there is lack of power. You need more power to up-clock a processor,
-this is done by increasing frequency and voltage, and probably by engaging a fan. If you have problem
-with power supply, your devince may run slower that it may run.
-
-https://www.quora.com/What-is-CPU-throttling
----------------------------------------------------------------------------------------------------------
 =========================================================================================================
-                                      GPU
+                                 Video Displays
 =========================================================================================================
----------------------------------------------------------------------------------------------------------
-                               Integrated vs Not
----------------------------------------------------------------------------------------------------------
-Intergrated Graphics (IGPU)
----------------------------------------------------------------------------------------------------------
-=========================================================================================================
-                                    Monitor
-=========================================================================================================
+Video displays come in three varieties: flat-panel monitors, projectors, virtual reality headsets.
+Almost every computing device today uses a LCD panel as the primary visual output component.
+
 Modern LCD(Liquid Crystal Display) monitors are extremely thin, as if they are made out of a single piece
-of material. They are, however, made up of multiple components including the display panel. The display
-panel is a flat sheet of material that contains liquid crystals that react in different ways when electricity
-is applied.
+of material. They are, however, made up of multiple components including the display panel.
+The display panel is a flat sheet of material that contains liquid crystals that react in different ways
+when electricity is applied.
 
 
 Monitors have many of characteristics like: panel type, screen size, refresh rate, response time, etc...
@@ -264,7 +672,7 @@ Monitors have many of characteristics like: panel type, screen size, refresh rat
                                   Display Panel Types
 ---------------------------------------------------------------------------------------------------------
 Monitor panel technology affects what the monitor can do and for which uses it is best suited. There are
-4 main panesl types called: IPS, TN, VA, OLED. All of them are part of the LCD panel technology family.
+4 main panel types called: IPS, TN, VA, OLED. All of them are part of the LCD panel technology family.
 The specific type of LCD panel affects many different aspects of screen performance including:
 ---------------------------------------------------------------------------------------------------------
 Response time and input lag:
@@ -279,14 +687,14 @@ to display a frame. Therefore, pixels need to transition more quickly than that 
 next frame in time.
 A longer response time results in `ghosting`, when you can see the remain of trails from a movin object
 on a screen because pixels took too long to switch between shades of gray. This affects gamers for whom
-the poor response times can vause distracting visual artifacts. This can be seen when you move mouse
+the poor response times can cause distracting visual artifacts. This can be seen when you move mouse
 pointer withing your monitor.
 Panel type  | Respone Time | Comment
-TN          |     1ms
-IPS         |    4/5ms
+TN          |     1ms      |
+IPS         |    4/5ms     |
 VA          |    4/5ms     | Takes more time to change from deep black shades
 OLED        |    0.1ms     | There are no OLED monitors except for a few very expesive aimed at high-end
-                             professional designers
+            |              | professional designers
 Note, it may take more time to change pixel from white to black but less to some shade of black. It is
 commonly used marketting trick to say time used to move from white to shade of black.
 
@@ -343,6 +751,7 @@ LCD monitors are illuminated by several backlights. Brightness is measured in ca
 want to watch movies or play games on your computer. For office work and browsing a lower rating of
 200 - 250 cd/m2 is fine.
 
+One candela is roughly equal to the amount of light created by a candle.
 ---------------------------------------------------------------------------------------------------------
 Ports:
 ---------------------------------------------------------------------------------------------------------
@@ -350,14 +759,10 @@ You need to connect monitor to computer video card. This is done with some type 
 You should check if your GPU and monitor have common ports, otherwise you may need a convertor which
 may degrade speed to data translation.
 The commonly used ports:
-1. Display port
-   The latest digital display interface, produced since 2008.
-2. HDMI
-   High-Definition Multimedia Interface, a digital audio/video interface produced since 2003.
-3, DVI
-   Digital Video Interface, the first digital video interface. Produced to replace VGA since 1999.
-4. VGA
-   Video Graphics Array, the old analog connector, first produced in 1987.
+1. Display port. The latest digital display interface, produced since 2008.
+2. HDMI. High-Definition Multimedia Interface, a digital audio/video interface produced since 2003.
+3, DVI. Digital Video Interface, the first digital video interface. Produced to replace VGA since 1999.
+4. VGA. Video Graphics Array, the old analog connector, first produced in 1987.
 ---------------------------------------------------------------------------------------------------------
 Black levels:
 ---------------------------------------------------------------------------------------------------------
@@ -376,7 +781,7 @@ monitors.
 ---------------------------------------------------------------------------------------------------------
 DPI/PPI:
 ---------------------------------------------------------------------------------------------------------
-Pixels are physical points on display used to display some coler at a moment. Monitor has touthands to
+Pixels are physical points on display used to display some coler at a moment. Monitor has thouthands to
 millions of them and the more there is the higher picture quality you may get.
 Pixels are usually measured in terms of density, e.g. how many you have per area of monitor. Usually
 area is a inch by inch sized square and its measurement is called DPI(Dots Per Inch) or PPI (Pixels Per Inch).
@@ -406,6 +811,15 @@ Convergence:
 ---------------------------------------------------------------------------------------------------------
 It refers to how sharply an individual colour pixel on a monitor appears. Each pixel is composed of three
 dots namely a red, a green and a blue. If the dots are badly mis converged, the pixel will appear blurry.
+
+---------------------------------------------------------------------------------------------------------
+VESE Mounts:
+---------------------------------------------------------------------------------------------------------
+Almost every monitor these days has a standardized bracket option for mounting the monitor on the wall or
+on a special stand called a VESA mount. VESA mount standards have a couple of official names:
+FDMI (Flat Display Mounting Interface) and the MIS (VESA Mounting Interface Standard).
+
+Curved panels do not have VESA mount options.
 
 ---------------------------------------------------------------------------------------------------------
 IPS `In-Plane Switching`
@@ -440,14 +854,14 @@ attempt to view the display from an off angle.
 ---------------------------------------------------------------------------------------------------------
 VA `Vertical Alignment`
 ---------------------------------------------------------------------------------------------------------
-It has a higher static contrast ration providing truly black colors and the brightest whites.
+Has a higher static contrast ration providing truly black colors and the brightest whites.
 
 ---------------------------------------------------------------------------------------------------------
                                    Resolution
 ---------------------------------------------------------------------------------------------------------
 Monitor resolution describes the visual dimensions of display in terms of relation of width and height.
 Example of a resoultion is well known Full HD 1080p meaning that display is 1920 (width) x 1080 (height)
-pixels, reslting in a grand total of 2.073.600 pixels on screen.
+pixels, resulting in a grand total of 2.073.600 pixels on screen.
 
 The higher monitor resolution is, the more detailed an image can be since it has more pixels to use.
 This will of course depend on the resolution of the content you are viewing but this may require stronger
@@ -489,7 +903,7 @@ time changes or not.
 
 This may be fixed with V-sync (Vertical synchronization), which prevents video card from doing anything
 visible to the display memory until after the monitor finishes it current refresh cycle. This will
-prevent the 2 devices every falling out of sync.
+prevent the 2 devices every falling out of sync, at the expense of higher latency.
 
 There is new technology called G-Sync. It provides support for dynamic refresh rate which is negotiated
 by video card and display. Note that not all monitors support G-Sync. It is a Nvidia implementation
@@ -501,6 +915,9 @@ market, meaning you can connect TV to your PC ?. As well Nvidia graphical cards 
 in two forms, one without its support and another more expensive with support, while AMD has FreeSync
 bult in.
 
+These technologies are a big improvement for gaming, but there`s a downside: minimal cross-compatibility.
+To take advantage of adaptive sync, you GPU and monitor either both need to support FreeSync/G-Sync.
+Although, Nvidia announced support for a handful of FreeSync monitors.
 
 https://www.tomshardware.com/reviews/nvidia-gsync-monitor-glossary-definition-explained,6008.html
 https://nerdburglars.net/what-is-screen-tearing/
@@ -511,7 +928,7 @@ Ultrawide monitors are monitors that utilize a 21:9 aspect ratio rather than the
 ratio of 16:9.
 
 Reasons to use ultrawide monitor instead of two monitors:
-1. No gap (bezel gap) between screens.
+1. No (bezel) gap between screens.
 2. Cinamtic aspect ration lets you to watch films in their native resolution. To dispaly film on
    traditional display, video is scalled down untill it fits the wids. This creates a black line on top
    and bottom of the screen called letterboxing.
@@ -521,6 +938,32 @@ Reasons to use ultrawide monitor instead of two monitors:
    monitor.
 4. Configuration consistency. You don`t need to keep setting between monitors synced.
 5. Curved immersion. There are curved variants that create a feeling of immersion.
+---------------------------------------------------------------------------------------------------------
+                                    Mounting
+---------------------------------------------------------------------------------------------------------
+VESA. Video Electronics Standards Association. Nealry universally accepted standard for mounting monitors
+to monitor arms (or other applications and surfaces). Monitor being VESA compatible can be mounted for a
+range of arms. The back of your monitor should have four screwholes either 75mm or 100mm ... apart.
+When choosing the arm, you should take to consideration the following metrics:
+- Mounting method
+  Edge Clamp. Attaches the monitor arm to any edge of the desk, this method gives you more distance
+  Grommet Mounting. Allows to mount the arm through the grommet hole in your desk top
+      Note, some arms may support both of these methods
+  Free Standing
+  Wall or celling
+- Lift Mechanism. Arms hold up their loads using either a spring or gas lift mechanism.
+  Spring    | Has the longest lifetime and is more economical
+  Gas       | Provide smoother response to movement
+  Electric  | Can change heights by simply pushing a button
+- VESA Mount holes spacing
+- Number of monitors used
+- Size of the monitors, will they fit all at once
+- Weight of the monitors
+- How often do the screen need to be adjusted
+  Horizontally left&right, Forward/Back, Screen Tilt, Vertically, Depth adjustment
+- Is your setup agains the wall
+
+https://www.raproducts.com/blog/how-to-buy-the-best-monitor-arm-monitor-mount-for-you/
 ---------------------------------------------------------------------------------------------------------
 https://www.cnet.com/topics/monitors/buying-guide/
 https://www.laptopsdirect.co.uk/content/monitor-buying-guide
@@ -654,43 +1097,66 @@ and even large mid-tower cases can restrict the length of GPU you can use, or re
 bays to do so.
 
 =========================================================================================================
-=========================================================================================================
                                    Drive bay
 =========================================================================================================
 Drive bay refers to a site in a PC where a hard or floppy disk drive, CD-ROM drive or tape drive can be
 installed. Thus, the number of drive bays in a computer determines how many mass storage devices can be
 internally installed.
-=========================================================================================================
-                                Characteristics
-=========================================================================================================
-Size:
 ---------------------------------------------------------------------------------------------------------
-For PCs, bays come in two basic sizes: 3.5-inch and 5.25-inch, which represents the bay's height.
-
+                                Metrics
 ---------------------------------------------------------------------------------------------------------
-Place:
----------------------------------------------------------------------------------------------------------
-Bays are described as either internal or exposed. An internal bay cannot be used for removable media, such
-as floppy drives. Some manufacturers use the terms hidden and accessible in place of internal and exposed.
-=========================================================================================================
+- Size. For PCs, bays come in two basic sizes: 3.5-inch and 5.25-inch, which represents the bay's height.
+- Place. Bays are described as either internal or exposed. An internal bay cannot be used for removable
+  media, such as floppy drives. Some manufacturers use the terms hidden and accessible in place of internal
+  and exposed.
 =========================================================================================================
                                   Motherboard
 =========================================================================================================
 Motherborad is the main printed circuit board present in the computers which holds the main electronic
 components of the system like the central processing unit and memory, also provides the connectors for
 other important peripherals and the CPU chip.
-=========================================================================================================
-                                Characteristics
-=========================================================================================================
-Types:
+
+Alternatively referred to as the mb, mainboard, mobo, mobd, backplane board, base board, planar board,
+system board, logic board on Apple computers.
 ---------------------------------------------------------------------------------------------------------
-There are following types of motherboards: AT, ATX, LPX, BTX, Pico BTX, Mini ITX 
+                                    Metrics
+---------------------------------------------------------------------------------------------------------
+1. Types.  AT, ATX, LPX, BTX, Pico BTX, Mini ITX 
+2. Form factor. The physical size, as well as the general location of components and ports.
+   Industry-standardized shapes and layouts that enable motherboards to work with cases and power supplies.
+ - AT. Obsolete, was poplar though the mid 1990s. At that point, there was no peripheral devices except
+   display and keyboard, therefore it lacked ports with appearence of new deivces like mouse.
+ - ATX (Extended?). Distincts from AT in the lack of keyboard port, replaced with a rear panel that has
+   all necessary ports built in. Had better sizes and placement for air movement; placed the RAM closer to
+   the northbridge and CPU offer users enhanced performance.
+ - ITX. Wasn`t a success, developing company created MicroATX after this
+ - MicroATX and FlexATX small variants of ATX
+ - Proprietary Form Factor. Several major PC makers made motherboards that worked only with their cases.
+   Such systems would stood out to the public. These may include riser cards, a board that plugs into the
+   motherborad and provides additional slots for adapter cards. Called like this because it rises above the
+   system board.
+3. Chipset. Defines the type of processor and RAM, determines to a degree the built-in devices the
+   motherboard supports, including the expansion slots.
+4. Standart Components. Socket or two for CPU, slots for RAM, ports for mass storage devices and so on.
+ - USB ports
+ - Sound card
+ - Networking interfaces
+ - Video ports for attaching a display
+ - RAID
+ - Case fan support. CPU fan power connector, usually a four-wire connector, may supports three-wire fans.
+   Note, fans can be connected to motherboard or a power supply, in the former case you will have a
+   programatic access to the fan from OS. 
+ - Expansion Bus.
+5. Additional Components. The connection and capabilities of a motherboard sometimes differ from those of
+   the chipset, in case when not all chipset feates are needed or new conviniat features are added.
+   To support these new features, motherboard manufacturers put additional chips on the board.
 
 ---------------------------------------------------------------------------------------------------------
-Parts
+                            Components and functions
 ---------------------------------------------------------------------------------------------------------
 Processor Socket. Central picece of a motherbroard, holding the processor, usually located near the center
 of the motherbroard.
+4 pin CPU Fan pin-out for CPU fans with higher power consumption.
 
 Power Connectors. Commonly 20/24 pin connector, situated either near the right edge of the motherboard, or
 somewhere close to the processor socket on older motherboards. Power supply, connected here, will provide
@@ -700,7 +1166,43 @@ additional power directly to the processor.
 
 Memory Slots. Slots used to connect memory modules. Number of slots can vary from 2, in low-end motherboards,
 up to 8, on high-end and gaming motherboards. Check type of memory supported by a motherboard before buying
-one. 
+one.
+
+CMOS (Complimentary Metal Oxide Semiconductor) battery and RAM. 
+RAM is used to store basic information about the PC`s configuration to avoide reconfiguration or reset.
+Some of possible information:
+- Disk types
+- Information abot CPU
+- RAM size
+- Date and time updated by RTC (Real Time Clock)
+- Serial and parallel port information
+- PnP information
+- Power Saving settings
+
+L3+ Cache memory.
+Most modern CPUs have an internal 2 layer cache memory (built into the processor) which is referred to as
+primary cache memory. This can be supplemented by external cache memory fitted on the motherboard, called
+L3 or secondary cache.
+
+Expansion Bus.
+I/O pathways from the CPU to peripherals, typically made up of a series of slots on the motherboard.
+Examples of buses are PCI, ISA, EISA.
+
+Chip-sets.
+A group of small circuits that coordinate the flow of data to and from a PC`s key components.
+These components include: CPU, RAM, Cache and devices situated on the buses.
+Also controls data flow to and from hard disksk and other devices connected to the IDE channels.
+A computer has 2 main chipsets:
+# Bridge - component which connects two buses
+- NorthBridge (memory controller). In charge of controlling transfers between the processor and the RAM.
+  It is located near the processor. Sometimes, called GMCH for Graphic and Memory Controller Hub.
+- SouthBridge (IO/expansion controller). Handles communication between slower peripheral devices. 
+  Also called ICH for IO Controller Hub.h
+
+CPU Clock.
+Clock synchronizing the operation of all parts of the PC and provides the basic timing signal for the CPU.
+Note, cpu clock speer is measured by multiplying system clock speed with some clock multiplier, for instance,
+system bus runs at 100MHz speed but the CPU handles multiplier upto 32 making possible 3.2GHz.
 
 
 =========================================================================================================
@@ -734,29 +1236,156 @@ There are three kinds of storage technologies used
    previous ones. Most common forms are: USB flash drive, flash memory cards (used in digital cameras,
    smartphones...), flash hard drives also called solid state drives (SSDs) 
 
+HDDD/SSHD (Hybrid Hard Drives). Drives that combine flash memory and spinning platters to provide fast and
+reliable storage.
+
 https://medium.com/computing-technology-with-it-fundamentals/storage-technologies-and-their-devices-1594293868f0
 ---------------------------------------------------------------------------------------------------------
-=========================================================================================================
+                                    Metrics
+---------------------------------------------------------------------------------------------------------
+- Spindle speed. Hard drives run at a set speed measured in RPM (Revolutions Per Minute).
+  Older drives - 3600 RPM, common 5400/7200 RPM, high end 10000/15000 RPM.
+  Higher speed generally equate better performance, as well more noise and heat. Excess hear cuts the life
+  of HDD dramatically.
+  Drive bay fan. Fan that sits at the front of a bay and blow air across the drive, some cases come with a
+  bay fan built in.
+  Booting up a computer with an HDD takes time because it needs to spin up before the read/write heads can
+  retricve data off the drive and load it into RAM. SSDs use flash memory chips to store data instead of all
+  metal spinning parts used in platter-based hard drives.
+- Form factors. HDDs are manufactured in two standartized form factors, 2.5inch and 3.5inch.
+  Desktop can use both, but laptops use 2.5inch one. Size doesn`t affect technology inside and connections.
+  SSD come in one of three form factors: 2.5inch mSATA and M.2 which connects to specific slots on
+  motherboard. Many current motherboards offer two or more M.2 slots.
+- Cost. SSDs cost more than HDDs. Less expensive SSDs typically implement less reliable MLC.
+
+Performance. Questions asked:
+How fast it can read/write long sequences of data stored in the same part of the drive.
+How fast it cat read/write small chunks of data scatered randomly around the drive.
+How quickly it responds to a single request.
+- Throughput. Sequential Read/Write Performance. MBps
+  HDD: top out at 200MBps
+  SSD: SATA SSDs can hit 600MBps and NVMe roll at 2500MBps or faster.
+- Mixed random performance. How many times/sec a device can read/write small, fixed-size chunks of data
+  at random locations on the drive. Measured in IOPS (Input/Output Operations Per Second) but can be
+  expressed in MBps.
+  HDD: typically clock in at fewer than 150 IOPS
+  SSD: the latest NVMe SSDs hundreds of thousands of IOPS
+- Response/Acess time, Latency. How quickly it responds to a single request. Expressed in ms/us
+  HDD: under 20ms
+  SSD: under 1ms
+
+--------------------------------------------------------------------------------------------------------- 
+                                   Standards
+--------------------------------------------------------------------------------------------------------- 
+There must be an standart that specifies how the CPU communicates with hard drive so you can connect any
+hardrive to you CPU and address it`s memory.
+ATA (Advanced Technology Attachment). Standards started in 1990, goint through ATA/ATAPI version 7.
+The original ATA defined a very specific series of commands for the CPU to communicate with the drive
+controller. The current drive command  sets are AHCI and NVMe, the SCSI is still around as well.
+We are interested in two version of the standard: PATA and SATA. 
+
+---------------------------------------------------------------------------------------------------------
+  SATA vs PATA
+---------------------------------------------------------------------------------------------------------
+Parallel ATA (PATA) was introduced with ATA/ATAPI version 1. Used 40-pin ribbon cables usually plugged
+directly into motherboard. All PATA drives used a standard Molex power connectors.
+A single PATA ribbon cable could connect up to two PATA drives to a single ATA controller, one being
+master and other slaves, configured with jumpers.
+S.M.A.R.T (Self-Monitoring, Analysis, and Reporting Technology), an internal driver program that tracks
+errors and error conditions withing the drive. It is stored internally on non volatile memory and can
+be read with reader software.
+The last ATA/ATAPI standard for PATA provided support for very large hard drives (144 petabytes PB) at
+speed up to 133 MBps. 
+
+Serial ATA (SATA) was introduced with ATA/ATAPI version 7.
+The PATA had a range of issues, and SATA addressed them:
+- Ribbon cables impreded airflow and could be a pain to insert properlyl the cables had a limited length,
+  only 18 inches
+- You couldn`t hot-swap PATA drives, meaning you need to shutdown device before manipulations
+- Technology reached its limits in terms of throughput.
+
+STAT creates a PTP connection between SATA device and the SATA controller, the host bus adapter (HBA).
+- Because data is send serially, interface needs fat fewer physical wires - only 7 connectors instead
+  of 40, resulting in much thinner cabling.
+- The cable length got more than twice - about 40 inches (1 meter).
+- Throughput, theriotecally 30 times faster then PATA. Comes in 3 common varieties 1.5/3/6 Gbps, which
+  have a maximum throughput of 150/300/600 MBps
+- Got support of hot-swap
+
+SATAe (SATA Express) or SATA 3.2 ties capable drives directly into the PCI Express bus on motherboards.
+SATAe drops both the SATA link and transport layers, embracing the full performance of PCIe.
+
+NOTE ATA drivers are referred to as IDE (Integrated Drive Electronics) drives, meaning any hard drive with
+a built-in controller.
+--------------------------------------------------------------------------------------------------------- 
                                 Types of memory
-=========================================================================================================
+---------------------------------------------------------------------------------------------------------
 There are two types of memory used in computer: Primary memory (Volatile) and Secondary memory (non-volatile).
 Random Access Memory (RAM) is volatile memory and Read Only Memory (ROM) is non-volatile memory.
+
+---------------------------------------------------------------------------------------------------------
+                                     Discs
+---------------------------------------------------------------------------------------------------------
+CDs store data by using microscopic pits burned into a glass master CD with a laser. The CD drive reads
+the pits and the non-pitted areas (lands) and converts the pattern into ones and zeros.
+CDs store data on one side of the disc only.
+
+Initially, discs were used to hold music and where divided into variable size tracks, each song gets one
+track. This format was not optimal for holding generic data since had no decent error chacking. This was
+addressed with a creationg of CD-ROM. It has a special format that divides the CD into fixed sectors,
+each holding 2353 bytes.
+Why they didn`t used FAT or something like fs? They could, but most fs formats are tieded to OS and may
+be not supported by anothers, as well vendors wanted discs to be readable by other devices as well,
+therefore a new ISO-9660 standard was developed. This format is sometimes referred to by CDFS (CD File
+System).
+
+Initiall discs were filled with data by vendor, which required some highly expensive equipment and
+substantial expertise. The industry make a number of attempts to create a technology that would let
+users record, or burn, their own CDs.
+- CD-R(ecordable). Recorded dadta by using organic dyes embedded into the disc, that could be modified
+  using strong laser, note, single time usage. Was much faster then initial CD-ROM discs.
+  You can write to them but not erase or alter what`s written.
+- CD-RW(ReWritable). The same CD-R but could be burned multiple times, making it an equivalent of flash.
+  Can be written written and rewritten.
+- DVD (Digital Versatile Discs). Had a range of modifcation to increase the capacity
+ - Smaller pits than CD-media, and packs them much more densely
+ - Comes in both SS (Single Sided) and DS (Double Sided) formats. DS holds twice amount of data as SS.
+ The smallest disc is 4G comperring to 1Gb CD on avarage.
+- Blue-ray. The last generation in optical disc formatting and storage technology.
+  Enjoyed wild populary as a result of high quality until flash memory prices dropped in the 2010s and
+  basically killed all ptical media.
 
 =========================================================================================================
                                       RAM
 =========================================================================================================
-Random-access memory comes in two varities =>
-1. Static (SRAM). Faster and significantly more expensive than Dynamic RAM. Used for cache memory, both
-   on and off CPU. Typically a few megabytes per PC.
-2. Dynamic (DRAM). Slower, less expensive. Used for the main memory + frame buffer of a graphics system.
+RAM variations:
+1. Static (SRAM). Faster and significantly more expensive than Dynamic RAM.
+   Used for cache memory, both on and off CPU. Typically a few megabytes per PC.
+2. Dynamic (DRAM). Slower, less expensive.
+   Used for the main memory + frame buffer of a graphics system.
    Typically hundreds or thousands of megabytes per PC.
 
-                           SRAM    DRAM
-Transistors per bit  ##    6       1
-Relative access time ##    1x      10x
-Persistent           ##    Yes     No
-Sensitive            ##    No      Yes
-Relative cost        ##    100x    1x
+DRAM is very popular, used for many application and had many versions during history, this include:
+1. SDRAM  (Synchronus DRAM). The same DRAM but tied to the system clock, like thhe CPU and MCC, so the
+   MCC knows when data is ready to be grabbed from SDRAM.
+2. RDRAM (Rambus DRAM). DRAM with 800MHz speed. It was greatly anticipated by the industry for years, but
+   support proved less than enthusiastic due to significant delays in development and a price many times
+   that of SDRAM, yet, almost all major PC makers sold systems using it for a while.
+3. DDR SDRAM (Double Data Rate SDRAM). AMD and mmany other prefered this over RDRAM.
+
+                      |    SRAM   | DRAM
+______________________|___________|_______
+Transistors per bit   |    6      | 1
+Relative access time  |    1x     | 10x
+Persistent            |    Yes    | No
+Sensitive             |    No     | Yes
+Relative cost         |    100x   | 1x
+
+Your motherboard should detect and automatically set up any DIMM you install, assuming you have the right
+RAM for the system, using a technology called SPD (Serial Presence Detect). RAM makers add a handy chip to
+modern sticks called the SPD chip which stores all the information about your DRAM.
+When a PC boots, it queries the SPD chip so that the MCC knows how much RAM information.
+
 ---------------------------------------------------------------------------------------------------------
                                       SRAM
 ---------------------------------------------------------------------------------------------------------
@@ -771,6 +1400,22 @@ Each bit is stored as charge on a capacitor. The capacitor is very small, about 
 DRAM storage can be made very dense - each cell consists of a capacitor and a signle access transistor
 DRAM memory cell is very sensitive to any disturbance.
 ---------------------------------------------------------------------------------------------------------
+                                    Metrics
+---------------------------------------------------------------------------------------------------------
+
+1. Pin size variety. Laptom - 68/144/172, desktop 168 
+2. Clock speed
+3. Bandwidth
+4. Speed Rating
+5. PC Speed Rating
+6. Packaging. RAM can be sigle or double sided.
+   Double sided sticks are basically two sticks of RAM soldered onto one board.
+   There is nothing special about them, except, some motherboards either can`t use them or can only use
+   them in certain ways - for example, only if you use a single stick and it goes into a certain slot.
+7. Latency
+8. Error checking. ECC/Parity/None
+9. SO pins
+   
 =========================================================================================================
                                       ROM
 =========================================================================================================
@@ -796,6 +1441,14 @@ bit to store data, greater density, and higher programming and erase (P/E) speed
 
 The name flash was used after sugestion that erasure process of the memory reminded the flash of a camera.
 https://searchstorage.techtarget.com/definition/flash-memory
+
+=========================================================================================================
+                                 Virtualization
+=========================================================================================================
+OS uses porgramming called a supervisor to handle very low-level interactions among hardware and software,
+such as task scheduling, allocation of time and resources. The virtualization, enabling one machine to run
+multiple guest OS, reures an extra layer of sophisticated programming called a hypervisor to manage the
+vastly more complex interactions.
 
 =========================================================================================================
 CPU => Central Processing Unit
@@ -854,6 +1507,32 @@ it can self burn, in this case there is only task to trasfer program from PC to 
 
 If you want to program the chip through USB, the chip needs to be preprogrammed with a bootloader from the
 factory, The bootloader is called DFU Bootloader?
+=========================================================================================================
+                                   Batteries
+=========================================================================================================
+Basics. Common batteries, such as AAA, AA, C and D, have positive and negative terminals and two ineternal
+layers called electrodes that include a cathode (which transports a positive charge) and an anode (to carry
+a negative charge). All batteries also have some type of electrolyte—a substance that conducts electricity
+(a flow of electrons) between the battery’s terminals. When you put a battery in a device, like a headlamp,
+the electrolyte, cathode and anode interact and a chemical reaction (basically oxidation) occurs.
+Ions (positively charged) and electrons (negatively charged) flow through the electrolyte, exit via the
+negative terminal and enable your device to function.
+Over time, a battery's internal chemicals begin to degrade and interaction diminishes. Eventually they can
+no longer retain a charge and are considered “dead.”
+The mix of chemicals in a battery aims to provide some combination of the four holy grails of the elusive
+"ideal" battery—long life, high performance, reasonable cost and low environmental impact. 
+
+Finger battaries size are identified according to alphabet, where the further you get through the alphabet,
+the larget the battery. Letters can be duplicated to show that battery is a bit smaller,
+e.g., A vs AA vs AAA.
+As well, there are coin/button cell batteries. These have another form and naming scheme, usually 2 letters
+followed by 4 numbers:
+- 1 letter  -> chemical composition
+- 2 letter  -> shape
+- 4 numbers -> size of the battery, 2 for diameter and 2 for height
+CR2032 -> C is Lithium, R stands for roundm 20mm in diameter and 3.2mm high 
+
+https://www.rei.com/learn/expert-advice/batteries.html
 =========================================================================================================
 				    Testing
 =========================================================================================================

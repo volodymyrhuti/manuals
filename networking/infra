@@ -1,0 +1,68 @@
+                                 Infrastructure 
+=========================================================================================================
+                      Networking equipment + segmentation
+=========================================================================================================
+Patch pannel => usually building may have hundreds of ethernet slots throught which you can connect your
+device to internet, hovewer mayble you don`t use them all or you have device that are in different places
+at your home therefore there is patch pannel to which all slots are connected and from there they are
+connect to switch. This way you can have hundred slot patch pannel and only 40 slot switch
+
+Demarc => points where authority trasfers from one party to the next Point at which connection from
+ISP intersects with your house and ISP is responsible that connection is fine till this box and after
+it is yours responsibility.  It is a box that detects quality of signal and you can check wheather it is yours
+or ISPs problem Usually you can check it by urself or call ISP and if there is problem from ISP side, they
+will fix it otherwise they will bill you for a call of technician. If you are not owning entire building
+than you will have one demarc for building managed by building managment and demarc from your floor, building
+managment is responsible for their connection
+
+MDF (main distribution facility). Demarc between you and your building managment is MDF, place where network
+are interconnect. Probalby place with all patchpannels
+
+IDF (intermidiate distribution facility). Since it can be very tidious or expensive to connect computors on
+every floor to one MDF, you will use one IDF per floor which is connected to one MDF
+
+DMZ (DeMilitirezedZone) => way of network architecture ? to protect important data but leave opened not so
+important one
+
+    Internet
+      |
+    Router (most of services open)
+      |
+    Switch-------------------------- Router (Most of service closed)
+      |\\                                          |
+      |||\                                         |
+    WebServers                          Internal Network
+    (Less secure)                   (Really secure, dont want to be hacked)
+
+---------------------------------------------------------------------------------------------------------
+                               Connection types ?
+---------------------------------------------------------------------------------------------------------
+SLA (Service Level Agreements) offer a guarantee of service
+DSL (Digital Subscriber Line) depends on distance between client and phone provider
+as well as on quality of phone lines. Easy to use for telephone services.
+
+Cable connection
+Docsis => depends on count of active users connected to trampline (interconnection of
+users and ISP) since connection is splitted there. As well doesnt have service level
+agreement therefore you won`t have constant internet speed always
+
+Wireless PPP => requires to set up antena on your house and direct it to antena staying
+at ISP (which is turned arround to u). It is not that expensive to open such service provider
+therefore if you pay fro service from some really small one, it can take preaty a lot of time
+for issue troubleshooting ,etc...
+
+=========================================================================================================
+                                    Servers
+=========================================================================================================
+                           Application vs web server
+---------------------------------------------------------------------------------------------------------
+Most of the times these terms are used interchangeably, however, there are some differences:
+- Web server is designed to serve HTTP Content. App server can do HTTP but is not limited and may provide
+  protocol support such as RMI/RPC
+- Web server is mostly designed to serve static content, though most Web Server have plugins to support
+  scripting languages like PHP, ASP, JSP, though which they can generate dynamic HTTP content
+- Most applications servers have Web Servers as intergral part of them
+  Additionally App Server can support App level services such as Connection Pooling, Transaction Support...
+-  Most of the production environments have web server acting as reverse proxy to app server.
+
+=========================================================================================================

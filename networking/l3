@@ -1,0 +1,784 @@
+=========================================================================================================
+                                  Multicasting
+=========================================================================================================
+Multicast => mechanism to distribute information to large audiences over an IP network,
+from source client.
+
+Multicase advantages:
+1. Used when sending same data (same type of data) to multiple receivers
+2. Better bandwidth utilization
+3. Less host/router processing
+4. Can be used without knowing addresses of receivers
+5. Used when simultaneous delivery for a group of receivers is required
+
+Multicast is mostly (only?) runs over UDP therefore it is best-effort delivery. There is no congestion
+avoidance, duplicate packets may be generated, out-of-sequence delivery may occur, efficiency issues in
+filtering and secutrity.
+
+Types of Multicast applications
+1. One-to-many => one host is sending to two or more receivers
+2. Many-to-many => any number of hosts sending to the same multicast group; hosts are also members of the group
+3. Many-to-one => any number of receivers sending data back to a source (via unicast or multicast)
+
+Multicast addresses are in renage from 224.0.0.0 through 239.255.255.255
+Class D [ 1110 | 28bits Multicast Group ID ]
+It is not valid to use multicast address as source, only as destination
+This calss D is subdivided into next scopes:
+1. Local scope                      => 224.0.0.0/24
+   Local scope packet has TTL of 1 ,therefore it never crosses more then 1 L2 segment
+2. Global scope                     => 224.0.1.0 to 238 255.255.255 or 224.0.1.0/24
+   It is further subdivided and can be forwarded by router
+   Well-known addresses assigned by IANA (reserved 224.0.0.0/23)
+   224.0.0.1  listened by all multicast systems on subnet
+   224.0.0.2  listened by all routers on subnet
+   224.0.0.4  listened by all DVMPR(olt multicast routing protocol) routers
+   224.0.0.13 listened by all PIMv2 routers
+   224.0.0.5, 224.0.0.6, 224.0.0.9, 224.0.0.10 used by unicast routing protocols
+3. Source specific mutlicast (SMM) scope  => 232.0.0.0/8
+4. GLOP (not an abbreviation) => 233.0.0.0/8
+5. Administratively scoped address  => 239.0.0.0 to 239.255.255.255
+   Private scope used within company internal network
+6. Site-local => addresses must remain within their scope, router must not forward packets
+   outside of its scope.
+7. Organization-local => scope intended to span multiple sites belonging to a single organization
+
+Multicast participents have state.
+Client that want`s to receive any traffic for multicast group G is saided to be in state star,G
+
+Yet, it is not clear how traffic from server is received by/sent to the client, and which hosts are our
+clients. There are next protocols to send multicast trafic from source to destination =>
+IGMP/MLD, PIM, MSDP, MBGP, MOSPF, DVMRP. Currenlty used are IGMP/MLD + PIM.
+
+PRUNE => message sent by one router to another, to stop flooding data on their connection
+---------------------------------------------------------------------------------------------------------
+                                  IP spoofing
+---------------------------------------------------------------------------------------------------------
+IP address spoofing is the creation of IP packets with a false source IP address of impersonating another
+computing system. This type of attack is most effective where trust relationships exist between machines.
+For example, it is common on some corporate networks to have internal systems trust each other, so that users
+can log in without a username or password provided they are connecting from another machine on the internal
+network (and so must already be logged in). By spoofing a connection from a trusted machine, an attacker on
+the same network may be able to access the target machine without authentication.
+
+It is possible to filter packets against spoofing attacks.
+Preventing an outside attacker spoofing the address of an internal machien
+Ingress filtering => blocking of packets from outside the network with a source address inside the network
+Preventing an inside attacker spoofing attacks against external machines
+Egress filtering => blocking of packets from inside the network with a source address that is not inside
+
+---------------------------------------------------------------------------------------------------------
+                         Peverse Path Forwarding (RPF)
+---------------------------------------------------------------------------------------------------------
+                         R2         Interface | Network
+                        /  \        i2        | 10.1.1.0/24
+ 10.1.1.1              /    i1
+Multicast Host  ====> R1     R4 ===> Multicast Client
+  (Sender)             \    i2         (Receiver)
+                        \  /
+                         R3
+
+To avoid loops in multicast, the receiving router check routing table and check with egress(output) interface
+the it would used if it were to send traffic back to the multicast sender. If the interface matches the interface
+the multicast packet has just been received on, the packet is accepted, otherwise, it is dropped.
+Because R# has routed over interface 2, traffic on interface 1 is dropped.
+https://www.fir3net.com/Networking/Protocols/what-is-multicast-reverse-path-forwarding-rpf.html
+---------------------------------------------------------------------------------------------------------
+                        Source Specific Multicast (SSM)
+---------------------------------------------------------------------------------------------------------
+SSM is a service model in which in addition to the receiver expressing interest in traffic to a multicast
+address, the receiver expresses interest in receiving traffic from only one specific source sending to that
+multicast address. By so limiting sources, SSM reduces demands on the network and improves security.
+SSM requires that the receiver specify the soirce address and explicitly excludes the use of the (*,G) join
+for all multicast groups in RFC 3376, which is possible only in IPv4`s IGMPv4 and IPv6 MLDv2.
+
+? Which protocol is used for data delivery to listeners? or is it protocol independent
+=========================================================================================================
+                    IGMP (Internet Group Managment Protocol)
+=========================================================================================================
+It is the network protocol for interconnection between multicast traffic client and clossest router.
+There is currently 3 versions of this protocol, the second is most commonly used, and the third is
+close to the second. For IP6 there is MDL which works the same way.
+
+---------------------------------------------------------------------------------------------------------
+                                  Message flow
+---------------------------------------------------------------------------------------------------------
+1. Client sends IGMP Membership Report (or Join) to configured group, meaning that it wants to listen traffic
+   provided by this group. Packet has TTL of 1
+2. Router received Join and remembers the client and add routing entry to multicast routing table
+   To list multicast routing table issue `ip mroute show`
+3. Now client receives traffic. Router will send IGMP Query to test if there is still active clients, otherwise
+   stream is not sent?. By default it is done each minute and sent to 224.0.0.1 - all nodes in subnet
+4. Client responses with Join filled with interested group.
+   If there was no repsonse for 3 Joins, route for this client is removed, no more trafic is sent to him
+5. Client leaves group with IGMP Leave for group address
+   We cannot delete route for this interface since there can be multiple clients behind it, therfore router sends
+   additional Querie (IGMP Group Specifix Query) to see if there are any active clients 
+
+Note that client won`t response to Querier for 0 to Max Response Time defined in received Query.
+This is done, so hundreds of client won`t response simmultaniously when received General Query.
+Report is send to group address, therefore all clients can see it and avoid sending another one,
+since router is only interested if there is any client.
+
+---------------------------------------------------------------------------------------------------------
+                                    Querier
+---------------------------------------------------------------------------------------------------------
+
+               / R1 == ####
+              /        ####
+Client ==> Switch      #### ===> Server
+              \        ####
+               \ R2 == ####
+
+In such topology multicast trafic would be duplicated by both routers, to avoid this we have choosing
+mechanism called Querier. Router that win, will monitor Joins, send Query and react for Leave.
+
+Chossing mechanism:
+1. Multiple routers activate IGMP on interface, each considers itself to be Querier
+2. Each send IGMP Query into subnet to find client and start competition with other gateways
+3. On receive, gateway compares Source IP with it`s IP, one whose IP is the lowest wins and becomes
+   Querier, other become Non-Querier
+4. Non-Querier starts a timer, which will  reset
+
+---------------------------------------------------------------------------------------------------------
+                               Version difference
+---------------------------------------------------------------------------------------------------------
+V1 had no leave message, duplicate handling was done by upper protocol like PIM, no Querier competition
+V3 supports everything that V2 does but there are some changes. Report is send not to group address but
+to 224.0.0.22, requested group address is define within packet. This is done for simplification of
+IGMP Snooping. SSM (Source Specific Multicast) support was added, client can specify from which hosts
+it wants to receive trafic or doesn`t. 
+
+---------------------------------------------------------------------------------------------------------
+                                 IGMP Snooping
+---------------------------------------------------------------------------------------------------------
+IGMP Snooping is a feature for switches to learn what multicast groups are needed on which ports.
+Switch will listen IGMP conversation between hosts and routers and maintain a map of which links
+need which IP multicast transmission. If nothing on that port has joined that group, the switch will
+prune it. This way multicast can be filtered from the links which do not need them, conserving bandwidth
+ on those links.
+
+---------------------------------------------------------------------------------------------------------
+                                   IGMP proxy
+---------------------------------------------------------------------------------------------------------
+IGMP proxy can be used to implement multicast routing. It is forwarding IGMP frames and commonly is
+used where there is no need for more advanced protocol like PIM. When acting as proxy, the router
+performs the host portion of the IGMP task on the upstream interface, as follows:
+- When queried sends group membership reports to the group
+- When one of its hosts join a multicast address group to which none of its other hosts belong, sends
+  unsolicited group membership reports to that group
+- When the last of it hosts in a particular multicast group leaves the group, sends an unsolicited?
+  leave group membership report to the all-routers group (244.0.0.2)
+
+Features =>
+- The simplest way to do multicast routing
+- Can be used in topologies where PIM-SM is not suitable for some reason
+- Take slightly less resources than PIM-SM
+- Ease of configuration
+
+IGMP proxy is not well suited for complicated multicast routing setups and does not support more than
+one upstream interface nor detect/avoid routing loops.
+
+https://wiki.mikrotik.com/wiki/Manual:Routing/IGMP-Proxy
+---------------------------------------------------------------------------------------------------------
+                      PIM (Protocol Independent Multicast)
+---------------------------------------------------------------------------------------------------------
+PIM has two version (which can be considered as separate protocols)
+1. PIM Dense Mode (DM)
+2. PIM Sparse Mode (SM)
+Idependent means that it is not attached to some concrete unicast routing protocol.
+
+---------------------------------------------------------------------------------------------------------
+                                  Programming
+---------------------------------------------------------------------------------------------------------
+All MFC (Multicast Forwarding Cache) update operations are performed by user-mode process interacting with
+the kernel. Interfaces taking part in multicast are saved to  /proc/net/ip_mr/vif and routes to
+/proc/net/ip_mr_cache. Column Oifs will be empty, and Iif will be -1 if client leaved during session
+and somebody is still sending traffic but it is dropped. Route creation takes some time, therefore
+packets are cached. Otherwise there would be drops during route creation process.
+
+https://www.linuxjournal.com/article/6070
+http://support.tenasys.com/INtimeHelp_62/multicast.html
+=========================================================================================================
+                                    Routing
+=========================================================================================================
+Symetric routing - interface used for receiving a packet is used for sending
+Asymetric routing - ingress and outgress interfaces are separate
+In order for routing to work on a Linux system, forwarding must be enabled:
+$ sysctl net.ipv4.ip_forward
+$ sysctl -w net.ipv4.ip_forward=1
+$ sysctl net.ipv6.conf.all.forwarding
+$ sysctl -w net.ipv6.conf.all.forwarding=1
+# Permament change
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/forward.conf
+echo "net.ipv6.conf.all.forwarding = 1" >> /etc/sysctl.d/forward.conf
+
+https://github.com/Mellanox/mlxsw/wiki/Static-Routing
+---------------------------------------------------------------------------------------------------------
+                                 Static routing
+---------------------------------------------------------------------------------------------------------
+Main purpose of static routing is to route traffic that must not, or should not, go through the defauly
+gateway. The default gateway is for any and all traffic which is not destined for the local network and
+for which no preferred route is specified in the routing table.
+
+To add static route to a single IP address, issue a command
+ip route add <ip> via <next-hop address> [dev <out_intf>]
+and add a static route to a netork
+ip route add <ip/mask> via <next-hop> [dev <out_intf>]
+
+Address 0.0.0.0/0 matches all IPv4 addresses, therefore it can be used as default route
+Gateway 0.0.0.0 means that there is no next-hop gateway and specified network is on the end of the link
+There is no need to route such packets and they are sent to out-interface? Otherwise packet for that
+destinatio is sent through gateway which will forward them.
+
+When you have more then one default route, one used for sending is choosen by the same algorithm used
+for choosing between all routes. This means, active route will be
+1. Preferred one
+2. If there are multiple with the same preference, then by metric
+3. If both preference and metric are equal, then method is OS dependent, but probably the first one
+   in the list will be choosen.
+
+ip route show cache         # show cache TODO
+ip route flush cache
+ip -s route show cache      # statictics
+
+
+---------------------------------------------------------------------------------------------------------
+                             Reverse Path Filtering
+---------------------------------------------------------------------------------------------------------
+To prevent DDOS attacks based on IP spoofing, Linux based routers, usually have a raverse path filtering
+enabled. This feature drops received packets if the sender is not rechable from the receiving link.
+This can be configured using the /proc/sys/net/ipv4/conf/all/rp_filter file.
+ 0 - no validation performed
+ 1 - if receiving interface is not the best return path for the packet then the packet is droped
+ 2 - if the source address is not routable through any interface the packet is droped
+     This one allows the asymetric routing
+
+You can check if any packets are filter with RPF with `nstat`
+nstat -za       # list network counters, can be usefull to track things like ReversePathFilter
+
+https://www.theurbanpenguin.com/rp_filter-and-lpic-3-linux-security/
+---------------------------------------------------------------------------------------------------------
+                              Policy based routing
+---------------------------------------------------------------------------------------------------------
+Policy-routing is a routing scheme that allows to apply multiple rules for packet before algorithmic
+prefix matching and depending on the outcome packet will be directed to specified table or not. There are
+256 possible tables by default, 3 of them are allocated during initialization and you can point to any
+of them using 1 of the 32767 rules.
+Linux comes with policy routing tables by default:
+- Local[0] - managed by kernel, cannot be modified or delted
+  Special routing table containing high priority control routes for local and broadcast addresses.
+- Main[32766] - used when no table specied to `ip route` command
+  The normal routing table containing all non-policy routes
+- Default[32767]
+  Is empty and reserved for post-processing if previous default rules did not select the packet.
+By default, tables have no names just identifiers but you can mannually name the table using mappings file
+/etc/iproute2/rt_tables just for your convinience.
+Table is choosen using policy routing rules which are applied to packets like src/dst address in a priority
+order from the highest [0] to lowest [32767].
+    # ip rule
+    0:      from all lookup local
+    32766:  from all lookup main
+    32767:  from all lookup default
+Here, <from all> is a condition, <lookup name> specifies which table to look. If packet matches condition,
+it is compared against the table and is forwarded if there is a match; if there is no match, linux will
+keep going through rules untill it find following matching rule and tries to match against table again
+and so on.
+
+There are following conditions and they can be combined:
+- from <src>
+- to <dst>
+- iif <if name>
+- oif <of name>
+- tos <value>
+- fwmark <value>
+Conditions can be inverted using `not`
+
+Load-balancing:
+# ip route replace default scope global \
+  nexthop via 11.22.33.1 dev eth0 weight 1 \
+  nexthop via 55.66.77.1 dev eth1 weight 1
+ip route flush cache
+
+echo <table_priority_num> <name> >> /etc/iproute2/rt_tables # creates a new table
+                                                              persistent across reboots
+ip rule add from <src> lookup <table name>                  # creates a new rule based on src address
+ip rule add from 192.168.30.200 lookup custom               # traffic originated from .200 goes through
+                                                              `custom` table
+ip route add <route> table <table>                          # add route to a specific table
+ip rule list                                                # list of policy routing rules
+ip route show table <num>                                   # list the specific table
+
+ip route add default via <ip> table <id>    # will create table with one rule
+ip rule add from <ip> table <id>            # will create rule sending packets to table <id>
+ip route add default via 192.168.30.1 dev eth0.30 table custom 
+ip rule add not from 192.168.1.0/24 to 10.0.0.0/8
+
+Note, rules are not persistent across reboots and require automatic configuration like
+/etc/network/interfaces: post-up ip rule add  ...
+
+https://habr.com/ru/post/443788/
+https://habr.com/en/post/108690/
+https://github.com/wptad/linux-management/blob/master/iproute.md
+https://unix.stackexchange.com/questions/188584/which-order-is-the-route-table-analyzed-in/188590#188590
+https://blog.scottlowe.org/2013/05/29/a-quick-introduction-to-linux-policy-routing/
+---------------------------------------------------------------------------------------------------------
+                      VRF. Virtual Routing and Forwarding
+---------------------------------------------------------------------------------------------------------
+This is a mechanism allowing creating multiple routing table on host, this way creating a separate L3 domain.
+This technique is similar to VLANs, which partitions a L2 network. One benefit of VRF over partitioning
+on layer 2 is that routing scales better considering the number of peers involved. 
+Note that each VRF domain is isolated from each other,  but there is an option to reference one VRF table
+from another, or perform inter-VRF routing by enslaving L3 master devices into bridge.
+
+ip link add dev <l3_dev_name> type vrf table <id>           # create a vrf
+ip link add dev blue type vrf table 1001
+ip link set dev blue up
+ip link set dev <dev_name> master <l3_dev_name>             # enslave interfaces
+ip link set dev enp1s0 master blue
+ip link set dev enp1s0 up
+
+
+---------------------------------------------------------------------------------------------------------
+                              Routing vs Bridging
+---------------------------------------------------------------------------------------------------------
+# TODO, Refactor?
+Routing refers to the interconnection of separate and independent networks which have non-overlapping
+ranges if IP addresses. Router examines the destination IP to determine which of several connected
+networks should receive it, after which the packet is forwarded to the proper network. Therefore routing
+allows transactions between hosts that are not at the same logical network while bridging L2 device
+works only within one logical network.
+
+Bridging refers to interconnection between separate physical networks that are all carryng the
+same range of IP addresses. Hubs and switches are example of bridges, they receive packet on one
+port and send it to another
+
+---------------------------------------------------------------------------------------------------------
+                                  Config files
+---------------------------------------------------------------------------------------------------------
+To configure statuc route when interface goes up, add `up ip route ...` directive under wanted interface
+within /etc/network/interfaces. Or create script under /etc/network/if-up...
+If you want route to print table with names instead of numbers, you can alliase networks withing /etc/networks
+
+https://unix.stackexchange.com/questions/196830/practical-usage-of-etc-networks-file
+---------------------------------------------------------------------------------------------------------
+                        OSPF (Open Shortest Path First)
+---------------------------------------------------------------------------------------------------------
+Dynamic routing protocol build on monitoring link quality that uses dejkstra algorithm of shortest path
+search.
+
+
+Link-State => gateway knows entire topology even behind gateway local to its network. This technology uses
+special DB LSDB
+
+Distance-Vector => gateway has information about gateways local to its network and doesnt know theirs topology,
+uses metrics.
+
+On boot, route will configure couple loopback interfaces and the highest ip will be used as router id in
+packets. Each interface has access to zone identified with ZoneID.
+Ospf starts with hello msg sending every 10 seconds to 224.0.0.5 (multicast) When router notices neighbour,
+it will send hello with field ActiveNeighbor ip of new gate. New gate will save oldgate as neighbor and send
+unicast packet specifying new gate as neighbour. Now they are neighbours and can build LSDB.
+LSDB will containg routing information and is supposed be identical on all gates (they will sinc it).
+
+Types of msgs in OSPF:
+- Hello => used to detect/relation neghbours 
+- Database Description (DBD) => sync detect
+- Link State Request (LSR) => request for link state used to sync
+- Link State Update (LSU) => response for LSR
+- Link-State Ack (LSAck) => ack of another type of packets?
+
+Link State Advertisment (LSA) => unit of data descrining state of gate or network. Set of all LSA describes
+LSDB, however it containes different types of LSA. On receive it is require to recalculate path price.
+(unless network summary lsa)
+
+Designated router (DR) => controls sending of LSA in network. When new gate is detected , it syncs with DR
+wich will update all other gates with LSUpdate to 224.0.0.5 for which other should ack to 224.0.0.6.
+Backup Designated router (BDR) => used when DR goes down. DR and BDR are chosen on segment not zone. To
+communicate with them multicast address of 224.0.0.6 is used. They are chosen by the highest OSPF interface
+priority?  then by the hieghst ID and wount be updated untill one goes down. Gate is considered down
+if there was no Hello during RouterDead interval (around 40 sec).
+
+Area Border Router (ABR) => gate that stands on endge of two areas and informes them with Network Summary
+LSA (type 3). This message contains path, without topology, but with price therefore we can add price of
+ABR path to price received without entire dejkstra recalculation => Partial SPF calculation.
+
+There is always area 0 which is core , that will be pathed through when message goes between any 2 areas
+with non 0 id.
+---------------------------------------------------------------------------------------------------------
+                              Route Redestribution
+---------------------------------------------------------------------------------------------------------
+Route redistribution => the use of a routing protocol to advertise routes that are learned by some other
+means, such as by another routing protocol, static routes, or directly connected routes.
+
+When you redistribute one protocol into another, remember that the metrics of each protocol play an
+important role in redistribution ,since each protocol uses different metrics. When you have multiple
+routes from different routing protocols, one is choosen by its Administrative Distance.
+
+Administrative Distance (AD) => a value that routers use in order to select the best path when there are
+multiple routes to the same destination from multiple routing protocols. AD counts the reliablity of a
+routing protocol. It is a numeric value which can range from 0 to 255 where 0 is the best route and
+255 is the worst. Note that using routing with AD may cause routing loops, convergence problems, or
+inefficient routing.
+
+AD    | Route Type
+0     | Connected interface
+0/1   | Static Route
+90    | Internal EIGRP Route
+100   | IGRP route
+110   | OSPF route
+115   | IS-IS
+120   | RIP Route
+255   | Unknown ROute
+
+         OSPF    ||    EIGRP
+  ... R1  ====>  R2 <====   R3 ...
+                 ||
+
+
+---------------------------------------------------------------------------------------------------------
+TODO
+ Dynamic Routing protocols
+ Remove or refactor  OSPF
+ Route redistribution
+
+
+=========================================================================================================
+                    ICMP (Internet Control Message Protocol)
+=========================================================================================================
+ICMP provides for the delivery of error and control messages that may require attention. It uses IP
+protocol for transport so it i sneither a network not a transport protocol but lies somewhere between the
+two. It is was used for many hacker attacks therefore usually admins block ICMP on edge routers. This result
+is diagnostic utilities like ping/traceroute not working properly.
+
+General form of a packet is
+Type => 1byte, code specifing issue
+Code => 1byte, more detailed specification
+Checksum => 2bytes
+All other fields depend on type value.
+
+There are 42 values reserved for Type field and only 8 of these are in regular use.
+Messages are divided into 2 categories: those messages relating to problems with delivering IP datagrams
+(error messages) ,and those related to information gathering and configuration (query or information messages)
+
+Message types:
+0(*) Echo Reply => returns data
+3(*)(+) Destination Unrechable => unrechable host/protocol
+4 Source Quench => indicates congestion (deprecated)
+5(*) Redirect => indicates alternate router should be used
+8(*) Echo => Echo(ping) request
+9 Router Advertisment => Indicates router address/preferences
+10 Router Solicitation => Request Router Advertisment
+11 (*)(+) Time Exceeded => resource exhausted
+12 (*)(+) Parameter Problem => malformed packet
+* Commonly used
++ Extensible
+
+
+=========================================================================================================
+                                      IPv6 
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                                   Addresses
+---------------------------------------------------------------------------------------------------------
+An IPv6 address consist of 128bits or 16bytes which are divided into next groups:
+Network address or Global unicast address  | first 6bytes
+Subnet adderss or Subnet id                | next 2bytes
+Device address                             | last 8bytes
+
+---------------------------------------------------------------------------------------------------------
+                            Address Types and Scope
+---------------------------------------------------------------------------------------------------------
+Global Unicast Address. Scope Internet, routed on Internet.
+Starts with 2001: or 2000::/3? is equivalent of the public addresses of IPv4 networks
+
+Unique Local Address. Scope internal network or VPN, is internally toutable but not
+routed on Internet.
+The first half of the ULA address range, fc00::/8, is reserved for a future global authority to assign.
+The second half of the ULA address range, fd00::/8, can be assigned locally, with restrictions.
+The next 40 bits must be randomly chosen, and you cannot assign prefixes in any particular order.
+Equivalent for private not self assigned IPv4, like 10.0.0.0/8
+
+Link Local. Scope network link, not routed internally or externally.
+Starts with FE80::/10. Is equivalent to the IPv4 address 169.254.0.0/16 which is allocated
+on an IPv4 network when no DHCP server is found.
+
+Multicast addresses. Starts with FF00::/8
+------------------------------------
+Convertions
+------------------------------------
+IPv4 mapped IPv6
+Some applications use ipv4 embedded in an pv6
+
+ :ffff:192.168.1.1/96
+
+6to4
+Transition from ip4 to ip6 is done with ip6 tunnel
+ip4 will be encoded in ip6 that starts 2002
+
+192.168.1.42/24 => 2002:c0a8:12a:18::1
+
+Routing header RH0 =>
+- contains table of ips to go through before destination
+- uses left segments field to map into table and decreases
+  it on hop-by-hop basis
+- is deprecated
+
+=========================================================================================================
+                                      DHCP
+=========================================================================================================
+/TODO some general iformation about protocol, packets, configutatio
+
+DHCP /BOOTP port => 68,67
+Lease => configurearion iformation used by host during agreed time
+
+Ip addresses in packet =>
+* Your address (yiaddr) => server ip
+* Client Hardware Address (chaddr)
+* Client IP Address (ciaddr)
+* Gateway (Relay) IP (giaddr)
+
+---------------------------------------------------------------------------------------------------------
+                                    Messages
+---------------------------------------------------------------------------------------------------------
+DHCPDISCOVER   # message sent over broadcast to find dhcp server, which will offer IP in response
+DHCPOFFER      # response for discover, offers ip for host as well as additional configurations like
+                 DNS server, lease time (upper bound) for ip
+DHCPREQUEST    # request specifing that client accepts ip
+                - sent over broadcast? but with server identifier option
+                - can be used directly to update lease
+DHCPACK        # response from server, client can use ip on its receive
+DHCPNACK
+DHCPDECLINE    # client has option to perform DAD(Duplicate Address Detection) and decline ip if test failed
+DHCPRELEASE    #
+DHCPINFORM     # used by client to request additional information
+               # information is send in DHCPACK by server
+DHCPFORCERENEW # force client transition to renew state
+
+---------------------------------------------------------------------------------------------------------
+                                Renew vs Rebound 
+---------------------------------------------------------------------------------------------------------
+Client has 2 timer, the first (renew) is shorter one and indicates time when client should
+start reqesting lease update from its server When the second timer goes down, client starts
+to broadcast that request to all servers
+---------------------------------------------------------------------------------------------------------
+                                Implementations
+---------------------------------------------------------------------------------------------------------
+Commonly all Linux distribution are prepacked with some sort of dhcp server/clinet utility. Two most
+well know are dhcpd server and dhclient client utilities provided by ISC (Internet Systems Consortium).
+ISC DHCP offers a complete open source solution for implementing DHCP servers, relay agents, and clients
+both for IPv4 and IPv6. Currently ISC is implementing new set of dhcp related utilities called Kea.
+
+https://www.isc.org/dhcp/
+---------------------------------------------------------------------------------------------------------
+
+LCI (Location COnfiguration Information)
+
+APIPA (Automatic Private IP Addressing) =>
+- method of dynamic link-local address configuration
+- host select random address form private range 
+  169.254.1.1 => 169.254.254.254 with subnet /16
+  checks if it is not already used and self assigns
+
+* Stateless DHCP - user already got ip but still requires dns
+               therefore it asks it from gateway
+
+---------------------------------------------------------------------------------------------------------
+                                   DHCP Relay
+---------------------------------------------------------------------------------------------------------
+DHCP Relay Agent relays DHCP messages between DHCP client and DHCP servers on different IP networks. Since
+broadcast trafic is not forwarded by routers? relay agent converts broadcast to unicast and sends it
+directly to router, and reverse.
+         BROADCAST        UNICAST
+Client  ===========>  X  ===========> Gateway
+                    RELAY
+Client  <===========  X  <=========== Gateway
+         BROADCAST        UNICAST
+When relay sees broadcasted DHCPDISCOVER, it will change source ip for it own and resent discover to real
+server. Next messages from sever will be forwarded to client.
+
+How dhcp server knows which client is relay and which isnt? Internal configuration?
+---------------------------------------------------------------------------------------------------------
+                                 Configuration
+---------------------------------------------------------------------------------------------------------
+dhclient -4/6 -r <intf>              # release lease
+dhclient -4/6 <intf>                 # acquire lease
+
+ipconfig /release
+ipconfig /renew
+=========================================================================================================
+                  DHCPv6 (Dynamic Host Configuration for IPv6)
+=========================================================================================================
+DHCPv6 is used to delegate IPv6 prefixes and to allocate IPv6 addresses. It offers stateful address
+autoconfiguration, and complements Stateless Address Autoconfiguration (SLAAC) described in RFC 2462,
+IPv6 Stateless Address Autoconfiguration. Stateless Address Autoconfiguration (SLAAC) allows an IPv6-aware
+device to be plugged into a network, and given an IPv6 address prefix without manual configuration.
+
+DHCPv6 Server can =>
+Delagete prefix to IPv6 subnets. Prefixes allow subnets to be selected, rather than a signle node.
+Assign normal and temporary IPv6 addresses to devices. Normal addresses are renewed by the server
+for as long as the device requires an address. Temporary addresses are assigned for a limited time
+(lease time) and are usually allocated for privacy reasons, RFC 3041 “Privacy Extensions for Stateless
+Address Autoconfiguration in IPv6”.
+
+Provider use DHCPv6 feature to manage site addressing, subnet, and link updates =>
+1. Stateless DHCPv6. No DHCPv6 server is needed to maintain any dynamic state for clients such as DNS.
+Configuration information is exchanged with stateless Prefix Delegation
+2. Stateful DHCPv6. DHCPv6 server centrally manage IPv6 address and prefix assignment.
+IPv6 address/ prefix/ additional information is received from server.
+
+---------------------------------------------------------------------------------------------------------
+                                    Prefixes
+---------------------------------------------------------------------------------------------------------
+Network + subnet parts of IPv6 address form an IPv6 Prefix which is used for routing.
+Network part is partially assigned by IANA and partially by ISP
+Registry Prefix is /23, IANA prefix part
+ISP Prefix is /32,  registry prefix extended for ISP
+ISP assigned Site prefix is /48, usually is given to entire organizations
+Site assigned Subnet Prefix is /64
+
+---------------------------------------------------------------------------------------------------------
+                                Prefix lifetime
+---------------------------------------------------------------------------------------------------------
+IPv6 addresses are leased to an interface for a fixed (possibly infinite) length of time. To handle the
+expiration of address bindings gracefully, an address goes through two distinct phases while assigned to
+an interface. Initially, an address is "preferred", meaning that its use in arbitrary communication is
+unrestricted. Later, an address becomes "deprecated" in anticipation that its current interface binding
+will become invalid. While an address is in a deprecated state, its use is discouraged, but not strictly
+forbidden. New communication (e.g., the opening of a new TCP connection) should use a preferred address
+when possible. A deprecated address should be used only by applications that have been using it and would
+have difficulty switching to another address without a service disruption.
+
+Tentative address - an address whose uniqueness on a link is being verified, prior to its assignment to an
+interface. A tentative address is not considered assigned to an interface in the usual sense. An interface
+discards received packets addressed to a tentative address, but accepts Neighbor Discovery packets related
+to Duplicate Address Detection for the tentative address.
+
+Preferred address - an address assigned to an interface whose use by upper-layer protocols is unrestricted.
+Preferred addresses may be used as the source (or destination) address of packets sent from (or to) the
+interface.
+
+Deprecated address - An address assigned to an interface whose use is discouraged, but not forbidden.
+A deprecated address should no longer be used as a source address in new communications, but packets sent
+from or to deprecated addresses are delivered as expected. A deprecated address may continue to be used
+as a source address in communications where switching to a preferred address causes hardship to a specific
+upper-layer activity (e.g., an existing TCP connection).
+
+Valid address - a preferred or deprecated address. A valid address may appear as the source or destination
+address of a packet, and the Internet routing system is expected to deliver packets sent to a valid address
+to their intended recipients.
+
+Preferred lifetime - the length of time that a valid address is preferred (i.e., the time until deprecation).
+When the preferred lifetime expires, the address becomes deprecated.
+
+Valid lifetime - the length of time an address remains in the valid state (i.e., the time until invalidation).
+The valid lifetime must be greater than or equal to the preferred lifetime. When the valid lifetime expires,
+the address becomes invalid.
+
+The client should attempt to renew the lease before the preferred lifetime ends, but if it is not able to
+do so, the address will be deprecated (and the client can continue using it if it doesn't have a preferred
+address) until the valid lifetime ends.
+
+      |            |         Valid          |
+      |  Tentative | Preferred | Deprecated |   Invalid
+Time  |=====================================================>
+      |  Preferred Lifetime    |
+      |  Valid Lifetime                     |
+
+Prefix configuration are sent with Router Advertisment messages and may include following parametes:
+- Valid lifetime (mandatory) - time interval in seconds, default 2592000 seconds (30days)
+- Preferred lifetime (mandatory) - time interval in seconds, default 604800 seconds (7days)
+- Onlink flag (optional) - the specified prefix is assigned to the link upon which it is advertised
+Nodes sending traffic to addresses that contain the specified prefix consider the destination to be
+reachable on the local link.
+- Autoconfiguration flag --(Optional) If this flag is set, the stateless auto configuration feature can
+use the specified prefix in the automatic configuration of 128-bit IPv6 addresses for hosts on the local
+link, provided the specified prefix is aggregatable, as specified in RFC 2374. 
+
+https://learningnetwork.cisco.com/thread/124273
+https://serverfault.com/questions/798716/ipv6-address-lifetime-preferred-versus-valid-lease
+---------------------------------------------------------------------------------------------------------
+                               Prefix Delegation
+---------------------------------------------------------------------------------------------------------
+ISP can handout indeividual addresses as well as entire networks to a customer 
+Customer router (Prefix Delegation Client) makes Prefix Delegation reques and receives prefix
+from ISP(Prefix Delegation Servcer) for further use. Client may delegate its own prefix even further.
+Now requesting router can uses prefixes to assign global IPv6 addresses to the devices on its
+internal network
+
+https://www.alliedtelesis.com/sites/default/files/documents/feature-guides/dhcpv6_feature_overview_guide_rev_a.pdf
+=========================================================================================================
+IA (Identity Association). Identidier used between client and server to refer to collection of
+addresses Comprises IAID (IA identifier) and associated configuration information. One IA for interface
+
+
+DUID (DHCP Unique Identifier). Identifies signe client/server during message exchange
+
+
+DUID types
+* DUID-LLT
+- base on link-local address + time
+
+* DUID-EN
+- based on enterprise number and vendor assignment
+
+* DUID-LL
+- based on link layer only
+
+Bits is RA =>
+M (Managed Address Configuration)
+- indicates that ipv6 addresses can be obtained using DHCP6
+- M = 1 => user performs full dhclient (with dns request?)
+
+O (Other Configuration)
+- information other than ip is available
+- O = 1 => user receiver ip and performes dhcp information request for 
+  extra information like dns
+
+
+=========================================================================================================
+                                 Message types 
+=========================================================================================================
+Router Solicit      ## sent by client to all routers multicast address
+Router Advertisment ## contains M and O flags
+SOLICIT             ## message used to find dhcp6 server after RA
+ADVERTISE           ## response to solicit
+REQUEST 
+INFORMATION-REQUEST ## answered is send with REPLY
+                       it contains option-request list
+REPLY
+=========================================================================================================
+                 SLACC (StateLess Address Auto Configuration).
+=========================================================================================================
+Can generate global ip as well but requires help of router ip will be created from router prefix(carried
+as option in RA aswell as flag telling wether it is fine to use it for global address generation) and self
+generated information method of self-assigning link-local ip6 address
+
+TODO
+=========================================================================================================
+                       DAD (Duplicate Address Detection)
+=========================================================================================================
+Node joins All Nodes multicast address and the Solicited-Node multicast address and send one or more
+Neighbor Solicitation messages with target address set to address being checked.If Neighbor Advertisement
+is reveiced, DAD failed. If durring solicitation you received solicitation for the same address, then you
+skip waiting for Advertisment and DAD is considered to be failed.
+
+TODO
+=========================================================================================================
+                    NUD (Neighbor Unreachability Detection)
+=========================================================================================================
+                                      TODO
+=========================================================================================================
+                         Solicited Node Multicast Group
+=========================================================================================================
+Multicast address
+FF02::1             all nodes                   (reach all nodes on the same link)
+FF02::2             all routers                             (-||-)
+FF02::5             all OSPF-routers                        (-||-)
+FF02::6             OSPF designated routers address         (-||-)
+FF02::9             all-RIP routers
+FF02::A             all-EIGRP
+FF02::1:FFxx:xxxx   solicited-node for reso;ution process 
+        ?+ used instead of v4 arp to find gateway with multicast solicitation
+
+TODO
+=========================================================================================================

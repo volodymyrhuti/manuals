@@ -1,0 +1,377 @@
+=========================================================================================================
+                                      WiFi
+=========================================================================================================
+                                    Metrics
+---------------------------------------------------------------------------------------------------------
+Bands:
+2.4GHz covering a 100 MHz range of 2400MHz to 2500MHz. It is splited into 14 descrete channels that are
+20 MHz each.  Channels 1, 6, 11 and 14 do not overlap
+5GHz covers a 150 MHz range from 5.725MHz to 5.875MHz, additional range of Unlicensed National
+Information Infrastructure (UNII) bands widens that range to 750MHz.
+Note, router supporting both bands is considered to be dual band.
+
+Well known standards/specctrum:
+.11a  | an early 5GHz 54Mbps Wi-Fi standard
+.11b  | early 2.4GHz 11Mbps version of Wi-Fi
+.11g  | increased 2.4GHz Wi-Fi speed up to 54Mbps
+.11n  | "Wi-Fi 4" supports both 2.4GHz and 5GHz Wi-Fi at speeds up to 450 Mbps
+.11ac | "Wi-Fi 5" supports 5GHz only and speeds of up to 1300 Mbps
+.11ax | "Wi-Fi 6" supports both 2.4GHz and 5GHz and has a maximum speed of up to 10Gpbs
+
+Channel bonding. Some standarts introduced idea of channel bonding - merging multiple 20MHz channels
+into a single 40/80/160 MHz channels. This is expected to improve performance, howeverm it also reduces
+the number of non-overlapping channels, therefore, increasing the probability for interference.
+
+Interference and obstructions
+Wireless frequency
+Frequency channel
+Transmit Power
+Antenna gain
+Signal polarity
+
+https://www.cbtnuggets.com/blog/certifications/cisco/when-to-use-20mhz-vs-40mhz-vs-80mhz
+---------------------------------------------------------------------------------------------------------
+
+Wireless STA (station) => any device that join a WiFi network
+RF => radio frequency
+ 
+BSS(basic service set) => two or more STA connected and controlled with wireless medium (such as a NIC)
+that communicate with each other.
+
+IBSS (independent BSS) => stations communicate directly with each other therefore must be within direct
+communication range
+
+ESS(extended service set) => DS (Distribution System) + and two plus BSS
+
+BSSID => 48 bit id that identifies bss, used for filtering in frames
+- in a infrastructure BSS it will be MAC of wireless interface
+- in IBSS it is generated
+- all 1s is broadcast BSSID (send by station to identifie network with 
+probe request). Only probe frames are allowed to use broadcast
+
+SSID => 48 bit service set identity
+
+IAPP (inter-access point protocol) => method of cominicating association info
+Station can be associated only with one AP a time therefore other should be notified.
+
+CF (coordination function) which determines when a STA transmits/receives
+
+
+Operatiog Modes
+- infrastructure
+- ad-hoc => pear to pear connection
+
+ Positive acknowledgment => all transmitted frames must be acknowledged, it trasfer
+is failed, the frame is considered lost
+
+RTS => Request to send
+- reserver radio link for transmission + silences any stations that hear it
+- if target hears it , sends back CTS (Clear to send) + silence
+ ? Why we need to silence neighbours =>
+   wifi link is half duplex therefore if there is hidden node between 
+   stations and it receives RTS from two station trying to initiate connection
+   it will collide, therefore we want only 1 station to speek a time
+- after RTS/CTS any frames must be positively acknowledged
+- this mechanism is expansive therefore it is only used in high-capacity 
+  environments or can be configured to be applied form big frames
+
+
+DCG => distributed coordinative function
+- checks that link is clear before transmiting
+? What is the difference between this and coordination functions
+
+Ways of controlling wireless medium
+- DCF (distributed coordination function)
+- PCF (point coordination function)
+- HCG (hybrid)
+
+CCA => clear channel assertment
+- physical way of checking channel
+
+Carier sensing =>
+- used to determine if the medium is available
+
+NAV (Network Allocation Vector) =>
+- virtual way of checking a channel
+- timer on host that accumulates time need to send frame(s)
+- time filed within frame send that reserves a medium
+- shorter NAV is sent with CTS in case some station missed NAV in RTS
+- ACK resets medium NAV
+
+Interframe spacing =>
+- SIFS (Short interframe space) => used for highest priority transmissions. They can begin
+as soon, as SIFS finishes
+- PIFS ( PCF interframe space ) => used by stations with data to transmit in the contention-
+free period
+- DIFS ( DCF interframe space ) => 
+- EIFS => used when there is an error in frame trasmission
+
+
+
+NULL data frame =>
+- data frame used by STA to notify AP about going to sleep
+- it sets PM(Power Managment) bit to 1
+- AP never sends this frame nor gos to sleep
+- AP will buffer all frames for this STA
+
+PS-Poll (PowerSave-Poll) frame =>
+- frame sent by STA when waking up from sleep
+- asks AP to send buffered frames
+- AP can acknowladge this frame without sending data if it wants.
+  In this case STA cannot sleep untill AP sends data
+- Data end is notified with special frame beacon
+- It doesnt update NAV but all stations receive it and update NAV for
+  short  interframe space by themselves
+- Instead of NAV is send AID (Association ID ,in range 1 - 2007)
+
+Managment frame =>
+* Beacon =>
+- annouunce the existence of a network
+
+* Probe Request =>
+- is used by STA to find networks
+- contains SSID and STA supported rates 
+
+* Probe Response =>
+- frame send to probe request
+- is sent by STA that was last to send beacon
+
+* ATIM (announcement traffic indication map) =>
+- is sent in IBSS if STA has buffered frames
+ to notify sleeping receiver
+
+* Disassociation and Deauthentication
+- sends reason code
+
+* Association request =>
+
+* Reassociation Request =>
+- includes current AP address so new one can communicate with it
+  and ask for STA information
+
+* Association response and reassociation response
+
+* Authentication
+
+
+Managment architecture =>
+
+
+---------------------------------------------------------------------------------------------------------
+                                  Bandsteering 
+---------------------------------------------------------------------------------------------------------
+Feature that encourages dual-band-capable clients to stay on the 5ghz band on dual-band APs. If client
+conects to 5GHz we remeber it and then miss requests for reassosiation with 2GHz. After 8 probe request
+in 10 secconds, client is allowed to associate with 2.4GHz AP.
+Band steering feature automatically selects between 80MHz, 40 MHz or 20 MHz channels in 802.11n networks?
+When AP hears a request from a client device to associate on both the 2.4GHz and 5GHz bands, it steers
+the client by responding only to 5GHz association request and not the 2.4GHz. Note that both APs on
+gateway are supposed to have the same configuration, like SSID name, security type and settongs, VLAN
+assignments. If they all matchm then it may get enabled automatically or there will be option to be
+enabled by user. 
+
+AP may be configured in one of the following modes =>
+1. Prefer 5GHz
+2. Force 5GHz
+3. Band Balance
+
+The main problem of steering is that it is not standartized therefore each vendor has it`s own
+impelementation and modes of running, as said above. As the result, network connection may be not reliable
+for some devices, or they may prefer 2.4GHz band when 5GHz is optimal.
+
+---------------------------------------------------------------------------------------------------------
+                               Measurement units
+---------------------------------------------------------------------------------------------------------
+RSSI (received signal strength). 8bit value arbitrary used by vendor to describe signal strength. There
+is no standart for its measurement therefore it is not valid to compare rssi used by different manufactures.
+
+RCPI (received channel power indicator)
+
+RSNI (received signal-to-noise indicator)
+
+---------------------------------------------------------------------------------------------------------
+                                  Wifi Roaming
+---------------------------------------------------------------------------------------------------------
+When a wireless client moves around in an area with multiple AP, it may automatically switch to another
+AP which has better signal strength. In this case APs are required to have the same SSID and prorection
+configuration. Decision whether to roam or not is client choise. However, on some gateways there is
+AP-Assisted Roaming optionl which will kick of sticky clients and make them transfer to the optimized
+connection.
+
+---------------------------------------------------------------------------------------------------------
+                                    Hotspot
+---------------------------------------------------------------------------------------------------------
+Hotspot => referes to physical location typically public places served by an AP used to connect devices to
+one another using WiFi; friendly/marketing term to qualify an AP that offers wifi access for guest users.
+If your AP has open SSID (no password?) then it can be considered an Hotspot; A hotspot is a common public
+application of WAPs, where wireless clients can  connect to the Internet without regard for the particular
+networks to  which they have attached for the moment
+
+https://community.cisco.com/t5/other-wireless-mobility-subjects/difference-between-quot-access-point-solution-quot-and-quot-hot/td-p/1662032
+---------------------------------------------------------------------------------------------------------
+                                  Wifi bridge
+---------------------------------------------------------------------------------------------------------
+In case you need to connect to networks over wireless connecton you can create a bridge.
+To do this you need one router wich is connected to internet or just one network router and antwork
+that should be connect need a wireless access point (not a router) that will be assosiated with
+previous router. This AP should to be run in the bridge AP mode in which it will communicate only with
+your configured router
+
+TODO
+---------------------------------------------------------------------------------------------------------
+                      Wifi booster vs repeater vs extender
+---------------------------------------------------------------------------------------------------------
+Booster => extends wifi network coverage space by boosting or amplifying existing signals.
+
+Repeater => wirelessly connected to your network, receive the wireless signal from your router
+and then repeat that signal to a new area extending WIFI coverage. It doesnt require
+physical connection. It will conect to your route and client simultaniously, therefore available
+bandwidth is cut in half.
+
+Extender => physically connected to your network via a wired connection, offering much faster
+speed and a stronger coverage. These device acts as another wireless router. They therefore
+create a different network to transmit coverage, which means they can operate on a different
+frequency from your existing router. You will have to deal with manually switching your connected
+device`s WIFI connection to the right SSID.
+
+Note that extender can perform repeater functions.
+---------------------------------------------------------------------------------------------------------
+                       DFS (Dynamic Frequency Selections)
+---------------------------------------------------------------------------------------------------------
+DFS is a WiFi function that enables WLANs to use 5GHz frequencies that are generally reserved for radars.
+Main benefit of using DFS channels is to utilize under-serviced frequencies to increase the number of
+available WiFi channels. Firstly AP checks that no radar is using DFS frequencies. This process is
+called Channel Availablity Check. If there is a radar on a channel, channel will be ignored for next
+30 min and then repeated. Availability Check can take anywhere between 1 and 10 minutes, depending on
+which country you`re in. If AP detectes radar on used channel, it will contact associtated WiFi clients
+to stop transmitting on that channel and try to change DFS channel.
+
+http://wifinigel.blogspot.com/2018/05/the-5ghz-problem-for-wi-fi-networks-dfs.html
+https://en.wikipedia.org/wiki/List_of_WLAN_channels
+https://netbeez.net/blog/dfs-channels-wifi/
+---------------------------------------------------------------------------------------------------------
+                                  Beamforming
+---------------------------------------------------------------------------------------------------------
+A common feature for high-end 802.11ac wireless routers. There’s no downside to getting beamforming, aside
+from the money you may have to spend to get a more expensive router with this feature. Note that your
+device is supposed to support 802.11ac, othrewise this feature can`t be used.
+
+---------------------------------------------------------------------------------------------------------
+                                      Mesh
+---------------------------------------------------------------------------------------------------------
+WMN (Wireless Mesh Network) => network made up of radio nodes organized in a mesh topology. 
+
+=========================================================================================================
+       WPS (Wi-Fi Protected Setup, originally Wi-Fi Simple Configuration)
+=========================================================================================================
+WPS is a network security standard to create a secure wireless home network;
+is a method of connecting to gateway without knowing its password. This is commonly used for first time
+logging, allwing client to reconfigure password. This is done via an external or internal registrar.
+These methods include:
+1. Push Button (PBC), external registrar. User has to push a button, either an actual or virtual one, on
+   both the access point and the new wireless client device. On most devices, this discovery mode turns
+   itself off as soon as a connection is established or after a delay (typically 2 minutes or less),
+   whichever comes first, thereby minimizing its vulnerability.
+   Method is optional.
+2. PIN entry. A unique PIN  will be required for each device to join the network. A fixed PIN label or
+   sticker may be placed on a device, or a dynamic PIN can be generated and shown on the device's display
+   (e.g., a TV screen or monitor). PIN is used to make sure the intended device is added to the network
+   being set up and will help to avoid accidental or malicious attempts to add unintended devices to the
+   network. Method is required to be implemented.
+3. Near Field Communication (NFC). Usually not used nor is required to be implemented.
+
+Wi-Fi Simple Configuration defines new 802.11 information elements (IE) that are included in beacons,
+probe requests and probe responses. The purpose of these IEs is to advertise the presence of devices that
+are capable of performing Wi-Fi Simple Configuration operations.
+
+Definitions used in architecture:
+1. Domain. A set of 1+  devices controlled by a common authority for the purpose of gaining access to 1+ WLANs.
+2. Enrollee. A device seeking to join a WLAN Domain. Once an Enrollee obtains a valid credential, it
+   becomes a Member.
+3. In-band. Data transfer using the WLAN communication channel
+4. Out-of-band. Data transfer using a communication channel other than the WLAN
+5. Registration Protocol. A Registration Protocol is a (logically) three party in-band protocol to assign
+   a Credential to the Enrollee. The protocol operates between the Enrollee and the Registrar and may
+   receive support through a proxy.
+6. Registrar. An entity with the authority to issue and revoke Domain Credentials. A Registrar may be
+   integrated into an AP (internal Registrar), or it may be separate from the AP (external Registrar).
+   A Registrar may not have WLAN capability.  A given Domain may have multiple Registrars.
+7. External Registrar. A Registrar for an AP’s Domain that runs on a device separate from the AP
+8. PushButton Configuration (PBC). A configuration method triggered by pressing a physical or
+   logical button on the Enrollee and on the Registrar.
+
+Some wireless access points have a dual-function WPS button, and holding this button down for a shorter
+or longer time may have other functions, such as factory-reset or toggling WiFi.
+
+http://junyelee.blogspot.com/2014/11/wi-fi-protected-setup_4.html
+https://kb.netgear.com/19824/How-do-NETGEAR-Home-routers-defend-WiFi-Protected-Setup-PIN-against-brute-force-vulnerability
+=========================================================================================================
+                               Beacon frame
+---------------------------------------------------------------------------------------------------------
+The Wi Fi Beacon management frame is a sent out by the access point every 100ms (can be configured).
+Beacon frames are used to advertise that the existence of a wireless access point is available and contains
+all the required information required to connect to the network. It contains follwing information:
+1. Beacon Interval. Interface at which beacons are transmitted by AP, needed by devices in power save mode
+   so they wake only when needed.
+2. Timestamp. This details the local time of the access point so all local device can use this information
+   to synchronize their time.
+3. SSID. This field details the network name associated with the access point. If the network is hidden
+   then there will be no information in this field. A client will need to know the SSID in its probe
+   request, if it wants to connect to this access point.
+4. Supported rates. This determines the supported data rates by the access points
+5. Parameter sets. This describes the supported signaling rates i.e frequency hopping spread spectrum etc
+6. Capability information. This field defines the capabilities that the client will need to support in
+   order to connect with the access point.
+7. Traffic Indication Map (TIM). An access point periodically sends the TIM within a beacon to identify
+   which stations using power saving mode have data frames waiting for them in the access point’s buffer.
+8. Fixed Parameter contains information like if wep is being supported being used and what type of
+   modulation is being used.
+There are also fields that hold  extra parameters, that has been added to the Wi FI spec since its first
+initial standard. This information can be found under tagged parameters.
+
+https://networksystemsblog.wordpress.com/2014/04/21/wi-fi-management-packets-explained-part-1-wi-fi-beacon-frames/
+---------------------------------------------------------------------------------------------------------
+                             Probe Request/Response
+---------------------------------------------------------------------------------------------------------
+Station looking for network may do it passively by iterating through possible channels and listening to
+beacons but it is not efficient (passive scanning). Instead, active stations, iterate through channels
+and send a Prob Request management frame asking what network is available on that channel.
+It`s broadcasted to DestinationAddress (ff:ff:ff:ff:ff:ff). Once a Probe sent, STA starts a ProbeTimer
+countdown & wait for answers. At the end of the timer, STA process the answer it has received. If no
+answers received, STA moves to next channel & repeats the discovery process.
+
+STA sending Probe Request may specify the SSID they looking (called directed probe request). Then only
+IBSS STA or AP support that SSID will answer. The SSID value can also be set to 0 (ie SSID field is
+present, but empty). This is called Wildcard SSID or Null Probe Request.
+
+Beacon frame and Probe response are similar but here are 3 noticable differences:
+1. The beacon frame contain a TIM, the probe response does not
+2. The beacon frame contain a QoS Capability information Element
+3. The probe response contain the Requested Information elements that may have been requested by the
+   probing station.
+
+Once Probe Response received by the STA, it should send an  ACK frame to the AP.
+https://mrncciew.com/2014/10/27/cwap-802-11-probe-requestresponse/
+---------------------------------------------------------------------------------------------------------
+                             IE Information Element
+---------------------------------------------------------------------------------------------------------
+
+https://stackoverflow.com/questions/36632029/wireshark-beacon-frame-wps-vendor-tag
+---------------------------------------------------------------------------------------------------------
+                                Filters
+---------------------------------------------------------------------------------------------------------
+Management Frames       |  wlan.fc.type==0
+Control Frames          |  wlan.fc.type==1
+Data Frames             |  wlan.fc.type==2
+Association Request     |  wlan.fc.type_subtype==0
+Association Response    |  wlan.fc.type_subtype==1
+Reassociation Request   |  wlan.fc.type_subtype==2
+Reassociation Response  |  wlan.fc.type_subtype==3
+Probe Request           |  wlan.fc.type_subtype==4
+Probe Response          |  wlan.fc.type_subtype==5
+Beacon                  |  wlan.fc.type_subtype==8
+ATIM                    |  wlan.fc.type_subtype==9
+Disassociation          |  wlan.fc.type_subtype==10
+
+https://dalewifisec.wordpress.com/2014/04/29/wireshark-802-11-display-filters-2/
+=========================================================================================================

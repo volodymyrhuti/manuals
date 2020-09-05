@@ -1,0 +1,607 @@
+                                  Architecture
+=========================================================================================================
+Words architecture and design are synonimes and usually means the same in software engineering.
+The goal of software architecture is to minimize the human resources required to build and maintain the
+required system.
+The measure of design quality is simply the measure of the effort required to meet the needs of the customer.
+
+Software has 2 associated values, the behaviour and the architecture.
+- Behaviour is the functionality that is executed by the computer without regards on the implementation
+  This is urgent but not always particularly important
+- Architecture is the implementation and how easy is to change it
+  This is important but never paricularly urgent
+
+Paradigms are ways of programming, relatively unrelated to languages. A paradigm tells you which programming
+structures to use, and when to use them. To date, there have been three such paradigms:
+- Structured. Imposes discipline on direct transfer of control
+- Object-orient. Imposes discipline on indirect transfer of control
+- Functional. Imposes discipline upon assignment
+These three align with the three big concerns of architecture: function, separation of components, and
+data managment.
+
+Independent deployability. When the source code in a component changes, only that component needs to be
+redeployed. If the modules in your system can be deployed independently, then they can be developed
+independently by different teams.
+
+OO is the ability, through the use of polymorpjism, to gain absolute control over every source code
+dependency in the system. It allows the architect to create a plugin architecture, in which modules that
+contain high-level policies are independent of modules that contain low-level details.
+
+Immutability is important since it avoids race conditions, which are the result of mutable variables
+modified by different threads. The well-structured applications will be segregated into those components
+that do not mutate variable and those that do. This kind of segragation is supported by the use of
+appropriate disciplines to protect those mutated variables.
+It is wise to push as much processing as possible into the immutable components, and to drive as much
+code as possible out of those components that must allow mutation.
+
+Event sourcing is a strategy wherein we store the transactions, but not the state. When state is required,
+we simply apply all the transactions from the beginning of time. This way, nothing ever gets deleted or
+updated form such a data store. As a consequence, our applications are not CRUD; they are just CR.
+Also, because neither updates nor deletions occur in the data store, there cannot be any concurrent update
+issues.
+If we have enough storage and processor power, we can make out application enirely immutable - and,
+therefore, entirely functional. This is precisely the way your code control system works.
+
+
+=========================================================================================================
+                               Design Principles
+=========================================================================================================
+The SOLID principles tell us how to arrange out functions and data structures into classes, and how those
+classes should be interconnected. Note, that a class is simply a coupled grouping of functions and data,
+therefore this principles are applicable not only for OO languages. The goal is following:
+- Tolerate change
+- Are easy to understand
+- Are the basis of components that can be used in many software systems
+These principles are mid-level meaning that they are applied to at the module level.
+
+Architects separate functionality based on how, why, and when it changes, and then organize that separated
+functionality based on how, why, and when it changes, and then organize that separated functionality into
+a hierarchy of components. Higher-level components in that hierarchy are protected from the changes made
+to lower-level components.
+
+Most of the problems are associated with aditional costs implied by recompilation/redeployment of modules
+that don`t require it or high cost or just a practical mess when modification is needed.
+Most of the principles are not 100% attainable, these must be strategic, e.g. applications offten prefer
+maintainability over reusability.
+---------------------------------------------------------------------------------------------------------
+                      SRP. Signle Responsibility Principle
+---------------------------------------------------------------------------------------------------------
+                     Every module should do just one thing
+            A module should have one, and only one, reason to change
+           A module should be responsible to one, and only one, actor
+               Separate the code that different actors depend on
+
+We use this principle when we are refactoring large functions into smaller ones, which is the lowest level
+of the development. Note, this is not SRP but quite close.
+                 A function should do one, and only one, thing
+
+# What is module?
+The simplest definiton of module is a source file. Usually this is enough, however some languages and
+development environments don`t use source files to contain their code. In those cases a module is just a
+cohesive set of functions and data structures, where the word `cohesive` implies the SRP.
+
+It is more easy to understand this by looking on the symptomps of violating it:
+- Accidental Duplication. If you share a code used by different actors, you are running a risk of having
+  changes use cases which will require modifications to the implementation and may affect other actors as
+  well without them knowing
+- Merges. Again, you have a business logic that is shared by multiple actors as the result of bad architecture.
+  It is possible that each actor has a dedicated team responsible for development of his use cases.
+  Hence, it is possible that multiple teams will perform modifications to the common code and try to
+  merge it without synching on the new changes with other teams. Such scenarion may result in poore
+  merge performed by the merging software or require high human resource support.
+
+# Solution
+There are many different solutions and each moves the functions into different classes.
+A common solution is the Facade pattern
+
+SRP is about functions and classes - but it reappears in a different form at two more levels. At the
+level pf components, it becomes the Common Closure Principle. At the architectural level, it becomes the
+Axis of Change responsible for the creation of Architectural Boundaries.
+
+---------------------------------------------------------------------------------------------------------
+                           OCP. Open-Closed Principle
+---------------------------------------------------------------------------------------------------------
+      A software artifact should be open for extension but closed for modification
+  If component A should be protected from changes in component B, then B should depend on A
+  The behaviour of a software artifact ought to be extendible without having to modify that artifact.
+
+Clearly, if simple extensions to the requirements force massive changes to the software, then the
+architects of that software system have engaged in a spectacular failure.
+
+Common scenarion, the stakeholder ask you to report the collected information in some new format with
+new styling format. Clearly some code must be written, but how much old will have to change.
+A good software architecture would reduce the amount of changed code to the barest minimum. Ideally zero.
+This is done by properly separationg the things that change for different reasons (SRP), and then
+organizing the dependencies between those things properly (DIP).
+
+Having made the separation or responsibilities we need to organize the source code dependencies to
+ensure that changes to one of those responsibilities do not cause changes in the other, also, ensure
+that the behaviour can be extended without undo modifications.
+
+It is accomplised by partitioning the processes into classes, and separating them into components.
+All dependencies are source code dependencies that are connected in a unidirectional relationships.
+  If component A should be protected from changes in component B, then B should depend on A
+
+This principle creates a hierarchy of protection based on the notion of `level`, where the component
+holding business rules is the most protected and modules that it depends on are less and so on.
+This way, higher-level components in the hierarchy are protected from the chagnes made to lower-level
+components.
+
+TODO Direction Control, hard, Transitive dependencies, ISP
+STDIO devices issue
+---------------------------------------------------------------------------------------------------------
+                       LSP. Liskov Substitution Principle
+---------------------------------------------------------------------------------------------------------
+                 Inheritance guidence, choosing proper subtypes
+
+It is possible to have an improper subtype making it`s usage confusing for the user.
+We may have an interface implemented by multiple classes, LSP is applicable because there are users who
+depend on well-defined interfaces, and on the substitutability of the implementations of those interfaces.
+
+LINK example
+TODO: how to fix LSP
+---------------------------------------------------------------------------------------------------------
+                      ISP. Interface Segregation Principle
+---------------------------------------------------------------------------------------------------------
+In general, it is harmful to depend on modules that contain more than you need. This is obviously true
+for source code dependencies that can force unnecessary recompilation and redeployment - but it is also
+true at a much higher, architectural level.
+
+ | System S | ---> | Framework F | ---> | Database D |
+
+The Framework F is using a subset of D which creates a risk of D failure, possibly in the subset we don`t
+even use, which breaks entire system.
+
+---------------------------------------------------------------------------------------------------------
+                      DIP. Dependency Inversion Principle
+---------------------------------------------------------------------------------------------------------
+The most flexible systems are those in which source code dependencies refer only to abstractions, not to
+concretions. In a statically typed language this means that the use, import, and include statments should
+refer only to source modules containing interfaces, abstract classes, or some other kind of abstract
+declaration. Nothing concrete should be depended on.
+
+Note, this is not realistinc and therefore is not a rule. Common classes, like `string`, are concrete and
+the source code dependency on the implementation file cannot, and should not, be avoided.
+On other side, such classes are very stable and it is rare for them to change. Programmers and architects
+do not have to worry about frequent changes to `string`. For these reasons, we tend to ignore the DIP
+when considering stable background of OS and platform facilities.
+
+Otherwise, interfaces are less volatile for changes then their implementation, while change to interface
+almost always implies changes to the implementation.
+The implication is that stable software architectires are those that avoid depending on volatile concretions,
+and that favor the use of stable abstract interfaces. This boils down to a set of very specific practices:
+- Don`t refer to volatile concrete classes. Refer to abstract interfaces instead.
+  This puts severe constraints on the creation of objects and generally enforces the use of Abstract Factories.
+- Don`t derive from volatile concrete classes. This follows from the previous rule, but bears a special
+  mention. TODO: it is rigid in statically typed languages and less in dynamically, in what way?
+- Don`t override concrete functions. Cocrete functions often require source code dependencies.
+  Overriding them doesn`t eliminate then and inherit instead. Use function abstract to manage them.
+  TODO: example?
+- Never mention the name of anything concrete and volatile.
+
+To comply with these rules, the creating of volatile concrete objects requires special handling. This
+caution is justified because, in virtually all languages, the creation of an object requires a source code
+dependency on the concrete definition of that object. This is managed with Abstract Factory.
+
+The curved line divides the system into two components: abstract and concrete. The flow of control crosses
+the curved line in the opposite direction of the source code dependencies, meaning that source code
+dependencies are inverted againsto the flow of control - which is why the name Dependency Inversion.
+
+Note, DIP violations cannot be entirely removed, but they can be gathered into a small number of concrete
+components and kept separate from the rest of the system
+
+TODO: single dependency so it violates the DIP
+11.1 Dependency investion, concrete depends on abstract
+=========================================================================================================
+                              Component Principles
+=========================================================================================================
+What software components are, which elements should compose them, and how they should be composed together
+into systems?
+Components are the units of deployment, the smallest entities that can be deployed as part of a system.
+In compiled languages these are aggregations of binary files, maybe linked together into a single executable.
+Well designed components always retain the ability to be independently deployable and, therefore,
+independently developable.
+
+The dynamically linked files, which can be plugged together at runtime, are the software components of our
+architectures. It has taken 50 years when component plugin architecture can be the casual default as opposed
+to the herculean effort it once was.
+
+---------------------------------------------------------------------------------------------------------
+                               Component cohesion
+---------------------------------------------------------------------------------------------------------
+REP. Reuse/Release Equivalence Principle
+---------------------------------------------------------------------------------------------------------
+                 The granule of reuse is the granule of release
+People who want to reuse software components cannot, and will not, do so unless those components are
+tracked through a release process and are given release numbers. Without release numbers there would be
+no way to ensure that all the reused components are compatible with each other.
+Not obvious implication, classes and modules that are grouped together into a component should be
+releasable together. The fact that they share the same version number and the same release tracking, and
+are included under the same release documentation, should make sense both to the author and to the users.
+
+It is hard to define what makes sense during such grouping, but it is easy to say what doesn`t in the
+process.
+
+---------------------------------------------------------------------------------------------------------
+CCP. The Common Closure Principle
+---------------------------------------------------------------------------------------------------------
+Gather into components those classes that change for the same reasons and at the same times.
+Separate into different components those classes that change at different times and for different reasons.
+This is SRP restated for components.
+
+Such gathering minimizes the workload related to releasing, revalidating, and redeploying the software.
+The principle is closle associated to OCP, but because the 100% closure is not attainable, it must be
+strategic. We design our classes such that they are closed to the most common kinds of changes that we
+expect or have experienced.
+The CCP amplifies this by gathering classes that are close to the same types of changes. Thus when a change
+in requirements come along, that change has a good chance of being restricted to a minimal number of
+components.
+
+CCP is the component form of the SRP
+
+---------------------------------------------------------------------------------------------------------
+CRP. The Common Reuse Principle
+---------------------------------------------------------------------------------------------------------
+     Don`t force users of a component to depend on things they don`t need
+     Classes and modules that tend to be reused together belong in the same component
+     Classes withing component should be tightly bound to each other
+     Classes withing components should be inseparable
+Callse are rarly reused in isolation and it is more tipical to have reusable classes collaborate with
+other classes that are part of the reusable abstraction. But the CRP tells us more, it tells what classes
+not to keep together in a component.
+When one component uses another, a dependency is create between the components, and it is possible that
+using components uses only one class withing the used component and not others. Because of this dependency,
+every time the used component is changed, the using component will likely need corresponding changes.
+Even if no changes are necessary to the using component, it will likely still need to be recompiled,
+revalidated, and redeployed. This is true even if the using component doesn`t care about the change
+made in the used component.
+
+Thus when we depend on a component, we want to make sure we depend on every class in that component.
+In another words, we want to make sure that the classes that we put into a component are inseparable -
+impossible to depend on some and not on the others. Otherwise, we will be redeploying more components
+than is necessary, and wasting significant effort.
+
+---------------------------------------------------------------------------------------------------------
+                               Component Coupling
+---------------------------------------------------------------------------------------------------------
+How to build relationships between components?
+What are the dependency managment metrics?
+
+---------------------------------------------------------------------------------------------------------
+The Acyclic Dependencies Principle
+---------------------------------------------------------------------------------------------------------
+               Allow no cycles in the component dependency graph
+Working with some one else on a single sources creates a problem when someone breaks your logic and you
+do the same for others without noticing it. Everyone keeps on changing and changing their code trying to
+make it work with the last changes that someone else made.
+There are several solutions: the weekly build, and the ADP (Acyclic Dependencies Principle).
+
+This issue is the result of having cycles in the dependency structure of the components which propagets
+the dependency thought the whole system making it highly coherent. Proper architecture should result in
+the structure that has no cycles; it is called DAG (Direct Acyclic Graph).
+You have 2 options to break the cycle:
+- Apply the DIP. Just insert an interface that one module will be using and another will implement
+- Create a new component that other will depend on. Move the class(es) that they both depend on into
+  that new component
+
+The second solution implies that the component structure is volatile in the presence of changing
+requirements. The component structure cannot be designed from the top down. It is not one the first
+things about the system that is designed, but rather evolves as the system grows and changes.
+
+The component dependecy diagrams have very little do to with descibing the function of the application.
+Instead, they are a map to buildability and maintainability of the application. This is why they aren`t
+designed at the beginning of the project.
+
+---------------------------------------------------------------------------------------------------------
+ SDP. Stable Dependencies Principle
+---------------------------------------------------------------------------------------------------------
+                      Depend in the direction of stability
+
+Any component that we expect to be volatile should not be depended on by a component that is difficult
+to change. Otherwise, the volatile component will also be difficult to change.
+By conforming to the SDP, we ensure that modules that are intended to be easy to change are not depended
+on by modules that are harder to change.
+
+Stability is related to the amount of work required to make a change.
+One sure way to make a software component difficult to change, is to make lots of other software components
+depend on it. Such component is very stable because it requires a great deal of work to reconcile any
+changes with all the dependent components. Such module is said to be responsible of dependent components.
+If module has nothing to depend on, has not external infuence to make it change, it said to be independent.
+
+The SDP says that the I(nstability) metric of a component should be larger than the I metric of the
+components that it depends on. That is, I metric should decrease in the direction of dependency.
+
+There is a situation when stable element needs to depend on a component that is expected to flexible,
+which violates the SDP. This can be fixed using DIP.
+
+---------------------------------------------------------------------------------------------------------
+ SAP. Stable Abstraction Principle
+---------------------------------------------------------------------------------------------------------
+               A component should be as abstract as it is stable
+
+
+=========================================================================================================
+                                  Architecture
+=========================================================================================================
+The architecture of a software system is the shape given to that system by those who build it. The form
+of that shape is in the division of that system into components, the arrangement of those components, and
+the ways in which those components communicate with each other.
+The purpose of that shape is to facilitate the development, deployment, operation, and maintenance of the
+software system contained within it.
+The strategy behind that facilitation is to leave as many options open as possible for as long as possible.
+Note, there are many systems out there, with terrible architectures, that work just fine. Their troubles
+do not lie in their operation; rather, they occur in their deployment, maintenance, and ongoing development.
+The ultimate goal is to minimize the lifetime cost of the system and to maximize programmer productivity.
+
+TODO: a small team cna quite effectively work together to develop a monolithic system without components/interfaces
+      development schedule
+---------------------------------------------------------------------------------------------------------
+Business logic/rule. Domain logic.
+It is used to refer to the portion of your application that is specific to your application and represents
+the core behavior of how things are supposed to work as opposed to generic functionality that, is not
+the main point of your application, could be be useful in software written for different client/business/
+client base or code that exists to support the infrastructure of the application.
+It is often a target of changes and therefore should be separated from system for higher maintainability.
+
+This is some not generic logic need to implement behaviour of the targeted system.
+Business Logic. Part of the program which encodes the real-world business rules that determine how data
+can be created, sotred, and changed. It prescribes how business object interact with one another, and
+enforces the routes and the methods by which business objects are accessed and updated.
+Business Rule. Operations, definitions and constraints that apply to an organization.
+
+Business Logic. You need an identiity of the person, validated request, source/target account number
+Busines Rule. Person must be authorized, transaction should be atomic, transaction should be reported
+              to the government
+
+Utility code, such as parsing/processing/data access and such would not be considered business logic.
+This is generic term that can have many meanings depenging on the people and context when is used.
+Business Logic is portable, meaning that if you move from one technology stack to another, nothing has
+changed from user point of view.
+
+
+https://softwareengineering.stackexchange.com/questions/261305/what-exactly-is-a-business-rule
+https://softwareengineering.stackexchange.com/questions/234251/what-really-is-the-business-logic
+---------------------------------------------------------------------------------------------------------
+Operation. The impact of architecture on system operations tends to be less dramatic than on development,
+deployment, and maintenance and can often can be resolved by throwing more hardware.
+The fact, hardware is cheap and people are expensive.
+
+---------------------------------------------------------------------------------------------------------
+Maintenance. Of all the aspects of a software system, maintenance is the most costly.
+Separating the system into components, and isolating those components through stable interfaces, it is
+possible to illuminate the pathways for future features and greatly reduces the risk of inadvertent breakage.
+
+---------------------------------------------------------------------------------------------------------
+Use Cases. The architecture of the system must support the intent of the system.
+The architecture doesn`t influences over the behaviour of the system. There are very few behavioral options
+that the architecture can leave open. The most important thing a good architecture can do to support
+behaviour is to clarify and expose that behaviour so that he intent of the system is visible at the
+architectural level. Elements of the system have prominent positions within the architecture, and have
+names that clearly describe their function.
+
+---------------------------------------------------------------------------------------------------------
+Development. The Conway`s law says:
+Any organization that designs a system will produce a design whose structure is a copy of the organization`s
+communication structure
+
+---------------------------------------------------------------------------------------------------------
+Decoupling Layers.
+The architect wants the structure of the system to support all the neccessary use cases, but does not
+know what all those use cases are, while knowing general intent of the system. The architect can employ
+the SRP and CCP to separate those things that change for different reasons, and to collect those things
+that change for the same reasons.
+For instance, a good architect will separate the UI from the business logic in a way that they can be
+changed independently of each other, while keeping those use cases visible and clear.
+Therefore, systems are divided into decoupled horizontal layers - the UI, application-specific business
+rules, application-independent business rules, the database, and so on.
+
+Note, decopling may require some architectural changes after operational considerations.
+For instance, if you have decoupled your logic and you consider using it somewhere else, you should not
+depend on these components being together in the same address space of a processor. They must be
+independent services, which communicate over a network of some kind.
+
+There are different decoupling modes:
+- Source level. Control dependencies between source code modules so that changes to one module do not
+  force changes or recompilation of others. TODO: monolithic structure
+- Deployment level. Control dependencies between  deployable units such as jar/DLLs/libraries..
+- Service leve. Reduce the dependencies down to the level of data structures, and communicate solely
+  through network packets such that every execution unit is enirely independent of source and binary
+  changes to others (e.g., services or micro-services).
+
+Note, it is hard to identify which mode works the best on the early stages of the development.
+
+---------------------------------------------------------------------------------------------------------
+Duplication.
+Architects often fall into a trap of duplication. There are different types of duplicaton: true duplication
+and false/accidental duplication. For instance, two use cases might be similar, maybe the same database
+structure or algorithms being used, and it can be tempting to share code between them. However, after
+a couple of year they will evolve along different paths and you`ll find that they are very different from
+each other.
+You will often find such issue when vertically separating use cases from one another.
+
+---------------------------------------------------------------------------------------------------------
+Plugin Argument.
+In the plugable architure, the module that is being pluged in depends on the others. This is a deeply
+asymmetric relationship, and it is one that we desire to have in our own systems. We want certain modules
+to be immune to others. For example, we don`t want the business rules to break on GUI or DB schema change.
+
+TODO: Conclusion 17, an application of DIP and SAP, lower level to high-level 
+---------------------------------------------------------------------------------------------------------
+Chap 18, Boundaryies
+
+such systems almost always depend on some kind of dynamic polymorphism to manage their internal dependencies
+Withour OO, or an equivalent form of polymorphism, architects must fall back on the dangerous practice of
+using pointers to functions to achive the appropriate decoupling.
+
+---------------------------------------------------------------------------------------------------------
+Boundary crossing
+When a high-level client needs to invoke a lower-level service, dynamic polymorphism is used to invert
+the dependency against the flow of control. The runtime dependency opposes the compile-time dependency.
+TODO: All dependencies cross the boundary from right to left toward the higher-level component.
+
+---------------------------------------------------------------------------------------------------------
+Policy and levels
+
+Level is the distance from the inputs and outputs. The farther a policy is from both the inputs and the
+outputs of the system, the higher is level. The policies that manage input/output are the lower level
+policies in the system.
+
+Note that the data flow and the source code dependencies do not always point in the same direction.
+We want source code dependencies to be decoupled from data flow and coupled to level.
+
+This lack of dependencies is critical. If the request and response models are 
+not independent, then the use cases that depend on them will be indirectly 
+bound to whatever dependencies the models carry with them. 
+
+The business rules should remain pristine, unsillied bu baser concerns such as the user interface or
+database used. Ideally, the code that represents the business rules should be the core of the system, with
+lesser concerns being plugged in to them. The business rules should be the most independent and reusable
+code in the system.
+
+The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies
+
+---------------------------------------------------------------------------------------------------------
+a shopping cart system, or it’s a bill of materials system, or it’ s an order 
+processing system. So the architect can employ the Single Responsibility 
+Principle and the Common Closure Principle to separate those things that 
+change for different reasons, and to collect those things that change for the  UI example
+
+
+=========================================================================================================
+                           Common architecture styles
+=========================================================================================================
+                     REST. REpresentational State Transfer
+---------------------------------------------------------------------------------------------------------
+An architectural style for distributed hypermedia systems that was first presented by Roy Fielding in 2000
+There are 6 guiding constraints for interface to be RESTful:
+1. Client-server. 
+2. Stateless.
+3. Cacheable.
+4. Uniform interface
+5. Layerd system.
+6. Code on demand (optional).
+
+https://restfulapi.net/
+https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                   Interview
+=========================================================================================================
+Ask good questions -> what features to work on
+                   \> how much to scale
+                   \> you need to define MVP of the product
+Drive discussion, you need to lead it
+
+Design Introduction
+---------------------------------------------------------------------------------------------------------
+Things to consider when designing the system:
+- Features required
+- Define APIs
+- Availability
+- Latency Performance
+- Scalability
+- Class Diagram
+- Security & Privacy
+- Cost effectivness
+
+Topic you should know:
+- Vertical vs Horizontal scaling
+- CAP theorem
+- ACID vs BASE
+- Partitioning/Sharding Data
+  consisten hashing
+- Optimistic vs Pessimistic locking
+- Strong vs Eventual consistency
+- Relational DB vs NOSQL
+- Types of NOSQL
+  key value
+  wide column
+  document based
+  graph based
+- Caching
+- Data center/racks/hosts
+- cpu/memory/harddrive/network bandwidth
+- random vs sequential readwrite on disk
+- http vs http2 vs websockets
+- TCP/IP model
+- ipv4 vs 6
+- TCP vs UDP
+- DNS lookup
+- Https & TLS
+- Public key infrastructure & Certificate Authority
+- Symmetric vs Asymmetric key
+- Load Balancer -> L4 vs L7
+- CDNs & Edge
+- Bloom Filters & Count-min sketch
+- Paxos - Consensus over distributed hosts
+  leader election
+- Design patterns & object oriented design
+- Virtual machines & containers
+- Publisher-Subscriber vs Queue
+- Map reduce
+- Multithreading, concurrency, locks, synchronization, CAS
+
+Tools to be aware of:
+- Cassandra widevolume database
+- MongoDB/Couchbosc
+- Mysql
+- Memcached
+- Redis
+- zookeeper
+- kafka
+- nginx
+- haproxy
+- solr, elastic search
+- blobstore like s3
+- Docker - kubernetes - mesos
+- hadoop/spark - hdfs
+
+Requirements clarification:
+- Users/Customers of the application
+  Who and how will use the system?
+- Scale (read and write)
+  How many read queries per second?
+  How much data is queried per request?
+  Is service reliable/consistent/available
+  Note, you can try perform general estimation on your own so you know the size of your structures
+- Performance
+  What is expected write-to-read data delay
+  What is expected latenct for read
+- Cost
+  Should the design minimize the cost of development or maintenance
+
+https://www.youtube.com/watch?v=bUHFg8CZFws
+https://www.youtube.com/watch?v=UzLMhqg3_Wc&list=PLrmLmBdmIlps7GJJWW9I7N0P0rB0C3eY2
+---------------------------------------------------------------------------------------------------------
+                                    Scaling
+---------------------------------------------------------------------------------------------------------
+There are two types of scalling: horizontal and vertical
+
+  |(1)Horizontal                    |(2)Vertical
+---------------------------------------------------------------------
+1 |Requires Load balancing          | N/A
+2 |Resilient for failures           | Single point of failure
+3 |Network calls (RPC)              | Inter process communication
+4 |Data inconsistency               | Consistent
+5 |Scales well as users increase    | hardware limit
+
+Note, there is a hybrid variant which means using horizontal scheme where each server is as powerfull as
+possible. Such solution combines 1.2,5 and 2.3,4
+
+Examples, horizonal: Cassandra and MongoDB; vertical: mysql
+---------------------------------------------------------------------------------------------------------
+                                     Other
+---------------------------------------------------------------------------------------------------------
+Availability is the time a system remains operational to perform its required function in a specific period.
+It takes into account maintainability, repair time, spares availability, and other logistics considerations.
+Reliability is availability over time considering the full range of possible realworld conditions that can
+occur.
+
+=========================================================================================================
+                                  Check later
+---------------------------------------------------------------------------------------------------------
+Direction Control, Information hiding -> transitive dependencies on the FinancialEntities.
+11.1 An architectural boundary, all source code depndencies cross that curved line pointing in the same
+  direction, toward the abstract side.
+  main function
+

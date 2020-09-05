@@ -1,0 +1,172 @@
+=========================================================================================================
+                                   Debugging
+=========================================================================================================
+                                    Tcpdump
+---------------------------------------------------------------------------------------------------------
+tcpdump
+        -s 0/65535          # packet size , 0 stands for default (65535)
+        -n                  # numeric, dont translate ip to domain name
+        -q                  # quite, less protocol information
+        -t                  # don`t print time stamp
+        -A                  # print packet in ASCII
+        -X                  # content in HEX and ASCII
+        -XX                 # -X + ethernet header
+        -D                  # list available interfaces
+        -i <name/any>       # interface, any means all, even those yet not created
+        -w <file_name>      # save results to file
+        ip/ip6              # to choose ip version
+        host <ip>           # filter by ip, the same as src=<ip> and dst=<ip>
+        src/dst <ip>
+        port <port>         # filter by port
+        src/dst <port>
+        port-range <start>-<end>
+
+Display interface name in case of `-i any`
+https://serverfault.com/questions/224698/how-to-display-interface-in-tcpdump-output-flow
+
+If there is no tcpdump on your embdeded linux, you can monitor connections with `netstat` or `ss`
+netstat -n -t | awk '{print $5}' | grep <ip:port>
+ss      -n -t | awk '{print $5}' | grep <ip:port>
+
+tcpdump -i any -s 0 host 192.168.1.3 and host 192.168.1.4 -w wl.pcap
+tcpdump -i any -vvvv ip6 -s 65535 -w dump6.pcap &
+tcpdump -i any -vvvv ip -s 65535 -w dump4.pcap &
+---------------------------------------------------------------------------------------------------------
+                                  nmap/netstat
+---------------------------------------------------------------------------------------------------------
+nmap
+    -Pn <ip>        # skip host discovery
+    -p  <port>      # port
+    -e  <intf>      # used interface
+
+nmap -p 22 -v -Pn -e eno1.100 192.168.151.17  # scaning port ssh 22 on device 192.168.151.17
+
+netstat
+    -n, --numeric       don't resolve service names
+    -l, --listening     display listening sockets
+    -t, --tcp           display only TCP sockets
+    -u, --udp           display only UDP sockets
+    -p,                 resolve service names
+
+netstat -tapln      :lists ports and program that opened them
+---------------------------------------------------------------------------------------------------------
+                                     Iperf
+---------------------------------------------------------------------------------------------------------
+Note that there are three version of iperf, iperf3 works using client-server approach and requires tcp
+connection before starting, therefore you may have problems with firewall. 
+iperf3
+    -t <sec>         # time to transmit for (10 sec default)
+    -c <server_ip>   # connect as client to server
+    -n <num>[KM/Kb]  # num of bytes to transmit per send
+    -B <intf>        # bind to specific interface
+
+iptables -P OUTPUT ACCEPT
+iptables -P INPUT ACCEPT
+iperf3 -s &                         # server
+iperf3 -n 900Kb -c 192.168.151.14   # client
+---------------------------------------------------------------------------------------------------------
+                                      SCP
+---------------------------------------------------------------------------------------------------------
+me/remote -> hostname@ip/domain
+
+scp username@hostname:file      # copy to me
+scp file username@hostname      # copy to remote
+scp -r dir username@hostname    # copy folder to remote
+scp -r username@hostname:path . # copy folder from remote
+scp me1@file me2@file   # cp from one user to another
+
+scp g564220@192.168.1.9:/home/tree.tar
+
+SCP will break if init script prints something, for instace echo from bashprofile
+To exit ssh session on lost connection press ~.
+https://unix.stackexchange.com/questions/196701/terminal-hang-when-lost-connection-and-ssh-is-on
+---------------------------------------------------------------------------------------------------------
+                                      ssh
+---------------------------------------------------------------------------------------------------------
+Mounting remote file system
+Install fuse and sshfs if you haven`t before.
+ sudo apt-get install sshfs fuse
+ mkdir /home/johndoe/sshfs-path/
+ sshfs <user>@<hostname>:<remote_path> <local_path>
+To umount
+ fusermount -u <local_path>
+
+Connecting over ssh without password
+ssh-keygen -t rsa               # generate a key without password
+ssh b@B mkdir -p .ssh           # create .ssh config dir on remote device if needed
+cat .ssh/id_rsa.pub | ssh b@B 'cat >> .ssh/authorized_keys' # add yourserf to authorized users
+ssh b@B
+
+Opening firefox through ssh and forwarding picture back
+First of all, you need to enable X forwarwarding on remote host, edit /etc/ssh/sshd_config
+X11Forwarding yes
+X11DisplayOffset 10
+X11UseLocalhost yes
+restart sshd
+Now connect to remote with enabled X11 forwarding, compression is recommended to speed up X
+ssh -X remote
+Start firefox
+echo $DISPLAY
+firefox
+
+http://www.linuxproblem.org/art_9.html
+https://stackoverflow.com/questions/35635631/ubuntu-15-10-no-fuse-group
+---------------------------------------------------------------------------------------------------------
+                                     Socat
+---------------------------------------------------------------------------------------------------------
+You need to provide both addresses in order for it to work, these look like
+socat [options] <address> <address>   where <address> = protocol:ip:port
+
+nc localhost 80                         # socat - TCP4:localhost:80 OR socat STDIN TCP4:localhost:80
+nc -lp localhost 700                    # socat TCP4-LISTEN:700 STDOUT
+nc -lp localhost 700 -e /bin/bash       # socat TCP4-LISTEN:700 EXEC:/bin/bash
+
+
+https://www.rubyguides.com/2012/07/socat-cheatsheet/
+---------------------------------------------------------------------------------------------------------
+                                     Netcat
+---------------------------------------------------------------------------------------------------------
+Used for port scanning, data transfers, simulationg tcp/udp connections, relays, reverse shell?, creating
+chats.
+
+netcat -l -p <port>         # server
+netcat <ip> <port> < <msg>  # client, send msg to server
+nc -zv <host>               # scan ports on host
+nc -vn <host> <port>        # test if tcp port is open
+echo -n "foo" | nc -u -w1 <host> <port>      # send udp packet to host with 1 second timeout
+# Copy file, save approach can be used to stream a video
+nc -lp <port> > my.jpg          # receiver
+nc <receiver> <port> < my.jpg   # sender
+# Server stativ web page as a web server
+while true; do nc -lp 8000 < test.html; done
+
+
+https://gist.github.com/lenciel/8780269
+---------------------------------------------------------------------------------------------------------
+                                   Wireshark
+---------------------------------------------------------------------------------------------------------
+There are meny ways to follow communication between two hosts. You may want to filter all trafic by ip/port
+but this may give non interesting packets transalted by the same hosts but, for instance, another
+applications. The easier way is to use Follow Stream options that you may find by clicking on packet and
+choosing appropriate option. This will setup needed filters and open conversation in separed window that
+is updated in live. As well it has some cool options like dumping packet in C language format.
+Under cover it uses a stream index, wireshark internal mapping between
+[IP A => IP B][ Port A => Port B][ L5 Protocol]
+This index is that associated to all packets.
+
+udp.port -- 67 || udp.port -- 68     ## dhcp filter using ports
+tcp contains SOAP                    ## check packet content for word
+                                     ## does this supports regex?
+wlan.ssid matches ".*regex.*"        ## apply regex on contents
+https://stackoverflow.com/questions/6076897/follow-tcp-stream-where-does-field-stream-index-come-from
+---------------------------------------------------------------------------------------------------------
+                                     Scappy
+---------------------------------------------------------------------------------------------------------
+                      Resend packet from previous capture
+---------------------------------------------------------------------------------------------------------
+p=rdpcap("/capture.pcap")
+srp1(p[1],iface="enxd46e0e089703")    # waits for response
+sendp(p[1],iface="enxd46e0e089703")   # send without response
+
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================

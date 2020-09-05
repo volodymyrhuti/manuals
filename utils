@@ -185,73 +185,6 @@ Flags
     -e trace=<modifier> # filter calls to trace, for instance -e trace=write, by default `all`
     -o log.file         # save output to file
 =========================================================================================================
-                                      Apt
-=========================================================================================================
-Apt knows what packages are available and how to download them from the repository by inspecting
-/var/lib/apt/lists. These files are updated 
-
-/etc/apt/sources.list
-
-To list currently used repos
-egrep -v '^#|^ *$' /etc/apt/sources.list /etc/apt/sources.list.d/*
-
-dpkg-deb -c <package.deb>       # list files withing .deb file
-apt-file list <package>         # no need to download .deb to see files
-dpkg -L <package>               # list files of install package
-dpkg -s <package>               # list installed
-apt-cache showpkg  <package>    # list available for installation
-
-dpkg -x <package.deb> <dst_dir> # unpack .deb
-ar -xv <package.deb>            # another way to unpack
-
-apt-file search <filename>                    # determine packages providing file
-sudo apt-cache search <package> | grep dev    #
-
-sudo dpkg -l | vim -                         # list installed packages
-dpkg --listfiles <pkg_name>                  # list files installed with package
-
-Install package dependencies
-apt-get install `apt-cache depends pkgname | awk '/Depends:/{print$2}'
-apt-get build-dep <package name>
-
-apt-cache policy <pkg>                       # list versions and remote locations
-apt-cache madison <pkg>
-rmadison <pkg>                               # from devscripts package
-
-apt purge <pkg>                         # remove everything related to the package + configs
-apt remove <pkg>                        # remove the binaries of a package
-
-# List of packages
-debian.pkgs.org
----------------------------------------------------------------------------------------------------------
-                        Proxy
----------------------------------------------------------------------------------------------------------
-sudo vim /etc/apt/apt.conf
-Acquire::http::proxy  "http://ip:port/";
-Acquire::https::proxy "https://ip:port/";
----------------------------------------------------------------------------------------------------------
-                                Troubleshooting
----------------------------------------------------------------------------------------------------------
-error processing archive  ...  trying to overwrite shared  ...  which is different from other instances of
-package ...  Errors were encountered while processing: Sub-process /usr/bin/dpkg returned an error code (1)
-Probably ur trying to overwrite currently installed package. If you want to force overwrite package =>
-sudo dpkg -i --force-overwrite /var/cache/apt/archives/<pkg>
-? sudo apt-get -f install
-
-=========================================================================================================
-                                      Snap
-=========================================================================================================
-Proxy configuration
-
-sudo systemctl edit snapd.service
-[Service]
-Environment=http_proxy=http://ip:port/
-Environment=https_proxy=http://ip:port/
-
-sudo systemctl daemon-reload
-sudo systemctl restart snapd.service
-
-=========================================================================================================
                                       Gdb
 =========================================================================================================
 gdb --silent            # clears warranty info
@@ -272,6 +205,15 @@ gdb --silent            # clears warranty info
     -readnow / -r       # read symbol table before run time ? purpose
     --readnever         # Do not read debugging information use when attach, dump core, detach ? purpose
 
+GDB holds a list of directories where it will look for the debug symbols, you can manipulate this using
+  show debug-file-directory 
+  set debug-file-directory /usr/lib/debug:/home/bruced/mysymbols
+However, you may want to see source lines as well, then you need to download them
+  apt-get source libc6
+  (gdb) directory <source_directory>
+
+https://randomascii.wordpress.com/2013/01/08/symbols-on-linux-part-one-g-library-symbols/
+---------------------------------------------------------------------------------------------------------
 
 save breakpoint <filename> # save breakpoints, use source to read them back
 tbreak <pos>               # one time break point
@@ -290,10 +232,13 @@ break ... if <cond>
 rbreak regex
 rbreak file:regex
 
-//commands called on breakpoint
-commands [list ...]
-  ...
-end
+You can issue some gdb commands after break point is hit. To perform this automatically, issue `command`
+after setting a breakpoint. This will start non-interactive prompt that will read commands you want to
+execute. To finishe the command list, write `end`.
+  b 123
+  commands [list ...]
+    ...
+  end
 
 
 info source
@@ -365,7 +310,7 @@ f   => float
 s   => null terminated string
 z   => x with leading zeroes to pad the value to the size of the integer type
 r   => 'raw' formatting, used to bypasse pretty-printing
-
+set print pretty on     # enable pretty printing
 https://sourceware.org/gdb/onlinedocs/gdb/Output-Formats.html#Output-Formats
 ---------------------------------------------------------------------------------------------------------
 
@@ -387,6 +332,7 @@ As well you can use `info scope addr` to list locals in scope of addr/source lin
 ---------------------------------------------------------------------------------------------------------
 Enabling gdb dashboard 
 dashboard -enabled on
+
 ---------------------------------------------------------------------------------------------------------
 Getting stack pointer
 uint64_t sp;

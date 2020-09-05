@@ -1,0 +1,472 @@
+=========================================================================================================
+                                 Type deduction
+=========================================================================================================
+Starting with C++11, you can use special data type called `auto` which makes compiler understand what
+type is expected from its initializer. If you have no initializer, it won`t work.
+auto d = 5.0;                           // d is double
+auto i = 1 + 2;                         // i is integer
+auto deduced_from_return = add(1,2);
+auto var;                               // compilation error
+     var = 1;
+
+Reasons for using type deduction:
+1. Frees you of spelling out types that are obviour or redundant.
+2. Make code more adaptable, you don`t need change type of variable if initializer changes.
+Resons against:
+1. Hard to reason about type deduced by compiler.
+2. Requires solid understanding to use
+
+---------------------------------------------------------------------------------------------------------
+                            Type Deduction
+---------------------------------------------------------------------------------------------------------
+Lets considere following template function, are types of expression passed and one used in declaration
+always the same?
+template <typename T>   // I will call it ParamType
+void f(const ParamType& param)
+int expr = 0;
+f(expr);       // T is deduced as int but parameter type is const int&
+
+It`s natural to expect that type deduced for T is the same as the argument passed to function but it
+not always the case. Type deduction both depends on the type of expr and form of ParamType used in function
+There are three cases:
+1. Param is pointer or reference but not unvirsal reference
+2. Param is the universal reference
+3. Param is neither a pointer not a reference
+
+---------------------------------------------------------------------------------------------------------
+Case 1:
+If expr is reference, discard reference during type deduction but not constness
+
+template <typename T>
+void f(T& param)
+int i;
+const int ci = i;
+const int &ri = i;
+f(i);           // T is int, param`s type is int&
+f(ci);          // T is const int, param`s type is const int&
+f(ri);          // T is const int, param`s type is const int&
+
+Situation is a bit another for an r-value. If we change T to const T, then const can be discarded from
+deduced type.
+template <typename T>
+void f(const T& param)
+int i;
+const int ci = i;
+const int &ri = i;
+f(i);           // T is int, param`s type is const int&
+f(ci);          // T is int, param`s type is const int&
+f(ri);          // T is int, param`s type is const int&
+
+The same rules are applied to [const] pointers, e.g. pointer is discarded for param type but constness
+is saved.
+template <typename T>
+void f(T* param)
+int i;
+const int *pi = &i;
+f(&i);           // T is int, param`s type is const int*
+f(pi);           // T is const int, param`s type is const int*
+
+---------------------------------------------------------------------------------------------------------
+Case 2:
+Things are less obvious when template is taking universal reference parameters. Such parameters are
+declared as rvalue references T&&, but they behave differently when lvalue arguments are passed in.
+1. If expression is lvalue reference, T and ParamType are deduced to be lvalue references
+2. If expression is rvalue, case 1 rules are applied (constness is ignored).
+template <typename T>
+void f(T&& param)
+int i;
+const int ci = i;
+const int &ri = i;
+f(i);           // i is lvalue, T is int&, param type is int&
+f(ci);          // ci is lvalue, T is const int&, param`s type is const int&
+f(ri);          // ri is lvalue, T is const int&, param`s type is const int&
+f(1);           // rvalue, T is int, param type is int&&
+
+---------------------------------------------------------------------------------------------------------
+Case 3:
+When ParamType is not a reference not a pointer, it means pass-by-value therefore we should remove any
+cv modifiers as well as reference
+template <typename T>
+void f(T param)
+int i = 27;
+const int ci = i;
+const int& ri = i;
+const int* const pi = &ci;
+f(i);                // T's and param's types are both int
+f(ci);               // T's and param's types are again both int
+f(ri);               // T's and param's types are still both int
+f(cpi);              // T is const int*, param as well
+
+---------------------------------------------------------------------------------------------------------
+Corner case:
+Don`t forget about piunter decay. This is not a problem if paramType is T&
+template <typename T>
+void f(T param)
+const int arr[10];
+const int *ptr = arr;
+f(arr);              // T and param`s type are both const int *
+f(ptr);              // T and param`s type are both const int *
+
+template <typename T>
+void f(T& param)
+const int arr[10];
+f(arr);              // T is const char[10], and parameter is const char (&)[10];
+
+Ability yo declare references to array enables creation of a template that deduces the number of elements
+that an array contains
+template<typename T, std::size_t N>
+constexpr std::size_t arraySize(T (&)[N]) noexcept
+{
+  return N;
+}
+
+---------------------------------------------------------------------------------------------------------
+                                Auto
+---------------------------------------------------------------------------------------------------------
+Type deduction performed by auto is very close to template one. You can imagine template function with
+auto used instead of T, meaning it still depends if there is const before and reference after.
+auto x = 27;          // case 3 (x is neither ptr nor reference)
+const auto cx = x;    // case 3 (cx isn't either)
+const auto& rx = x;   // case 1 (rx is a non-universal ref.)
+auto&& uref1 = x;     // x is int and lvalue, so uref1's type is int&
+auto&& uref2 = cx;    // cx is const int and lvalue, so uref2's type is const int&
+auto&& uref3 = 27;    // 27 is int and rvalue,
+                      // so uref3's type is int&&
+
+One pitfall of auto is usage on uniform initialization. There is no way to understand whuch type is
+expected from this initialization, since it is commonly used for initialization of both variables and
+structs. Therefore, it was decided to use some generic class that would hold all passed variable as list.
+But there is an limitation, all parameters must have the same type.
+int x1 = 1;       // Ok
+int x2(1);        // Ok
+int x3 = {1};     // Ok
+int x4{1};        // Ok
+auto x5 = 1;      // Ok, deduced type is int
+auto x6(1);       // Ok, deduced type is int
+auto x7 = {1};    // Nok, deduced type is initializer_list<int>, but will compile
+auto x8 {1};      // Nok, deduced type is initializer_list<int>, but will compile
+auto x9 {1, 1.0}; // Nok, won`t compile, can`t deduce type for T
+
+Note, the case with initializer_list performs two type deduction.  The first one is deduction that variable
+is meant to be initializer_list, the second it type of parameter used by list, int in this case. This
+is important when you send such parameter in template function
+template<typename T>
+void f(T param);
+f({1,2,3});     // Error, can`t deduce type of 
+
+template<typename T>
+void f(initializer_list<T> param);
+f({1,2,3});     // Ok, T is int
+
+You can`t use auto as return type for uniform initialization for the same reasons. You explicitly define
+trailing return type, but it is purpose not fixing auto deduction login, therefore don`t do this.
+auto createInitList(){ return {1,2,3}; }            // error: can`t deduced type for {1,2,3}
+auto func = [](const auto& param) { ... }({1,2,3}); // error: can`t deduced type for {1,2,3}
+
+
+---------------------------------------------------------------------------------------------------------
+                              Trailing return type
+---------------------------------------------------------------------------------------------------------
+Startinf from C++14, you define return type as auto. If it`s ambiguos which type is supposed to be returned,
+trailing return type may be used. But it is not recomended for usage, since it makes code more vague.
+
+auto switch(double i) -> double {
+    if (i) return i;        // Ok, deduced type is int
+    else return 0;          // 0 is int, making it ambiguos , since previous statement was expected to
+                            // return double
+}
+
+=========================================================================================================
+                                    Decltype
+=========================================================================================================
+Primary use of decltype is function templates where the function`s return type depends on its parameter
+types. For instance you take some family of containers and you want return result of container function
+and you don`t know return type upfront. Maybe you would expect that return type is the same as conteiner
+parameter type.
+template<typename Container>
+Contrainer::object_type getObject(Container &c, int index) {
+    return c[i];
+}
+
+But this may be wrong. What if there is more optimal to hold data instead of it`s original type and
+you prefer to return this new object. Then, function defined above is wrong. The common emaple is bool
+vector which is internally implemented as bitset.
+Another solution is to return auto, maybe you will need to clarify return type using trailing decltype.
+In this case you would use auto as return type but it type deduction may provide wrong type since it
+ignores references and constness.
+getObject(container, 1) = 10;   // won`t work, reference was ingored
+
+The solution of this problem is using decltype which override behaviour of auto, making it use declaration
+type of variable or return type of function. This way, if function returns reference, auto will save it.
+decltype(auto) getObject(Container &c, int index) {
+    return c[i];
+}
+getObject(contaienr, 1) = 10;   // Ok
+
+In general, decltype provides intuitevly expected types:
+const int i = 0;           // decltype(i) is const int
+bool f(const Widget& w);   // decltype(w) is const Widget&
+                           // decltype(f) is bool(const Widget&)
+struct Point {
+  int x, y;                // decltype(Point::x) is int
+};                         // decltype(Point::y) is int
+Widget w;                  // decltype(w) is Widget
+if (f(w)) …                // decltype(f(w)) is bool
+template<typename T>       // simplified version of std::vector
+class vector {
+public:
+  …
+  T& operator[](std::size_t index);
+  …
+};
+vector<int> v;             // decltype(v) is vector<int>
+…
+if (v[0] == 0) …           // decltype(v[0]) is int&
+
+But there is a case that you would not expect. Probably, you won`t face such a corner case unless you are
+some kind of library writer
+int x;
+decltype(x);        // int as expected
+decltype((x));      // int&
+This can be understood in following wat, x is a variable access and variable has type int, while, (x) is
+a lvalue expressing returning value of variable, therefore we append reference. Such, a seemingly trival
+change in the way you write a return statement can affect the deduced type for a function;
+decltype(auto) f1() {
+    int x = 0;
+    reuturn x;          // decltype(x) is int, so f1 returns int
+}
+decltype(auto) f2() {
+    int x = 0;
+    reuturn (x);          // decltype((x)) is int&, so f1 returns int&
+}
+Note, this code returns reference to local variable which is undefined behaviour.
+
+https://stackoverflow.com/questions/14115744/significance-of-parentheses-in-decltypec
+https://stackoverflow.com/questions/3097779/decltype-and-parentheses/3097803
+=========================================================================================================
+                                   Templates
+=========================================================================================================
+In C++, function templates are functions that serve as a pattern for creating other similar functions.
+The basic idea behind function templates is to create a function without having to specify the exact type(s)
+of some or all of the variables. Instead, we define the function using placeholder types, called template
+type parameters.
+When you call a template function, the compiler makes a copy of the template, replacing the placeholder
+types with the actual variable types from the parameters in your function call!
+
+To create a template you need to define definition and placeholdetrs. They are usually defined together
+using what is called a template parameter declaration:
+template <typename T> // this is the template parameter declaration
+T max(T x, T y) {
+    return (x > y) ? x : y;
+}
+Here T is a placeholder, conventially standing for `type`. You can have multiple types by defining them
+in parameter declaration.
+
+Placeholder type is deduced from argument from parameters but it won`t compile if there is an ambiguity.
+max(1, 1.0); // There is only one T but we pass both int and double
+Used type can be explicitly defined
+max<int>(1, 1.0);  // 1.0 is implicitly converted to int.
+
+---------------------------------------------------------------------------------------------------------
+                                 Instantiation
+---------------------------------------------------------------------------------------------------------
+Templates are not compiled directly with all other code. Instead, when compiler sees call to template, it
+will instantiate definition for passed arguments.
+
+There are a couple of problems with template class separation between files. For instance you have a
+template class in header and definition in source file.
+foo.h
+template<typename T>
+class foo{
+    T getLength();
+}
+
+foo.cpp
+template<typename T>
+T foo::getLengh(){ return ...};
+
+main.cpp
+main(){
+    foo<int> f;
+    f.getLenght();
+}
+Example above won`t compile with linker error, since it couldn`t find definiton. The problem is following,
+compiler needs to see definition to instantiate it. Since definition in separate compilation unit,
+instantiation for user type is skiped, class gets instantiated without function definition.
+It is allowed to not instantiate functions/members that are not used, except virtual functions (you
+can`t be sure that one won`t be called)
+
+Solutions:
+1. Put definiton to header file
+   Easy, but increases compile and link time.(linker removes duplicate to avoid bloat of executable?)
+2. Include .cpp into header
+   Non-standart usage of include
+3. 3 file approach
+   Create file that will hold all needed instantiations. Include both .h and .cpp to it. Whenver you need
+   instantiation of a class, append it to file
+   template class Array<int>; // Explicitly instantiate template Array<int>
+   Requires maintaining of the file, requires more space in executable since everything is instantiated
+   without exception.
+
+https://stackoverflow.com/questions/183108/is-object-code-generated-for-unused-template-class-methods
+---------------------------------------------------------------------------------------------------------
+                        Partial Instantiation
+---------------------------------------------------------------------------------------------------------
+Since, compiler is allowed to skip instantion of member that are not used, this has side effects that are
+commonly used in metaprogramming.
+template <class T>
+class Xyzzy {
+public:
+    void CallFoo() { t.foo(); }  // Invoke T::foo()
+    void CallBar() { t.bar(); }  // Invoke T::bar()
+    T t;
+};
+class FooBar {
+public:
+    void foo() { ... }
+    void bar() { ... }
+};
+class BarOnly {
+public:
+    void bar() { ... }
+};
+    Xyzzy<FooBar>  foobar;    // Xyzzy<FooBar> is instantiated
+    Xyzzy<BarOnly> baronly;   // Xyzzy<BarOnly> is instantiated
+    foobar.CallFoo();         // Calls FooBar::foo()
+    foobar.CallBar();         // Calls FooBar::bar()
+    baronly.CallBar();        // Calls BarOnly::bar()
+This compiles since there is no need to instantiate `foo()` for `BarOnly`
+
+https://stackoverflow.com/questions/183108/is-object-code-generated-for-unused-template-class-methods
+---------------------------------------------------------------------------------------------------------
+                              Non-Type parameters
+---------------------------------------------------------------------------------------------------------
+Template classes and functions can make use of another kind of template parameter known as a non-type
+parameter. It is a special type of parameter that does not substitute for a type, but is instead replaced
+by a value. A non-type parameter can be any of the following:
+- A value that has an integral type or enumeration
+- A pointer or reference to a class object
+- A pointer or reference to a function
+- A pointer or reference to a class member function
+- std::nullptr_t
+
+For instance, template array with user defined size.
+template <class T, int size> // size is the non-type parameter
+class StaticArray
+{
+    T m_array[size];
+    T* getArray();
+    T& operator[](int index);
+};
+StaticArray<int, 10> arr;
+Note, this value is supposed to be const or constexpr.
+
+---------------------------------------------------------------------------------------------------------
+                            Template specialization
+---------------------------------------------------------------------------------------------------------
+Instead of having one definition for all parameters, you may want the same definiton for most parameters
+and separate for exceptions. For instance `max` function require different definition for intergers and
+strings. To do so, we use a function template specialization to create a specialalized version of the
+max() function for string.
+
+template<typename T>
+string& max(T& x, T& y) { ... }
+
+template<>
+string& max<string>( string& x, string& y) { ... }
+
+When the compiler goes to instantiate max<string>, it will see already explicitly defined that function,
+and use it istead of defining new one.
+Another common use case is specializng pointer data types to prevent shallow copy.
+
+The same mechanism can be used for classes.
+---------------------------------------------------------------------------------------------------------
+                        Partial template specialization
+---------------------------------------------------------------------------------------------------------
+Full template specialization has a problem, it requires specializaition for all template argument, even
+non-type ones.  This may be problematic, for instance array wrapper:
+template<typename T, int size>
+class Array{...}
+
+template<typename T, int size>
+void print_array(Array<T, size> arr){...};
+
+Again, you may wan`t to have special definition of function `print_array` for some type. You may try to
+use full specialization. This will work but since full specialization is required, it will work only for
+array of specified size.
+
+template<>
+void print_array<char, 10>(Array<char, 10> arr){...};
+Array<int, 10> arr1;
+Array<int, 11> arr2;
+print_array(arr1);      // Ok
+print_array(arr2);      // Nok
+
+Instead you can define function for specified type with template non-type parameter
+
+template<int size>
+void print_array(Array<char, size> arr){...};
+
+Note, this only works for class specialization, you cannot partially specialize functions (functions
+must be fully specialized). This creates a limitation for member functions.
+template <class T, int size> // size is the expression parameter
+class Array {
+    T m_array[size];
+public:
+    void print() {
+        for (int i = 0; i < size; ++i)
+            std::cout << m_array[i] << ' ';
+        std::cout << "\n";
+    }
+}
+What if you want to partially specialize `print`
+template<int size>
+void Array<doble, size>::print(){
+    for (int i = 0; i < size; ++i)
+        std::cout << std::scientific << m_array[i] << " ";
+    std::cout << "\n";
+}
+This doesn’t work, because we’re trying to partially specialize a function, which is disallowed.
+Possible solutions:
+1. Partial specialization of class instead of function.
+   Requires alot of code duplication
+2. Inheritance of the common base
+
+
+template <class T, int size>
+class BaseArray {
+    T m_array[size];
+};
+
+template <class T, int size>
+class Array: BaseArray<T, size> {
+public:
+    void print() {...}
+}
+
+template<int size>
+class Array<doble, size>: BaseArray<double, size>{
+public:
+    print(){
+        for (int i = 0; i < size; ++i)
+            std::cout << std::scientific << m_array[i] << " ";
+        std::cout << "\n";
+    }
+};
+---------------------------------------------------------------------------------------------------------
+What if you wan`t to make one template used for non-pointer data types and another for pointers. Class
+template can be partially specialized for this.
+template<typename T>
+class Storage {         // for non-pointer
+    T value;
+    T get(int);
+}
+
+template<typename T>
+class Storage<T*> {     // for pointer
+    T* value;
+    T* get(int);
+}
+
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================

@@ -1,0 +1,55 @@
+=========================================================================================================
+                                 Multithreading
+=========================================================================================================
+The easiest way to run your program with multiple threads is the async() and future<>
+- async provides an interface to let a callable object run in the background as a separate thread, if possible
+- future allows you to wait for the thread to be finished and provides access to its outcome: return
+  value or exception, if any.
+
+  future<int> res1(async(func1))
+  int res2 = func2();
+  int res = res1.get() + res2;
+
+async() tries to start the function but it may fail if threads are not available or ther system is single
+threaded. in which case, we need the future object to force a start when we need the result or want to
+ensure that the functionality was performed. Thus, you need the future object even if you are not
+interested in the outcome of a functionality started in the background.
+The get() perform one of the following:
+- func has started and was finished, get returns the result
+- func has started but is not finished, get blocks
+- func was not even started, get forces the start and blocks
+NOTE: without calling the `get()` there is no guarantee that function will be ever called.
+
+This behaviour is important to ensure that the program still works on a single-threaded environment or,
+if for any other reason, it was not possible for async() to start a new thread.
+If you wan`t the process to finish and not interested in the return value for now, call `wait()`
+
+You can force the execution or deffer during the initialization by passing `launch policy`, which will
+throw if it is not possible. The deferred execution may help to debug some issues.
+  future<int> res1 = async(launch::async, func1);
+  future<int> res1 = async(launch::deferred, func1);
+
+If you don`t assign the result of async(launch::async) anywhere, the caller will block until the passed
+functionality has finished, which would mean that this is nothing but a synchronous call.
+
+NOTE: Excpetions that are not handled withing the thread are propagated again when calling .get().
+---------------------------------------------------------------------------------------------------------
+                                Waiting/Polling
+---------------------------------------------------------------------------------------------------------
+You can call get() for a future only once, after which, it gets invalid state which can be checked using
+.valid(). There is an interface to wait for a background operation to finish without processing its outcome.
+It is callable more than once and might be combined with a duration or timepoint to limit the amount of
+waiting time.
+1. future.wait()                         # wait for func to be done (might start background task)
+2. future_wait_for(chrono::seconds(10))  # wait with timeout, doesn`t force starting
+3. future.wait_until(system_clock::now()+delay) # wait untill a specific timepoint has reached
+There return one of the following:
+- future_status::deferred - job was force started
+- future_status::timeout  - job was already started and is in process 
+- future_status::ready    - operation has finished
+
+By passing a zero duration or a timepoint that has paased, you can simply `poll` to see whether a background
+task has started and/or is (still) running, but care should be taken for a single threaded environments.
+Another reason for an endless loop might be that the thread executing the polling loop has the processor
+and the other threads are not getting any time to make the future ready.
+=========================================================================================================

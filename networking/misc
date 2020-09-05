@@ -1,0 +1,84 @@
+=========================================================================================================
+                                 Configurations
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+Making hotspot from device connected to internet
+
+nmcli dev wifi hotspot ifname <wl_interface> ssid <user_ssid> password <used_pwd>
+sudo iptables -t nat -A POSTROUTING -o <internet_intf>  -j MASQUERADE
+sudo iptables -A FORWARD -i <internet_intf> -o <wl_intf> -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i <wl_intf> -o <internet_intf> -j ACCEPT
+sudo ifconfig <wl_interface> down
+sudo ifconfig <wl_interface> up
+
+
+sudo iptables -t nat -A POSTROUTING -o wlp1s0  -j MASQUERADE
+sudo iptables -A FORWARD -i wlp1s0 -o anbox0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i anbox0 -o wlp1s0 -j ACCEPT
+
+---------------------------------------------------------------------------------------------------------
+Connecting to AP from cli
+
+wpa_passphrase ssid pass > wpa.conf
+wpa_passphrase Home_ home_1234 > wpa.conf
+sudo wpa_supplicant -Dnl80211 -iwlp1s0 -cwpa.conf
+
+---------------------------------------------------------------------------------------------------------
+Sometimes, you need to sniff a wireless network traffic. This can be done using wireless interface in
+monitor mode and wireshark. Note, you can sniff only one channel using one interface. Usually you want
+to configure this channel mannualy, e.g. you want to sniff channel currently used by AP on your gateway.
+Whether you receive or miss some part of traffic depends on quality of your wifi adapter, therefore on
+some cheap adapter you may miss part of current channel traffic, as well as, receive traffic from another
+channels.
+
+Configuring interface mode to monitor
+sudo ifconfig wlp1s0 down           && \
+sudo iwconfig wlp1s0 mode managed   && \
+sudo ifconfig wlp1s0 up             && \
+sudo iwconfig wlp1s0 channel 1      && \
+sudo ifconfig wlp1s0 down           && \
+sudo iwconfig wlp1s0 mode monitor   && \
+sudo ifconfig wlp1s0 up             && \
+iwconfig wlp1s0
+
+Don`t forge to configure channel you want to sniff traffic on
+sudo iwconfig wlp1s0 channel 11
+sudo iwconfig wlp1s0 channel 1
+iwlist wlp1s0 channel
+
+If some rf related error pops up
+sudo rfkill list            &&\
+sudo rfkill unblock wifi    &&\
+sudo rfkill unblock all     &&\
+sudo rfkill list
+
+https://networkengineering.stackexchange.com/questions/2261/can-a-probe-request-be-answered-on-a-different-channel
+=========================================================================================================
+                                     Random
+=========================================================================================================
+Use canonical? names for interfaces 
+---------------------------------------------------------------------------------------------------------
+Edit your /etc/default/grub
+GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
+sudo update-grub
+sudo reboot
+---------------------------------------------------------------------------------------------------------
+RTNETLINK permission denied	:
+Edit /etc/sysctl.conf
+
+net.ipv6.conf.all.disable_ipv6 = 0 
+net.ipv6.conf.default.disable_ipv6 = 0 
+net.ipv6.conf.lo.disable_ipv6 = 0
+
+sysctl -p
+---------------------------------------------------------------------------------------------------------
+ping: sendmsg: Operation not permitted
+
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+
+ip6tables -P INPUT ACCEPT
+ip6tables -P OUTPUT ACCEPT
+ip6tables -P FORWARD ACCEPT
+=========================================================================================================

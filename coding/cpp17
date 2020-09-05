@@ -1,0 +1,308 @@
+=========================================================================================================
+                                  Comparators
+=========================================================================================================
+It is a binary function that accepts two elements in the range as arguments, and returns a value
+convertible to bool. The value returned indicates whether the element passed as first argument is considered
+to go before the second in the specific strict weak ordering it defines. The function shall not modify any
+of its arguments.
+
+Once you have comparator declared, you gain access to a walth of powerful algorithms in the STL for efficient
+operations on the range of structures, as long as you can tell your algorithm which one should come before
+the other when two elements are compared.
+
+This approatch have an issue. What if data has a circular relationship? For example, in rock-paper-scissors
+you have `scissors > paper > rock > scissors`. In this case, it`s impossible to properly sort a vector of
+such elements: it`s impossible to guarantee that for any member of the vector, that elements is always
+greater than any element to its left and lesser than any element to its right. This is an undefined behavior
+in C++.
+
+Having a non-circular relationship is called non-transitivity for the < operator. STL requires data types
+to abide a strict weak ordering to be properly compared. In general we need only define the < operator
+and we will get > and == for free because:
+- a > b is quivalent b < a
+- a == b is equivalent !(a < b) && !(b < a)
+Then for strict weak ordering we must have
+- For al x: x < x is never true, everything should be equal to itself
+- If x < y then y < x cannot be true
+- If x < y and y < z then x < z, the ordering should be transitive
+- If x == y and y == z then x == z, equality should be transitive
+
+https://medium.com/@shiansu/strict-weak-ordering-and-the-c-stl-f7dcfa4d4e07
+=========================================================================================================
+                                    Lambdas
+=========================================================================================================
+Lambda expression is a convinient way of defining an anonymout function object (a closure) right at the
+location where it is invoked or passed as an argument to a function. Typically used to encapsulate
+encapsulate algorithms so that they can be passed to another function. However, it is possible to execute
+a lambda immediately upon definition.
+
+Reasons why lambdas were introduced:
+1. There are pleany of generic functions in STL that can take function/functor but defining new function
+   every time is not convinient/redable/usable (not all compilers allow to use nested functions, but this
+   function may collapse with another in current namespace).
+2. Functors can be heavy in terms of resources, memory to allocate, take allot of window space to define
+   them, making code less readable
+C++11 introudec lambdas allow you to write an inline, anonymous functor to replace the struct/class you
+would write by hand. It is cleaner to read and potentially simpler to maintain, compiler can generate
+more optimal code then you would write by hand.
+
+Lambda looks like `[capture close][optional parameter list] mutable throw()->int(trailing ret type){body}` 
+Usage example:
+void func(std::vector<int> &v) {
+  std::for_each(v.begin(), v.end(), [](int) { /* do something here*/ });
+}
+[]{ .. code .. }(); // immediately executed lambda expression
+{ .. code .. }      // functionally equivalent
+
+You can use lambda expressions to initialize variables based on the result of an algorithm
+int a = []( int b ){ int r=1; while (b>0) r*=b--; return r; }(5);
+
+You can pass lambda to another lambda
+[&]( std::function<void()> algorithm ) // wrapper section
+   { algorithm(); } (
+    [&]{ .. code .. }
+   );
+
+Note, lambda is not a function pointer and it is not an anonymous function, but capture-less lambdas can
+be implicitly converted to a function pointer.
+
+---------------------------------------------------------------------------------------------------------
+                        Return type
+---------------------------------------------------------------------------------------------------------
+Usually, type is deduced by the compiler, but when it is ambiguos, you can define helper trailing return
+type. Think of return type as `decltype(return_statement)`
+
+    std::transform(v.begin(), v.end(), v.begin(),
+        [](double d) -> double {    // otherwise it is not clear if 0 is int or double
+            if (d < 0.0001) {
+                return 0;
+            } else {
+                return d;
+            }
+        });
+
+---------------------------------------------------------------------------------------------------------
+                            Capture
+---------------------------------------------------------------------------------------------------------
+Capture close is C++14 feature, that let`s you introduce new variable and how they are captured to body.
+This is a convinient way to save environment without passing everuthing to functor constructor.
+Empty close means that no variables are capture from enclosing scope, otherwise:
+[&] => all variables that you refer to are captured by reference
+[=] => captured by value, but it is constant and requires mutable to be changed
+
+You can use any of these modes as defaul one and then override it for separate variables
+[&, factor, &factor]
+
+Default and identifiers can`t be repeated, default can be duplicate for further variables, e.g.
+[&, &var]       // NOK
+[this, this]    // NOK
+[var, var]      // NOK
+
+It is possible to expand variadics in capture, it is called pack expansion
+template<class... Args>
+void f(Args... args) {
+    auto x = [args...] { return g(args...); };
+    x();
+}
+
+---------------------------------------------------------------------------------------------------------
+                                 Implementation
+---------------------------------------------------------------------------------------------------------
+Under the hood, lambda is a class generated by the compiler, with all parameters from environment passed
+as constructor arguments, and defined function operator to execute previously defined body. Evironment is
+saved depending on closure used. This is just a more convinient way to implement functor.
+Note, lambda has a default constructor deleted but copy/move constructor defined, therefore one can`t be
+constructed but cam be copoied/moved.
+auto lambda = [](){};
+decltype(lambda) l1;                // Compilation error, no defaul constructor
+decltype(lambda) l1{lambda};        // Ok
+
+Since it is just a compiler generated class, we can inherit from it.
+template<typename L1, typename L2>
+struct S : L1,L2 {
+    S(L1 l1, L2 l2) : L1(std::move(l1)), L2(std::move(l2)) {}
+    using L1::operator();
+    using L2::operator();
+}
+auto l1 = [](){ return 4; };
+auto l2 = [](int i){ return i * 10; };
+auto combined = S(l1,l2);
+combined();     // calls l1
+combined(10);   // calls l2
+
+https://www.youtube.com/watch?v=3wm5QzdddYc
+https://www.youtube.com/watch?v=W-xTpqj31mI
+---------------------------------------------------------------------------------------------------------
+                                   Constness
+---------------------------------------------------------------------------------------------------------
+By default, function call operator is defined as const and any variables taken by value can`t be changed.
+If you still want to change them, operator should be defined as mutable. This is done in the following way
+
+int var = 1;
+auto l1 = [var] {  var = 2; };          // Compilation error, can`t change const variable
+auto l2 = [var] () mutable { var = 2 }; // Ok
+
+Starting with C++14, you can declare variables in capture list. This is called a statefull lambda.
+auto l3 = [var_new = 1, p = std::make_unique<int>(new int)] { ... };
+
+If you define noncopyable variables in capture, lambda becomes non copyable as well
+auto l4 = l3;       // Compilation error
+
+---------------------------------------------------------------------------------------------------------
+                          Generalized capture (C++14)
+---------------------------------------------------------------------------------------------------------
+In C++14 you can introduce and initialize new vatiables in capture clause, without need to have them
+in enclosing scope. The initialization can be expressed as any arbitrary expression; the type of the new
+variable is deduced from the type produced by the expression. One benefit of this feature is that you
+can capture move-only variables from the surrounding scope and use them in a lambda
+pNums = make_unique<vector<int>>(nums);
+//...
+      auto a = [ptr = move(pNums)]()
+        {
+           // use ptr
+        };
+
+int x = 4;
+auto y = [&r = x, x = x+1]()->int {
+            r += 2;
+            return x+2;
+         }();
+
+---------------------------------------------------------------------------------------------------------
+                                    Functor
+---------------------------------------------------------------------------------------------------------
+Sometimes you need a function that will change it`s flow depending on environment and you don`t want
+to pass entire environment as one of input arguments. One possible solution is global varibales but it
+is not good coding practive. Another solution is a functor. It is an object that can be treated as
+though it is a function or function pointer. Since it is an object, it can hold state. It is commonly
+used with stl withing algorithms.
+class increment {
+    int num;
+    increment(int n) : num(n) {  }
+    int operator () (int arr_num) const {
+        return num + arr_num;
+    }
+};
+    int arr[] = {1, 2, 3, 4, 5};
+    int n = sizeof(arr)/sizeof(arr[0]);
+    int to_add = 5;
+    transform(arr, arr+n, arr, increment(to_add));
+    for (int i=0; i<n; i++)
+        cout << arr[i] << " ";
+
+---------------------------------------------------------------------------------------------------------
+                            Parameter list
+---------------------------------------------------------------------------------------------------------
+Lambda can take input parameters, but it is optional. Usefull for some small function or when functor
+is required
+
+---------------------------------------------------------------------------------------------------------
+                                Generic Lambdas
+---------------------------------------------------------------------------------------------------------
+auto lambda = [](auto x, auto y) {return x + y;};
+---------------------------------------------------------------------------------------------------------
+                                    Pitfalls
+---------------------------------------------------------------------------------------------------------
+Reference captures introduce lifetime dependency, therefore you should be certail that local variables
+are still accessible during the call. In other words, you should not capture by reference/pointer local
+variables and then use lambda out of scope. For instance return lambda as the result of a function or
+pass to async.
+
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/7627098/what-is-a-lambda-expression-in-c11
+
+=========================================================================================================
+                     Lambda vs Functor vs bind vs function
+=========================================================================================================
+Bind a function taking callable, placeholders and arguments that will be bound to placeholders.
+This can be though as making copy of function but with some explicilty choosen parameters having a default
+value. Call to bind returns some implementation defined value that is not know for developer and must be
+assigned to some auto variable.
+Note, it copies passed arguments
+
+void print1(int i) {
+    std::cout << i << '\n';
+}
+void print2(int i, string &s) {
+    std::cout << i << " " << s << '\n';
+}
+auto f1 = bind(&print1, 5);
+f1();                               // prints 5
+int i = 5;
+auto f2 = bind(&print1, i);
+f1()                                // prints 5
+i = 6;
+f1()                                // still prints 5 since value of i was copied
+auto f2 = bind(&print1, ref(i));
+i = 5;
+f2();                               // print 5 even i during registration was 6
+auto f3 = bind(&print2, _1, 1);
+f3("string");                       // prints 1 string
+f3("another string");               // prints 1 another string
+auto f4 = bind(&print2, _2, _1);    // swap parameters
+f4("string", 2);                    // prints 2 string
+f4("string", 2, 1, 2, 3, 'a', ...); // prints 2 string, extra parameters are swallowed
+
+template<typename T>
+void print3(T i) {
+    std::cout << i << '\n';
+}
+auto f5 = bind(&print3<int>, ref(i));
+i = 5;
+f5();                               // print 5 even i during registration was 6
+std::functional<void(int)> f6(f5);  // works
+
+Issue of bind is bit compile time overhead in terms of speed and memory require as well as runtime in
+term of executed instruction count and speed. Usually you wll just use lambda but in general it is hard
+compare them since they are doing different things. bind forwards a call maybe with some parameter
+taking another slot while lambda is entire function that should be look through to understand what does
+that mean.
+
+std::function is generalized form of function pointer which can be initialized from function pointer or
+any other callable object. Problem of it, is the amount of memory require to be allocated, which may even
+involve heap allocation. As well it take more time calling then auto variable.
+One usefull usage of function is usage within arrays since it is easy to convert lambda to function and
+push to vector. Otherwise you need to use `decltype(lambda_var)`.
+Note, lambda without capture can be converted to function pointer.
+
+https://www.youtube.com/watch?v=JtUZmkvroKg
+=========================================================================================================
+                                For-each loop
+=========================================================================================================
+Loop is a conviniet way to iterate though an array but it is prone to off-by-one errors.
+C++11 introduces a new type called a for-each loop (or a range-based for loop) that provides a simpler
+and safer method for cases where we want to iterate through every element in an array (or other list-type
+structure).
+int arr[] = { 0, 1, 2, 3, 4 };
+for (int number : arr) // iterate over array 
+   std::cout << number << ' ';
+
+Commonly variable type is define as auto.
+for (auto number : arr)
+for (auto &number : arr) // no copying is made
+Note, that variable `number` is not an index. It`s assigned the value of the array element for the
+current loop iterator.
+
+It can be used with list-type structes like vectors, queue, lists, map and so on.
+std:vector<int> arr[] = { 0, 1, 2, 3, 4};
+for (const auto& number : arr) // iterate over array 
+   std::cout << number << ' ';
+
+For each doesn`t work with pointer to array, since it needs size information. Because arrays decay to
+pointer, there is no information need by for-each providing compile time error.
+As well, this doesn`t work when an explicit type conversion is required.
+
+You don`t need to dereference iterator used in for-each loops since it is taken by value or reference,
+except pointer cases. While, iterator used for simple loops are generized pointers and require
+dereferencing.
+
+Such approach has some limitiations:
+- You don`t have an index which could be needed (like checking if comma between items is needed).
+  Therefore, you will need to maintain a separate counter but then you lose some of the concoseness gains.
+- There is no simple standard way to iterate backwards. You can use boost adaptor / create one or just
+  use for loop with rbegin/rend.
+
+https://en.cppreference.com/w/cpp/language/range-for
+https://mbevin.wordpress.com/2012/11/14/range-based-for/
+https://www.nextptr.com/tutorial/ta1208652092/how-cplusplus-rangebased-for-loop-works
+=========================================================================================================

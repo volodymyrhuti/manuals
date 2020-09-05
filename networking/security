@@ -1,0 +1,496 @@
+=========================================================================================================
+                            Firewalling and iptables
+=========================================================================================================
+There are three common types of firewalls and how they function =>
+1. NAT (Network Address Translation) =>  places private IP subnetworks behind one or
+   a small pool of public IP addresses, masquerading all requests to one source rather
+   than several. Implemented with Netfilter kernel susbsytem
++ Transparent for LAN clients
++ Protection of many machines and services behind one+ external IPs simplifies administration
++ Restiction of user access to and from the LAN can be configured by the opening/closing
+  ports in the NAT
+- Once users connect to a service outsied of the firewall, cannot prevent malicious
+  activity (from which side? service?)
+2. Packet Filter => firewall reades each data packet and filters the packet based on sets
+   of programmable rules implemented by administrator. (Netfilter kernel subsystem)
++ Customizable with iptables utility
++ All network activity is filtered at the router level, rather then on application level
++ Reads header information but not a content
++ Does not require customization from client side
++ Since transmition is not through a proxy performance is faster
+- Cannot read packet content like a proxy firewall
+- Works on protocol layer, but cannot filter at an application layer
+- Taugh to create rules for complex networks like one with DMZ or masqurading
+3. Proxy => filters all trafic of configured protocol from LAN client to a proxy machine,
+   which then forwards trafic on behalve of client. Proxy machine works like a buffer between
+   malicious remote users and internal network client machine
++ Admin controls applications and protocols function outside of the LAN (can control which
+  application and protocols are forwarded or not?)
++ Proxy server can cache requests
++ Service can be logged and monitored for tighter control over resource utilization
+- Ofter application specific (HTTP,Telent ...) or protocol-restricted (most work with TCP-connected
+  services only)
+- Can become a network bottleneck
+
+Firewalls can be statefull or stateless. Statefull is more flexible, since it can remember state of
+previous connections. However stateless are much faster.
+
+Built-in chains (nat) =>
+# these are permanent and cannot be deleted
+1. INPUT - control of incomming connections
+2. FORWARD - used for routing, NATing
+3. OUTPUT - control of outgoing connections
+
+Built-in targets =>
+1. ACCEPT => packet is sent into user space
+2. DROP => packet is dropped without error packet
+3. REJECT => packet is dropped but an error packet is sent to originator
+
+Each chain has a default policy, what it should do with packet that doesnt fit any of defined rules.
+It can either DROP or ACCEPT, and is configured with iptables -P <chain> <policy>.
+
+Changes to rules are temporary, if you want to save changes issue `service iptables save`, rules are
+saved to `/etc/sysconfig/iptables` and reapplied whenever service is started or system rebooted with
+iptables-restore command.  Existing file is save to iptables.save.
+---------------------------------------------------------------------------------------------------------
+                                 FORWARD Chain
+---------------------------------------------------------------------------------------------------------
+ISPs provice a limited number of publicly routable IP addresses to the organizations they serve.
+Therefore private IP addresses are used as the common way of allowing all nodes on a LAN to properly
+access internal and external network services. Esge routers can receive incoming transmissions from
+the Internet and route the packets to the intended LAN node. This forwarding of network traffic can
+become dangerous at times and to prevent this, iptables provides routing and forwarding policies that
+can be implemented to prevent abnormal usage of network resources. The FORWARD chain allows an admin
+to control where packets can be routed within LAN.
+
+LAN nodes using internal IP can communicate with each other, however they can properly communicate with
+external networks. This can be overcome with firewall IP masqueradung, which masks requests from LAN nodes
+with the IP address of the firewall`s external device
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
+To allow access to internal service from external network, use PREROUTING chain with DNAT target.
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to 172.31.0.23:80
+forwards http connections to dedicated Apache HTTP Server at 172.31.0.23
+This is commonly used in DMZ to give access to common services that are not so critical to protect 
+
+There is option to inspect and restrict connections to services based on they connection state.
+There are 4 connection states =>
+1. NEW => a packet requesting a new connection
+2. ESTABLISHED => a packet that is part of an existing connection
+3. RELATED => a packet that is requesting a new connection but is part of an existing connection
+For example FTP establish a connection using port 21, but data is transderred on port 20
+4. INVALID => a packet that is not part of any connections in the connection tracking table
+
+---------------------------------------------------------------------------------------------------------
+                                   Netfilter
+---------------------------------------------------------------------------------------------------------
+Netfilter facility is built in to the Linux kernel, and has five built-in tables
+or rules lists =>
+1. filter => default table for handling packets
+2. nat => alter packets that create a new connection and used for NAT
+3. mangle => specific types of packet alteration
+4. raw => configuring exemptions? from connection tracking in combination with NOTRACK target
+  packet was only received for interface and no routing was managed yet
+  on packet marking when sending ??
+5. security => 
+
+Each table has a group of built-in chains, which correspoond to the actions performed on the
+packet by netfilter.
+
+Filter is used for filtering trafic, allowing and banning connections and packets.
+This is the default table when no other is specified. Chains =>
+1. INPUT — Applies to network packets that are targeted for the host.
+2. OUTPUT — Applies to locally-generated network packets.
+3. FORWARD — Applies to network packets routed through the host.
+
+Nat table alliws to route packets to different hosts on NAT networks by changing source and
+destination addresses of packets, only allowed action here is MASQUEADE. Chains =>
+1. PREROUTING — Applies to network packets when they arrive.
+2. OUTPUT — Applies to locally-generated network packets before they are sent out.
+3. POSTROUTING — Applies to network packets before they are sent out. 
+
+Mangle => used for packet classification, marking of packets/connections and modifying
+packet headers. Chains =>
+1. INPUT — Applies to network packets targeted for the host.
+2. OUTPUT — Applies to locally-generated network packets before they are sent out.
+3. FORWARD — Applies to network packets routed through the host.
+4. PREROUTING — Applies to incoming network packets before they are routed.
+5. POSTROUTING — Applies to network packets before they are sent out.
+
+Raw => used for working with packets before they are provided to conntrack, conntrack
+conditions won`t work here. Chains =>
+1. PREROUTING — the first chain visited before any other
+2. OUTPUT — same as for packets generated by host
+
+Every network packet received by or sent from a Linux system is subject to at least one table.
+However, a packet may be subjected to multiple rules within each table before emerging at the
+end of the chain.
+
+Some protocols provide specialized matchind options which can be configred to match
+particular packet using that protocol. However, the protocol must first be specified
+in the iptalbes command with -p option. Addtional match options are available through
+modules loaded by the iptables command using -m 'module_name' flag. For instance
+there is state module which enables state matching.
+
+---------------------------------------------------------------------------------------------------------
+                                     Scheme
+---------------------------------------------------------------------------------------------------------
+==> PREROUTING ==> Routing Decising ==> FORWARD ==> POSTROUTING ==>
+                       ||                            /\
+                       \/                            ||
+                      INPUT ==> Local Process ==> OUTPUT
+
+
+
+        |==============|
+        |  PREROUTING  |
+        |              |        |==============|
+  /=====>     raw      |        |    INPUT     |
+  |     |  PREROUTING  |        |              |
+  |     |      |       |   /====>   mangle     |
+  |     |  connection  |   |    |   INPUT      |
+  |     |   tracking   |   |    |      |       |
+  |     |  (conntrack) |   |    |   filter     |
+  |     |      |       |   |    |   INPUT      |
+  |     |    mangle    |   |    |      |       |
+  |     |  PREROUTING  |   |    |  connection  |
+  |     |      |       |   |    |   tracking   |
+  |     |     nat      |   |    |  (conntrack) |
+  |     |  PREROUTING  |   |    |      |       |
+  |     |      |       |   |    |==============|
+  |     |==============|   |           |
+  |            |           |           |
+  |         ROUTING =======/     Local Process
+  |            |                       |
+  |     |==============|            ROUTING
+  |     |   FORWARD    |               |
+  |     |      |       |        |==============|
+  |     |   mangle     |        |    OUTPUT    |
+NETWORK |   FORWARD    |        |      |       |
+  |     |      |       |        |     raw      |
+  |     |   filter     |        |    OUTPUT    |
+  |     |   FORWARD    |        |      |       |
+  |     |      |       |        |  connection  |
+  |     |==============|        |  tracking    |
+  |            |                |  (conntrack) |
+  |         ROUTING <======\    |      |       |
+  |            |           |    |    mangle    |
+  |     |==============|   |    |    OUTPUT    |
+  |     | POSTROUTING  |   |    |      |       |
+  |     |      |       |   |    |     nat      |
+  |     |   mangle     |   |    |   OUTPUT     |
+  |     | POSTROUTING  |   |    |      |       |
+  |     |      |       |   \====|   filter     |
+  |     |     nat      |        |   OUTPUT     |
+  |     | POSTROUTING  |        |              |
+  |     |      |       |        |==============|
+  |     |  connection  |
+  |     |   tracking   |
+  \=====|  (conntrack) |
+        |              |
+        |==============|
+
+https://goyalankit.com/blog/iptables
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/12945233/iptables-forward-and-input
+https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html-single/security_guide/index#sect-Security_Guide-Firewalls-Using_IPTables
+https://ru.wikibooks.org/wiki/Iptables#%D0%A2%D0%B0%D0%B1%D0%BB%D0%B8%D1%86%D1%8B
+https://www.booleanworld.com/depth-guide-iptables-linux-firewall/
+http://vasilisc.com/21-examples-iptables
+
+---------------------------------------------------------------------------------------------------------
+                                 Configuration
+---------------------------------------------------------------------------------------------------------
+iptables
+# Chain managment
+   -I/A/D <chain>     # insert/append/delete to chain
+   -E                 # rename user defined name
+   -F <chain>         # flush(remove) all rules from chain, all chains if none is specified
+   -N                 # create new chain
+   -P                 # sets default policy
+   -R                 # replace rule
+   -X                 # delete user chain
+   -Z                 # reset counters
+
+# Rule construction
+   -s <source/mask>   # source
+   -d <destin/mask>   # destination
+   -j <targer>        # jump target DROP/ACCEPT/FORWARD/QUEUE/LOG/MARK/REJECT or to user defined chain
+                        target can be not specified, then rule will be skiped and counter increased
+   -g <uset_chain>    # continue on user chain
+   -i <in_interface>  # interface from which received
+                        can be inverted with ! and wildcarded with +, like eth+
+                        all interfaces if used without argument
+   -o <out_ibterface> # interface from which packet is being sent
+                        same rules as for -i
+   -f <fragment>      # rule applied to second and subsequent fragments,
+                        following ! means only unfragment packets match
+   -p <protocol>      # ip protocol affected by rule, can be icmp/tcp/udp/all
+                        can be a numeric value representing one of these or different peotocol
+                        any protocol listed in the /etc/protocols
+                        no argument == all
+   -c                 # initial counter
+# Ranges
+    -m iprange --dst-range <x.x.x.x start>-<x.x.x.x end>
+               --src-range
+    --dst <ip>/<1-32>
+    --src
+    -m multiport --dports <start_port>:<end_port>   # multiport can be skipped, unless ports are not
+                 --sports                           # continuous or multiple ranges are specified e.g.
+                                                    # -m multiport --dports 80,443
+
+To insert rule at specific position use
+iptables -I <chain> #number
+
+
+DROP => drop the connection and act like it never happaned Source won`t realize that your system exists
+Reject => don`t allow connection ,but send error back.
+
+# Flush
+sudo iptables -F INPUT
+sudo iptables -F OUTPUT
+sudo iptables -F FORWARD
+sudo iptables -F
+# Accept trafic by default
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+# Allowing ping
+iptables -I INPUT -p icmp --icmp-type any -j ACCEPT
+iptables -I OUTPUT -p icmp --icmp-type any -j ACCEPT
+iptables -I FORWARD -p icmp --icmp-type any -j ACCEPT
+
+# Drop multicast?
+iptables -I INPUT -p udp -d 239.0.0.0/8  -j DROP
+iptables -I FORWARD -p udp -d 239.0.0.0/8  -j DROP
+iptables -I OUTPUT -p udp -d 239.0.0.0/8  -j DROP
+iptables -I INPUT -m pkttype --pkt-type multicast -j ACCEPT
+broadcast/multicast.
+
+This module matches the link-layer packet type.
+-m pkttype --pkt-type [unicast|broadcast|multicast] 
+
+# Drom mDNS ?
+iptables -I INPUT -p udp -m udp --dport 5353 -j DROP
+iptables -I FORWARD -p udp -m udp --dport 5353 -j DROP
+iptables -I OUTPUT -p udp -m udp --dport 5353 -j DROP
+
+# Drop icmp
+ip6tables -I INPUT -p icmpv6 -j DROP
+ip6tables -I FORWARD -p icmpv6 -j DROP
+ip6tables -I OUTPUT -p icmpv6 -j DROP
+iptables -I INPUT -p icmpv -j DROP
+iptables -I FORWARD -p icmpv -j DROP
+iptables -I OUTPUT -p icmpv -j DROP
+
+http://unixetc.co.uk/2017/11/06/using-address-ranges-and-port-ranges-with-iptables/
+=========================================================================================================
+                                     Proxy
+=========================================================================================================
+Proxy server is a server that send trafic on behalf of client to preserve client anonymity.
+
+Features:
++ Caching, there can be multiple clients behind proxy and server can cache requested data
++ Blocking unwanted sites
++ Geofencing. Disadvantages
++ Content compression in otder to  speed up loading/transfer time
++ Encyption/decryption is expensive operation that can be performed by the proxy instead of web server.
+  Moreover, a proxy server may have specialized hardware for this operations
+- Knows your ip and what you are requestiog from internet
+- If traffic is not ecrypted, it can be seen by nodes between client and server, therefore it is
+  preferable to use secure versions of protocol like https instead of http
+- Server can always read requsted/received data since even when you encrypt it, server reencripts it on
+  the path to destination
+- You need to trust your provider.
+
+Both VPNs and the Tor Network are specific examples of encrypted proxies.
+
+To demultiply connections, proxy accepts connection from client and opens new to the destination, then
+they are programatically associated (like saved to pair...). To avoid port collision for case with
+multiple requests, you will need more sophisticated algorithm.
+
+Client \
+        \                                                 /-> Server
+Client --------> (Forward) Proxy Server -----> Internet --
+        /                                                 \-> Server
+Client /
+
+There are free and private proxy servers. Free ones are often runned by criminals or are simply not safe.
+Individuals or companies can run their own private proxy servers for their personal use, or the use of their
+staff. Usually private means that proxie offer use of their service for fee. VPNs are the most common form
+of private commercial proxy.
+
+TODO how to make proxy server from ubuntu
+
+---------------------------------------------------------------------------------------------------------
+                             Types of Proxy Servers
+---------------------------------------------------------------------------------------------------------
+1. HTTP Proxy. This proxy interprets network traffic.
+   Allows it to do high-level things with the traffic, such as searching its cache to see if it can serve
+   a response without going to the destination. Or consult a whitelist/blacklist to see if a URL is allowed.
+   NOTE: that http tunelling can be implemented without CONNECT.
+2. HTTPS Proxy. This type of proxy create a HTTP tunnel using CONNECT method. Client asks an proxy
+   server to forward TCP connection to the desired destination. Server makes the connection on behalf of
+   the client. Once the connection is established, server continues to proxy the TCP stream to/from client.
+   Only initial request is HTTP, after that, the server simply proxies the established TCP connection.
+3. SOCKS (Socket Secure) Proxy. 
+
+
+---------------------------------------------------------------------------------------------------------
+                                 Reverse Proxy
+---------------------------------------------------------------------------------------------------------
+A reverse proxy server requests network resources on behalf of a client from destination servers.
+The differenct between a forward and reverse proxy is subtle but important: A forward proxy sits in front
+of a client and ensures that no origin server ever communicates directly with that specific client;
+A reverse proxy sits in front of an origin server and ensures that no client ever communicates directly
+with that origin server.
+                                                            / Service
+                                                           /
+Client -----> Internet ----> ( Reverse ) Proxy Server ------- Service
+                                                           \
+                                                            \ Service
+
+Additional features include:
+- Protection from attacks. No need to reveal the IP address of the Service provider, making it much harder
+  to leverage a targeted attack against them, such as a DDoS attack. Instead the attackers will only be
+  able to target the reverse proxy, such as Cloudflare`s CDN, which will have tigher security and more
+  resources to fend off a cyber attack.
+- GSLB. Global Server Load Balancing. The proxy will send client`s request to the server that`s
+  geographically closest to them.
+- Can add HTTP access authentication ot a web server that does not have any authentication
+- Can operate wherever multiple web-servers must be accessible via a single public IP address.
+
+---------------------------------------------------------------------------------------------------------
+                                 Configurations
+---------------------------------------------------------------------------------------------------------
+echo $no_proxy
+echo $http_proxy
+echo $https_proxy
+cat /etc/hosts
+
+Configure proxy host-ignore with dconf
+dconf write /system/proxy/ignore-hosts  "[localhost, 127.0.0.1, 8.8.8.8 ]"
+
+Bash cmd require proxy to be specified as variable
+export https_proxy=<ip>
+export http_proxy=<ip>
+
+=========================================================================================================
+                            SSL. Secure Socket Layer
+=========================================================================================================
+SSL (Secure Socket Layer) also known as TLS, short for ‘Transfer Layer Security’.
+SSL certificates are widely used in websites, mobile apps, emails, fax, messaging, etc but the most
+commonly used for websites. If website contains one, you will see that connection is encrypted and
+running over https.
+SSL certificates work based on public key infrastructure (PKI) or public key cryptography. This method
+involves two distinct cryptographic keys — Private Key and Public Key, where the public key is used for
+encryption purposes and the private key is for decryption. The Public Key is shared with everyone who
+receives the certificate upon visiting a website.
+Both the keys are different but related to each other. This means that the information encrypted using a
+particular public key can only be decrypted using the private key attached to it. A secure connection is
+established if the client can verify that the public key matches the private key. This is called
+‘Asymmetric Encryption.'
+
+In SSL/TLS and other digital certificates, both methods – Symmetric and Asymmetric – are employed.
+The Asymmetric encryption has a drawback, as the verification and functions are applied from both the
+sides, it slows down the process significantly, therefore, Symmetric is sometime more preferable.
+
+---------------------------------------------------------------------------------------------------------
+                 Asymmetric Encryption, Public-Key Cryptograph
+---------------------------------------------------------------------------------------------------------
+Asymmetric Encryption uses two distinct, yet related keys. One key, the Public Key, is used for encryption
+and the other, the Private Key, is for decryption. As implied in the name, the Private Key is intended to
+be private so that only the authenticated recipient can decrypt the message.
+
+At the heart of Asymmetric Encryption lies a cryptographic algorithm. This algorithm uses a key generation
+protocol (a kind of mathematical function) to generate a key pair. Both the keys are mathematically
+connected with each other. This relationship between the keys differs from one algorithm to another.
+The algorithm is basically a combination of two functions – encryption function and decryption function.
+
+Message encrypted with publick key can be decrypted only with private key.
+---------------------------------------------------------------------------------------------------------
+                                      Flow
+---------------------------------------------------------------------------------------------------------
+TLS handshake. Two communicating parties open a secure connection and exchange the public key.
+In public key cryptography, two keys are used: a public, which the server makes available publicly, and a
+private key, which is kept secret and only used on the server side. Data encrypted with the public key can
+only be decrypted with the private key, and vice versa.
+During the TLS handshake, the client and server use the public and private keys to exchange randomly
+generated data, and this random data is used to create new keys for encryption, called the session keys.
+
+1. Client sends `hello` message containing
+-  SSL/TLS version to be used?
+-  Supported Cryptographic algorithms
+-  Data compression methods
+2. Server responds
+-  Cryptographic algorithm that will be used
+-  Session ID
+-  Server`s digital certificate
+-  Server`s public key
+3. Client contacts the servers CA (Certificate Authority) and verifies the server`s digital certificate
+4. If clint trust the server, the client sends a shared secret key to be used in the following
+   conversation. The sercret key is encrypted with the server`s public key
+5. Client sends a `finished` message which is encrypted with the secret key
+6. The server responds with a `finished` message wich is encryped with the secret key
+7. Handshake is complete
+
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                    Hashing
+=========================================================================================================
+                               base32. RFC 4648
+---------------------------------------------------------------------------------------------------------
+Basically a way of encoding arbitrary binary data in ASCII text. Encoded value only contains uppercase
+letters, digits and the eaul sign as padding. Such a value (excluding padding) can be included in an URL
+without encoding any characters. Encoding uses 26 uppercase letters A-Z, and the digits 2-7, the 0 and 1
+are skipped due to their similarity with the letters O and I.
+
+Encoding
+1. Convert you initial data to the binary format
+   ASCII "CAT" => [67, 97, 116]
+                  [0100 0011 | 0110 0001 | 0111 0100]
+2. Convert an input stream into a group of 5 bytes
+   If there are less than 5 bytes, at the end, pad additional empty bytes
+   [0100 0011 | 0110 0001 | 0111 0100 | xxxx xxxx | xxxx xxxx]
+3. Divide this group into 8 chunks of 5 bits
+   [0100 0 | 011 01 | 10 000 | 1 0111 | 0100 x | xxx xx | xxxxx | x xxxx]
+                                             =
+4. If a chunk has both actual bits and empty bits, replace the empty bits with 0`s
+   [0100 0 | 011 01 | 10 000 | 1 0111 | 0100 0 | xxx xx | xxxxx | x xxxx]
+                                             =
+5. Convert each 5 bits chunk to its decimal value 0-31
+   [8, 13, 16, 23, 8, =, =, =]
+6. Map decimal values to corresponding characters in the base32
+   [I, N, Q, X, I, =, =, =]
+
+https://www.youtube.com/watch?v=Va8FLD-iuTg
+---------------------------------------------------------------------------------------------------------
+                                     base64
+---------------------------------------------------------------------------------------------------------
+Is basically a way of encoding arbitrary binary data in ASCII text, commonly used when there is a need to
+encode images/audio/... that needs to be stored and transferred over media that are designed to deal with
+textual data. This is to ensure that the data remains intact without modification during transport.
+Uses 3 bytes in 4 characters that span 6 bits to represnt the ASCII form using `[a-zA-Z0-9+/]` and `=` as
+a padding.
+1. Convert you initial data to the binary format
+   ASCII "CAT" => [67, 97, 116]
+                  [0100 0011 | 0110 0001 | 0111 0100]
+2. Convert an input stream into a group of 3 bytes
+   If there are less than 3 bytes, at the end, pad additional empty bytes
+   [0100 0011 | 0110 0001 | 0111 0100 ]
+3. Divide this group into chunks of 6 bits
+   [0100 00 | 11 0110 | 0001 01 | 110100 ]
+4. If a chunk has both actual bits and empty bits, replace the empty bits with 0`s
+5. Convert each 5 bits chunk to its decimal value 0-31
+   [16, 54, 5, 52]
+6. Map decimal values to corresponding characters in the base32
+   [Q, 2, F, 0]
+
+https://www.youtube.com/watch?v=vw7BhqsjYFk&list=PLmL13yqb6OxdEgSoua2WuqHKBuIqvll0x&index=13
+---------------------------------------------------------------------------------------------------------
+                                     base58
+---------------------------------------------------------------------------------------------------------
+Also converts binary to alphanumeric text. Is similar to base64 without 0/O, I/l, + and / because they
+look the same in some fonts. Ordering is following [1-9A-Z]
+
+=========================================================================================================

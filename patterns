@@ -1,3 +1,9 @@
+                                    Patterns
+=========================================================================================================
+Decomposing code is a hallmark of object-oriented programming. The subject of design patterns is concerned
+with finding good ways to achive code-reuse. Broadly speaking, design patterns are grouped into: creational,
+structural, and behavioral patterns. Many specific patterns are very natural - strategy objects, adapters,
+builders, ets., appear in a number of places in out codebase.
 =========================================================================================================
                                      SFINAE
 =========================================================================================================

@@ -22,6 +22,35 @@ make
 V=1 ??
 http://www.sis.pitt.edu/mbsclass/tutorial/advanced/makefile/whatis.htm
 https://github.com/datamade/data-making-guidelines/blob/master/make.md
+
+
+---------------------------------------------------------------------------------------------------------
+                                   GCC flags
+---------------------------------------------------------------------------------------------------------
+-o filename                 # output filename ,if not used => a.out
+-c                          # compile without linking
+-D'#define_name="#value"'   # create define during compile time
+-Idir                       # dir with headers to include
+-Ldir                       # dir with libraries, shared are prefered over static
+-l#lib                      # link against lib
+-static                     # link against static libs only
+-g                          # include debug info
+-ggdb                       # include allot of debugging info understandable by gdb only
+-On                         # optimaze for n=1,2,3
+-Os                         # optimize for space instead of speed
+-O                          # minimal optimization that allows inline usage
+-pedantic                   # give all warnings and errors required by the ANSI/ISO C
+-Wall                       # turn on all generally useful wanrings
+-M                          # display list of included files with absolute paths
+-MM                         # same as -M without system dependecies
+-H                          # display recursive tree of dependencies (one.h -> two.h -> three.h)
+
+-fno-asynchronous-unwind-tables
+-fno-dwarf2-cfi-asm
+-fno-inline
+
+List gcc include path
+echo | gcc -E -Wp,-v -
 ---------------------------------------------------------------------------------------------------------
                                  Implementation
 ---------------------------------------------------------------------------------------------------------
@@ -61,9 +90,15 @@ of currly braces. The same as in shell, they can be skipped when context is not 
 source = main.c
 $source   or   $(source)
 
+makefile variable => use a single dollar sign
+shell variable => use two dollar signs
 If you want to use shell variable, you need to expand it with double dollar sign and parenthesis, like
 $$(HOME)
+for number in 1 2 3 4 ; do \
+    echo $$number ; \
+done
 
+https://stackoverflow.com/questions/26564825/what-is-the-meaning-of-a-double-dollar-sign-in-bash-makefile
 =========================================================================================================
                                 Special targets
 =========================================================================================================
@@ -227,6 +262,22 @@ The Filesystem Hierarchy Standard
 These documents specify expected targets and directories on user machine that should be used.
 
 =========================================================================================================
+                              Static Pattern Rules
+=========================================================================================================
+targets …: target-pattern: prereq-patterns …
+        recipe
+
+objects = foo.o bar.o
+$(objects): %.o: %.c
+        $(CC) -c $(CFLAGS) $< -o $@
+
+The target-pattern and prereq-patterns say how to compute the prerequisites of each target. Each target
+is matched against the target-pattern to extract a part of the target name, called the stem.
+
+
+
+https://www.gnu.org/software/make/manual/make.html#Static-Pattern
+=========================================================================================================
                                Remake (debugger)
 =========================================================================================================
 Remake is a patched gnu make that provides tools to debug makefiles.
@@ -238,4 +289,10 @@ $(debugger 'arg')
 
 https://github.com/rocky/remake
 http://bashdb.sourceforge.net/remake/remake.html/index.html
+=========================================================================================================
+                                    Patterns
+=========================================================================================================
+
+https://stackoverflow.com/questions/34219186/what-is-the-difference-between-and-in-a-makefile
+https://www.gnu.org/software/make/manual/html_node/Pattern-Match.html#Pattern-Match
 =========================================================================================================

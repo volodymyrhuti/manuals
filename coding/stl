@@ -1,0 +1,869 @@
+=========================================================================================================
+                                      STL
+=========================================================================================================
+STL is an combination of containers, iterators, algorithms and container adapters.
+The concept of the STL is based on a separation of data and operations. The data is managed by container
+classes, and the operations are defined by configurable algorithms. Iterators are the glue between these
+two components. They let any algorithm interact with any container.
+By using certain adapters and function objects (or functors), you can supplement, constrain, of configure
+the algorithms and the interfaces for special needs.
+
+=========================================================================================================
+                                   Containers
+=========================================================================================================
+The implementation of each type of container differs. For example: 
+- Sequence containers are usually implemented as arrays or linked-lists.
+- Associative containers are usually implemented as binary trees.
+- Unordered containers are usually implemented as hash tables.
+
+Reasons to use standart containers:
+Standard containers eliminate much of the boilerplate code that you need to write when bringing up a new
+system for a new client. Following reasons should be considered:
+1. STL containers are already debuged, saving you time
+2. Usually they are faster then something handwritten for fast
+3. Many containers share the common interfaces, making it quite simple to utilize different conatiners
+   without lookinf up member function definitions.
+4. STL is well-documented and easily understood by other developers.
+
+When choosing the right container, abilities other than the order of elements might be taken into account.
+In fact, the automatic sorting of elements is associative containers does not mean that those containers
+are especially designed for sorting elements.
+
+In principle, you can give any container-line object a corresponding STL interface to be able to iterate
+through elements or provide standard operations to manipulate its content.
+However, some cointer-like objects do not fit into the concept of the STL. For example, the fact that STL
+containers have a begin and an end makes it hard for circular container types, such a ring buffer, to fit
+into the STL framework.
+
+---------------------------------------------------------------------------------------------------------
+                               Container Elements
+---------------------------------------------------------------------------------------------------------
+Elements of containers must meet cetain requirements because containers handle them in a special way.
+1. An element must be copyable or movable
+2. An element must be (move) assignable by the assignment operator.
+   Containers and algorithms use assignment operators to overwrite old elements with new ones.
+3. An element must be destryable by a destructor. Container destroy their internal copies of elements when
+   these elements are removed from the container. Thus, the desctructor must not be private.
+Elements might also have to meet the following requirements:
+- Some member functions of sequence containers might require the default constructor.
+  For instance, element initialization when reserving space
+- Test of equality == must be defined for several operations, especially for search
+- For associative containers, the operations of the sorting criterion must be provided by the elements.
+  By default, this is the operator <
+- For unordered containers, a hash function and an equivalence criterion must be provided for elements.
+
+---------------------------------------------------------------------------------------------------------
+                           Value/Reference Semantics
+---------------------------------------------------------------------------------------------------------
+
+TODO: + error handling 6.12 + deriving 
+
+---------------------------------------------------------------------------------------------------------
+                              Container Operations
+---------------------------------------------------------------------------------------------------------
+The standard specifies a list of common container requirements that shall apply to all STL containers.
+However, due to the variety of containers provided with C++11, there might be exceptions so that some
+containers even don`t fulfill all general requirements.
+
+=========================================================================================================
+                              Utilities containers
+=========================================================================================================
+Small and simple classes that perform frequently needed tasks:
+- Pair. Treats two values as a single unit. Used by other containers like map, multimap, unoredered ....
+  p.first   | get<0>(p)
+  p.second  | get<1>(p)
+  make_pair(val1, val2)
+- Tuple. An extention of the pair concept for an arbitrary but still limited number of elements.
+
+=========================================================================================================
+                              Sequence containers
+=========================================================================================================
+Sequence containers are container classes that maintain the ordering of elements in the container.
+A defining characteristic of sequence containers is that you can choose where to insert your element by
+position.
+Sequence containers: vector, deque, array, list, forward_list, basic_string
+
+---------------------------------------------------------------------------------------------------------
+                                     Deque
+---------------------------------------------------------------------------------------------------------
+The deque class (pronounced “deck”) is a double-ended queue class, implemented as a dynamic array that can
+grow from both ends.
+Advantages:
+- Insertion/deletion to the end is amortized constant time
+- ?deletion at the ends never invalidates pointers references to the rest of the elements.
+- Internally it is implemented as a couple of arrays, therefore when overalocation is need, only part
+  of structed is copied to new location.
+- The internal structure has one more indirection to access the elements, so elemet access and iterator
+  movement are usually a bit slower
+- Provides no support to control the capacity and the moment of reallocation. Any insertion/deletion of
+  elements other than at the beginning/end invalidates all pointers/references/iterators.
+  NOTE: Insertion/deletion at the end/beggining still invalidates iterators
+- Blocks of memory might get freed when they are no longer used, so the memory size of deque might shrink
+  (or not, implementation specific)
+- Uses random-access iterators
+
+Disadvantages:
+- Since it is implemented as multiple arrays, dereferencing element requires to dereference bookkeping
+  information and only then dereferencing an variable which is overhead
+- Insertiong/deleting elements in the middle is relatively slow as the result of shifting
+- Large minimal cost, to allocate one element deque you need to alocate couple buffers internally.
+
+Deque operations differ from vector operations in only two ways
+- Deques do not provide the functions for capacity (capacity() and reserve())
+- Deques do provide direct functions to insert/delete the first element (push/pop_front())
+
+---------------------------------------------------------------------------------------------------------
+                                      List
+---------------------------------------------------------------------------------------------------------
+- Lists only provide access to the start and end of the list -- there is no random access provided. If you
+  want to find a value in the middle, you have to start at one end and “walk the list” until you reach the
+  element you want to find.
+- The advantage of lists is that inserting elements into a list is very fast if you already know where you
+  want to insert them
+- Insert/remove doesn`t invalidates pointers/references/iterators
+- Support exception handling in such a way that almost every operation succeeds or is a no-op. Thus, you
+  can`t get into an intermediate state in which only half of the operation is complete
+
+Special member functions:
+- remove # removes all elements with the requested value, however to remove only the first occurrence of
+  a value, you must use an erase/remove/remove_if
+  ? return value is a number of removed nodes
+
+---------------------------------------------------------------------------------------------------------
+                                     Vector
+---------------------------------------------------------------------------------------------------------
+
+Boolean elements have the special optimized version of the vector. The bool specialization usually uses
+internally only 1 bit for an element so it 8 times smaller. However, the smaller addressable value must
+have a size of at least 1 byte, therefore, such vector requireces special handling for references and
+iterators. The additional operations include:
+  vec.flip()        # negates all boolean elements
+  vec[idx].flip()   # negates the boolean element with index idx
+  vec[idx] = val
+NOTE: vec[idx] returns a proxy, an auxiliart class.
+
+=========================================================================================================
+                             Associative containers
+=========================================================================================================
+These are sorted-collections in which the position of an element depends on its value. The value of the
+elements determine the position of the elements in the container. The order of insertion doesn't matter.
+Associative containers are containers that automatically sort their inputs when those inputs are inserted
+into the container. By default, associative containers compare elements using operator<.
+
+Associative containers provide sorted data structures that provide a fast lookup (O(log n) time) using keys.
+The drawback is that you can`t modify values directly, because doing so would corrupt the automatic sorting
+of the elements.
+The STL contains four associative container classes: set, multiset, map, multimap.
+
+The type of an map element is `pair<const key, value>`. The key is constant because any modification of 
+its value would break the order of the elements, which are automatically sorted by the container.
+As well, pairs don`t have an output operator, therefore, you can`t print them as a whole and you need
+to access the members of the pair.
+
+Both maps and unordered maps are collections of key/value pairs with unique keys. Such a collection can
+also be though of as an associative array whose index is not an integer value. As a consequence, both
+containers provide the subscription operator [].
+
+NOTE: It is guaranteed that duplicates are grouped together in the order of their insertion.
+---------------------------------------------------------------------------------------------------------
+                                 Set / Multiset
+---------------------------------------------------------------------------------------------------------
+A set is a container that stores unique elements, with duplicate elements disallowed. The elements are
+sorted according to their values. A multiset is a set where duplicate elements are allowed. 
+The base type should support comparisong according to the sorting criterion, which is specified with the
+second template argument, by defualt is `less`.
+The sorting criterion must define strict weak ordering: antisymmetric, transitive, irreflexive, has to
+have transitivity of equivalence.
+
+These are usually implemented as balanced binary trees.
+- Searching takes an algorithmic complexity
+- You may not change the value of an element directly, therefore, to modify the value of an element,
+  you must remove the element having the olf value and insert a new element that has new value
+- Don`t provide operations for direct element access
+- Indirect access via iterators has the constraint that, from the iterator`s point of view, the elemt
+  value is constant
+
+Special member search operations: obj.count(val), .find(val), .lower/upper_bound(val), .equal_range(val)
+To remove elements in sets/multisets you can use only member functions provided by the container:
+.insert(), .emplace(), .clear()
+.erase(val)             # remove all elements with passed value, returns 0/1
+.erase(val_iterator)    # to remove a single element
+NOTE: insertion for sets returns pair<iterator,bool> instead of just an iterator, this is because insertion
+of the duplicate value will fail, which is described with a bool value.
+
+---------------------------------------------------------------------------------------------------------
+                                 Map / Multimap
+---------------------------------------------------------------------------------------------------------
+A map (also called an associative array) is a set where each element is a pair, called a key/value pair.
+The key is used for sorting and indexing the data, and must be unique. The value is the actual data. 
+A multimap (also called a dictionary) is a map that allows duplicate keys. Real-life dictionaries are
+multimaps: the key is the word, and the value is the meaning of the word. All the keys are sorted in
+ascending order, and you can look up the value by key. Some words can have multiple meanings, which is
+why the dictionary is a multimap rather than a map. Both have requirements:
+- Both key and value must be copyable or movable
+- The key must be comparable with the sorting criterion
+- Strick weak ordering
+NOTE: element type is a pair <const Key, T>
+
+Automatic sorting imposes an important constraint on maps and multimaps:
+You may not change the key of an element directly to not compromise the correct order. To modify the key
+of an element, you must remove the element that has the old key and insert a new element that has the new
+key and the old value.
+Possible workaround: map["new_key"] = map["old_key"]; map.erase("old_key");
+A direct midfication of the value of the is still possible, provided that the type of the value is non
+constant.
+Member methods:
+obj.lower/upper_bound(val), obj.equal_range(val)
+obj.key_comp()   # returns the comparison criterion
+obj.value_comp() # -||- for values as a whole
+obj.count(val)   # number of elements with key val
+obj.find(val)    # first key that is val
+
+You can`t use the find() to search for an element that has a certain value. Instead, you have to use a
+general algorithm, such as find_if(), or program an explicit loop.
+You can`t call any modifying algorithm if the destination is a map or a multimap. For instance, you
+can`t call the remove(), because it removes by overwriting removed elements with the following ones.
+Instead you need to call `erase` with key or iterator
+
+NOTE:
+1. Erasing element invalidates the iterator, therefore you need to reinitialize it with the returned
+   values, like: iter = map.erase(iter); before C++ you needed to perform postfix increment so you would
+   remove a temporary iterator, like: map.erase(iter++)
+2. Checking whether a container is less than another is done by a lexicographical comparison.
+3. Subscription operator default initializes the key,value pair if it is not present
+   cout << map["non_existing_key"]  # will initialize a new object
+
+=========================================================================================================
+                       Unordered (associative) Containers
+=========================================================================================================
+These are unordered-collections in which the position of an element doesn't matter. Neither does the order
+of insertion nor the value of the element. Only their existence in the container matters. If you put four
+elements in to a collection, their order is undefined and might change over time.
+The default equivalence criterion is the operator ==.
+
+Unordered associative containers provide unsorted data structures that can be accessed using a hash.
+The advatage is that finding an element with a specific value is even faster than for associative ones.
+Use of unordered containers provides amortized constant complexity, provided that you have a good hash function.
+The STL container contains four unordered container classes: unordered_set, unordered_multiset, unordered_map,
+unordered_multimap.
+
+Conceptually, this contain all the elements you insert in an arbitrary order, like bag where you put an
+elements and then access them in a random order. So, in contrast with maps/sets, there is no sorting
+criterion; in contrast with sequence containers you have no semantics to put an element into a specific
+position.
+
+Few of the specified abilities of unordered containers are based on the following assumptions:
+- The hash tables use the `chaining` approach, whereby a hash code is associated with a linked list
+  This technique is called `open hashing` or `closed addressing`
+- Whether these linked lists are singly/doubly linked is open to the implementors
+- Various implementation strategies are possible for rehashing
+
+Disadvantages over ordinary associative containers:
+- Don`t provide operators <,>,<=,>= to order multiple instances of there containers.
+  However, == and != are provided
+- lowe/upper_bound are not provided
+- Because the iterators are guaranteed only to be forward iterators, reverse iterators, including
+  c/r|begin/end(), are not supported, and you can`t use algorithms that require bidirectional iterators,
+  or at least this is not portable
+
+NOTE: rehashing is possible only after a call to insert/rehash/reserve/clear as a consequence of the
+guarantee that erase() never invalidates iterators, references, and pointers to the elements. Thus, if
+you delete hundereds of elements, the bucket size will not change. But if you insert one element afterward,
+the bucket size might shrink.
+The insert and emplace members do not affect the validity of references to container elements.
+The ordering of the duplicate elements is preserved even after rehashing.
+
+Member search operation:
+map.count(val)
+map.find(val)
+map.equal_range(val)
+
+It is possible to access the individual buckets with a specific bucket interface to expose the internal
+state of the whole hash table.
+
+=========================================================================================================
+                               Container Adapters
+=========================================================================================================
+Container adapters are special predefined containers that are adapted to specific uses. The interesting
+part about container adapters is that you can choose which sequence container you want them to use.
+
+---------------------------------------------------------------------------------------------------------
+                                     Stack
+---------------------------------------------------------------------------------------------------------
+A stack is a container where elements operate in a LIFO (Last In, First Out) context, where elements are
+inserted (pushed) and removed (popped) from the end of the container. Stacks default to using deque as
+their default sequence container (which seems odd, since vector seems like a more natural fit), but can
+use vector or list as well. 
+
+---------------------------------------------------------------------------------------------------------
+                                     Queue
+---------------------------------------------------------------------------------------------------------
+A queue is a container where elements operate in a FIFO (First In, First Out) context, where elements are
+inserted (pushed) to the back of the container and removed (popped) from the front. Queues default to
+using deque, but can also use list. 
+
+---------------------------------------------------------------------------------------------------------
+                                 Priority queue
+---------------------------------------------------------------------------------------------------------
+A priority queue is a type of queue where the elements are kept sorted by the priority. The priority is
+based on a sorting criterion that the probrammer may provide (by default via operator<). When elements are
+pushed, the element is sorted in the queue. Removing an element from the front returns the highest priority
+item in the priority queue. 
+
+=========================================================================================================
+                                     String
+=========================================================================================================
+Strings do not provide a special meaning for the character `\0` which is used as a special character in
+an ordinary C-string to mark the end of the string.
+There are three ways to convert the contents of the string into a raw array of characters or C-string:
+1. data() and c_str(). Generates the value of a string as a C-string as a character array that has `\0`
+   as it last character.
+2. copy(). Copies the contents of the string into a character array provided by the caller.
+   An `\0` is not appended
+   str.copy(buffer, len [, initial pos])
+
+Note, having sufficient capacitty is important because the reallocation takes time and invalidates all
+references, pointers, and iterators that refer to characters of the string. Calling reserve() can be
+done for both enlarging and shrinking the buffer, passing no arguments means shrink-to-fit.
+
+If strings are compared by <, <=, >, >=, their characters are compared lexicographically according to the
+current character traits.
+    string("aa") < string("aaa") => true
+You can compare substrings using .compare()
+    str.compare(0, 2, str, 2, 2)
+
+If a search function fails, it returns string::npos, but be carefull and declar the return type as the
+string::size_type, not int or unsigned; otherwise, the comparison of the return value might not work.
+
+=========================================================================================================
+                                   IO Streams
+=========================================================================================================
+The IO classes from the C++ standard library are not restricted to files or to screen and keyboard but
+instead form an extensible framework for the formatting of arbitrary data and access to arbitrary `external
+representations`.
+
+In C++, IP is preformed by using streams. A stream is a `stream of data` in which character sequnces `flow`.
+Following the OO principles, a stream is an object with properties that are defined by a class.
+Output is interpreted as data flowing into a stream; input is interpreted as data flowing out of a stream.
+- istream defines input streams that can be used to read data
+- ostream defines output streams that can be used to write data
+
+There are several global objects used as standart IO channels:
+- cin (istream)  - the standard input channel
+- cout (ostream) - the standard output channel
+- cerr (ostream) - the standard error channel
+- clog (ostream) - the standard logging channel
+
+By using stream buffers, it is quite easy to define access to a new `external representation` such as a
+new storage device. All that has to be done is to derive a new stream buffer class from `basic_streambuf<>`
+or an appropriate specialization and to define functions for reading and/or writing characters for this
+new external representation.
+
+The output mechanism can be extended to incorporate your own data types. Overloading of different types
+ensures that the correct function for printing is deduced automatically. The mechanism is not limiter to
+standard types. Thus, the user has only one mechanism, and it works for all types.
+
+---------------------------------------------------------------------------------------------------------
+                                  Stream state
+---------------------------------------------------------------------------------------------------------
+Streams maintain a state which identifies whether IO was successful and, if not, the reason for the failure
+State is saved withing a member `iostate` and can following values:
+goodbit | None of the other bits is set, probably, everything is ok
+eofit   | End-of-file was encountered
+failbit | Error; an IO operation was not successful
+        | Normally, is a result of a format error during reading
+badbit  | Fatal error; undefined state
+        | Stream is somehow corrupted or data is lost
+        | For example, positioning a stream that refer to a file before the beginning of a file
+
+The state can be queried using member functions: .good(), .eof(), .bad(), .clear()
+.clear(state)     | reset current state and sets a new one
+.fail()           | true if and error has occured -> failbit or badbit is set
+.rdstate()        | returns the currently set flags
+.setstate(state)  | sets additional state flags
+NOTE: tou always have to clear error bits explicitly, otherwise the following operations are noop
+
+---------------------------------------------------------------------------------------------------------
+                                  Manipulators
+---------------------------------------------------------------------------------------------------------
+Manipulators are special objects that are used to manupulate a stream. It is the main way to change the
+way input is interpreted or output is formatted.
+
+Manipulators are implemented using a simple trick. The stream has the shift operator overloaded to
+take a function pointer then execute it. The manipulators are just a functions.
+
+  ostream& ostream::operator << ( ostream& (*op)(ostream&))
+  {
+      // call the function passed as parameter with this stream as the argument
+      return (*op)(*this);
+  }
+  std::ostream& std::endl (std::ostream& strm)
+  {
+      strm.put(’\n’); // write newline
+      strm.flush(); // flush the output buffer
+      return strm; // return strm to allow chaining
+  }
+
+Therefore, you can use this manipulator in an expression like `std::cout << std::endl`. As well, you
+can perform the function call directly `endl(cout)`. You can implement your own manipulators as well.
+---------------------------------------------------------------------------------------------------------
+                                  File Access
+---------------------------------------------------------------------------------------------------------
+The STL provides 4 class templates
+- basic_ifstream for read access
+- basic_ofstream for write access
+- basic_fstream for access to files that should be both read and writted
+- basic_filebuf used by other file stream classes to perform the actual reading and writing of characters
+
+The majis advantage, in regards to C, is the automatic managment of files which are operend at construction
+time and closed at destruction time. You need to check object after the construction if the file is opened.
+A file can be opened/closed explicitly using member functions: .open(name [,flags]) .close() .is_open()
+For streams that are both read and written it not possible to switch arbitrarily between reading and writing
+except some cases, like reading end-of-file and starting to write there.
+
+---------------------------------------------------------------------------------------------------------
+                                    Strings
+---------------------------------------------------------------------------------------------------------
+The mechanism of stream classes can be used ot read from strings or write to strings. For instance
+
+    ostringstream os;
+    os << "123" << hex << "hex " << 123 << endl;
+    cout << os.str() << endl;
+    os << "qwe"
+    cout << os.str() << endl;
+
+The characters that are not overwritten remain valid. To remove the current contents from the stream you
+can assign an empty sting like `strm.str("")`
+
+Special member functions:
+.str()       # return buffer as a string
+.str(string) # sets the contents of the buffer to string
+
+---------------------------------------------------------------------------------------------------------
+                               Connecting streams
+---------------------------------------------------------------------------------------------------------
+Often, you need to connect two streams, like if you want to ensure that text asking for input is written
+on the screen before the input is read; or reading and writing to the same stream. This is used for
+cin/cout so that your question is printed before answer is read. 
+1. Loose coupling with tie()
+   .tie()      # return currently tied stream, can be a nullptr
+   .tie(strm)  # ties a new stream and returns the old one; nullptr can be used as untie
+   std::cin.tie (&std::cout);
+   std::wcin.tie (&std::wcout);
+   std::cerr.tie (&std::cout);
+2. Tight coupling using stream buffers
+   rdbuf()           # returns pointer to the stream buffer
+   rdbuf(streambuf*) # install a new buf and returns the old one
+   This approarch allows several stream objects to read from the same input channel or write to the same
+   output channel without mixing up the order of the IO. This doesn`t work smoothly, because the IO
+   operations are buffered.
+   The advantage is that the format does not need to be restored after is modified, because it applies
+   to the stream object and not buffer.
+3. Redirecting streams
+   std::ofstream file ("cout.txt");
+   file.copyfmt (std::cout);
+   std::cout.rdbuf (file.rdbuf());
+
+
+---------------------------------------------------------------------------------------------------------
+NOTE: since C++11, concurrent output using the same stream object is possible but might result in
+      intreleaved characters; councurent input might result in characters where it is not defined which
+      thread reads which character
+=========================================================================================================
+                             Choosing the container
+=========================================================================================================
+1. Use sequential containers when you need to access elements by position
+-  Default container to use is std:vector
+-  If size is known in advance, use std::array
+-  If you need to work frequently with both sides of container, use std::deque
+-  If you need to insert/delete freeuently element from the middle, use std::list
+-  Do not use std::list if you need random access
+-  Prefer std::vector over std::list if your system uses a cache
+-  std::string is almost always better than a C-string
+2. Use associative containers when you need to access elements by key
+-  
+
+=========================================================================================================
+                                   Iterators
+=========================================================================================================
+An Iterator is an object that can traverse (iterate over) a container class without the user having to
+know how the container is implemented. With many classes (particularly lists and the associative classes),
+iterators are the primary way elements of these classes are accessed.
+
+An iterator is best visualized as a pointer to a given element in the container, with a set of overloaded
+operators to provide a set of well-defined functions:
+Operator*      | dereferencing iterator to get element it is currently pointing to
+Operator++     | moves iterator to next elements, most containers support stepping backward by using operator--
+Operator=      | assign iterator to some position, usually start/end assigned through common interface
+               | begin()  # returns an iterator representing the beginning of the elements in the container
+               | end()    # returns an iterator representing the element just past the end of the elements
+               | cbegin() # the begin() but iterator is const(read-only)
+               | cend()   # the end() but iterator is const(read-only)
+Operator==/!=  | comparison operators to determine if two iterators point to the same element.
+
+These operations provide exactly yhe interface of ordinary pointers in C and C++ when these pointers are
+used to iterate over the elements of an ordinary array. The difference is that iterators may be smart
+pointers - pointer that iterate over more complicated data structures of containers.
+
+All containers provide the same basic member functions that enable them to use iterators to navigate over
+their elements. The most important ones:
+- begin() returns an iterator that represents the beginning of the elements in the container
+- end(). past-the-end iterator. returns an iterator that represents the end of the elements in the container
+  The end is the position behind the last element.
+  _______________________________
+  | begin() |   |   |   |   |   |  end()            => half-open range [begin; end)
+  -------------------------------
+Such an half-open range has two advantages:
+1. You have a simple end criterion for loops that iterate over the elements: they simly continue as long
+   as end() is not reached
+2. It avoids special hanling for empty ranges. For empty ranges, begin() is equal to end()
+
+Every container defines two iterator types:
+1. container::iterator to iterate over elements in read/write mode
+2. container::const_iterator to iterate in read-only mode
+
+/* A developer should be carefull when using auto with const iterators. Auto type deduction remove cv qualifiers */
+/* therefore you are leaving object accessible for modification . */
+
+NOTE: preincrement (++iterator) is usually prefered for the perfrormance resons. The posticrement internally
+involves a temporary object because it must return the old position of the iterator.
+
+NOTE: Iterators must be implemented on a per-class basis, because the iterator does need to know how a
+class is implemented. Thus iterators are always tied to specific container classes.
+---------------------------------------------------------------------------------------------------------
+                                   Categories
+---------------------------------------------------------------------------------------------------------
+In addition to their fundamental operations, iterators can have capabilities that depend on the internal
+structure of the container type. For example, if container has random access, its iterators are also able
+to perform random-access operations, such as positioning the iterator directly at the fifth element.
+Iterators are subdivided into categories based on their general abilities. The predefined includes:
+Forward       | Able to iterate only forward, using the increment operator.
+              | unordered_set/multiset/map/multimap are at least forward iterators
+Bidirectional | Able to iterate in two directions.
+              | list, set, multiset, map, multimap
+Random-access | Have all properties of the bidirectional iterator + random access
+              | provide operators for iterator arithmetic (like pointer arithmetic)
+              | vector, deque, array, string
+Input         | Able to read/process some values while iterating forward
+              | Input stream iterators
+Output        | Able to write some values while iterating forward
+              | Insert and output stream iterators
+
+To write generic code that is as independent of the container type as possible, you should not use special
+operations for random-access iterators.
+    for (auto pos = coll.begin(); pos != coll.end(); ++pos) // works with any container
+    for (auto pos = coll.begin(); pos < coll.end(); ++pos)  // doesn`t works with lists/sets/maps
+The `<` operator is provided only for random-access iterators
+
+---------------------------------------------------------------------------------------------------------
+                                    Adapters
+---------------------------------------------------------------------------------------------------------
+The STL provides several predefined special iterators: iterator adapters:
+Insert (Output) iterators. Used to let algorithms operate in insert mode rathen than in overwrite mode.
+Used to solve the problem of algorithms that write to a destination that does not have enough room.
+- If you assign a value to their element, they insert that value into the collection they belong.
+  There are diffrent with regard to where the elements are inserted - fron/end/position.
+- A call to step forward is a no-op.
+For instance: predefined back_inserter(obj), front_inserter(obj), inserter(obj, pos)
+For associative and unordered containers, the position is taken as a hint to start the search for the
+correct position, but this can be ignored.
+
+Stream iterators. Read from or write to a stream. An abstraction that lets the input from the keyboard
+behave as a collection from which you cna read or you can redirect the output of an algorithm directly
+into a file or onto the screen.
+
+    copy (istream_iterator<string>(cin), // start of source
+          istream_iterator<string>(),    // end of source
+          back_inserter(buf));           //destination
+
+    unique_copy (buf.cbegin(), buf.cend(),        // source
+            ostream_iterator<string>(cout,"\n")); // destination
+
+Reverse iterators. Let algorithms operate backward by switching the call of an increment operator
+internally into a call of the decrement operator, and vice versa. This is usually done using `rbegin()`
+and `rend()`.
+
+Move iterators. Convert any access to the underlying element into a move operation. As a result, they allow
+moving elements from one container into another either in constructors or while applying algorithms.
+
+=========================================================================================================
+                                   Algorithms
+=========================================================================================================
+In addition to container classes and iterators, STL also provides a number of generic algorithms for
+working with the elements of the container classes. These allow you to do things like search, sort, insert,
+reorder, remove, and copy elements of the container class. They are implemented as functions operating
+on iterators. This means that each algorithm only needs to be implemented once, and it will generally
+automatically work for all containers that provides a set of iterators (including your custom container
+classes). Algorithms are not member functions of the container classes but instead are global functions
+that operate with iterators.
+
+Such generic paradigm has some disadvantages:
+- The usage may be not intuitive
+- Some combinations of data structures and algorithms might not work
+- A combination of a container type and algorithm might be possible but not usefull (maybe bad performance)
+
+All algorithms process one or more ranges of elements which are a subset/full container. Therefore developer
+passes the beggining and the end of the range for processing. It is up for caller to validate ranges.
+A range is valid if the end of the range is reachable from the beginning by iterating through the elements.
+Otherwise, the behavior is undefined, and endless loops or forbidden memory access may result.
+
+Every algorithm processes half-open ranges, meaning, a range includes the position used as the beggining
+of the range but excludes the position used as the end.
+    [begin, end) or [begin, end[
+
+There are algorhithms that work with several ranges. When you call algorithms for multiple ranges, make
+sure that the second and additional ranges have at least as many elements as the first range.
+equal
+
+Algorithms can be classified as follows:
+- Nonmodifying
+- Modifying
+- Removing
+- Mutating
+- Sorting
+- Sorted-range
+- Numeric
+
+NOTE: find returns an element, but usually you want an element + 1 for the following algorithms
+      Search algorithms return the end element if wanted one is not found.
+---------------------------------------------------------------------------------------------------------
+                            Manipulation algorithms
+---------------------------------------------------------------------------------------------------------
+Some algorithms modify destination range, which may mean removing elements. If this happens, special
+aspects apply.
+- remove() shifts values to overwrite without deleting elements or resizing the array, however it returns
+  the new logical end() iterator. The left range can be removed using erase(). For instance
+  obj.erase(
+             remove(obj.begin(), obj.end(), value),
+             obj.end()
+           );
+- These doesn`t work with an associative/unordered containers as the destination. Otherwise that would
+  violate the structure order. For this reason, such containers provide specialized member functions.
+- Member functions should be prefered over generic ones. For instance: you can remove element from a
+  linked list with a generic `remove` that will just shift all values instead of deleting a node.
+
+This is not done automatically is the result of a design choice. Iterators are an aabstraction to represent
+a postion in a container and they don`t know their containers. Thus, the algorithms, which use the iterators
+to access the elements of the contaier, can`t call any member function for it. As well, not all classes
+have a common deletion methods like `erase()`, or you may not want this to be performed for some other
+reason.
+
+---------------------------------------------------------------------------------------------------------
+                                   Predicates
+---------------------------------------------------------------------------------------------------------
+A special kind of auxiliary function that returns a boolean and are usually used to specify a sorting
+or a search criterion. Depending on their purpose:
+- Unary. Takes a single element to check for a specific propoperty.
+- Binary. Takes two arguments and compares them
+
+=========================================================================================================
+                                 Smart Pointers
+=========================================================================================================
+Problems of raw pointers:
+1. Its declaration doesn’t indicate whether it points to a single object or to an array.
+2. Its declaration reveals nothing about whether you should destroy what it points to when you’re done 
+   using it, i.e., if the pointer owns the thing it points to.
+3. If you determine that you should destroy what the pointer points to, there’s no way to tell how.
+   Should you use delete, or is there a different destruction mechanism (e.g., a dedicated destruction
+   function the pointer should be passed to)?
+4. If you manage to find out that delete is the way to go, Reason 1 means it may not be possible to know
+   whether to use the single-object form (“delete”) or the array form (“delete []”). If you use the wrong
+   form, results are undefined.
+5. Assuming you ascertain that the pointer owns what it points to and you discover how to destroy it, it’s
+   difficult to ensure that you perform the destruction exactly once along every path in your code
+   (including those due to exceptions). Missing a path leads to resource leaks, and doing the destruction
+   more than once leads to undefined behavior.
+6. There’s typically no way to tell if the pointer dangles, i.e., points to memory that no longer holds
+   the object the pointer is supposed to point to. Dangling pointers arise when objects are destroyed
+   while pointers still point to them.
+Smart pointer is wrapper around raw pointer that tries to solve this issues. There are 4 smart pointers
+in C++11: auto_ptr, unique_ptr, shared_ptr, weak_ptr. Where auto_ptr is a deprecated leftover from C++98
+and is replaced with unique_ptr.
+
+---------------------------------------------------------------------------------------------------------
+                                    Auto_ptr
+---------------------------------------------------------------------------------------------------------
+Before C++11, there was no move semantics mechanism in syntax therefore it was emulated using copying.
+Example of smart_pointer implemented this way:
+It would be nice to have a wrapper around an object that is automatically alocated therefore clean on
+stuck unwinding. Well, this seems to be not taugh to implement
+template<class T>
+class Auto_ptr {
+    T* m_ptr;
+public:
+    Auto_ptr1(T* ptr=nullptr) :m_ptr(ptr) { }
+    ~Auto_ptr1() { delete m_ptr; }
+    T& operator*() const { return *m_ptr; }
+    T* operator->() const { return m_ptr; }
+}
+But there is no copy constructor, resulting to shallow copying
+Auto_ptr<int> ptr1(new int);
+Auto_ptr<int> ptr2(ptr1);
+// Double free, undefined behaviour, crash
+Possible solution is to make copy constructor/operator private or delete, however, how will we pass/return
+arguments to/from function. We need to define them but they must move responsibility from operands to
+assignee therefore preventing resource leakage and undefined behaviours.
+    // A copy constructor that implements move semantics
+    Auto_ptr2(Auto_ptr2& a) // note: not const
+    {
+        m_ptr = a.m_ptr; // transfer our dumb pointer from the source to our local object
+        a.m_ptr = nullptr; // make sure the source no longer owns the pointer
+    }
+    // An assignment operator that implements move semantics
+    Auto_ptr2& operator=(Auto_ptr2& a) // note: not const
+    {
+        if (&a == this)
+            return *this;
+ 
+        delete m_ptr; // make sure we deallocate any pointer the destination is already holding first
+        m_ptr = a.m_ptr; // then transfer our dumb pointer from the source to the local object
+        a.m_ptr = nullptr; // make sure the source no longer owns the pointer
+        return *this;
+    }
+The next problem is how do we return automatic variable from function. We can`t return a pointer nor
+reference since it will be dangling, The only solution is to return by value while moving a responsibility.
+
+Problems of such approach:
+1. Any assignment moves pointer, every time you pass it by value as operand or return from function, which
+   requires you to watch for object which is not resposible, otherwise you could forget about it and try
+   to use null smart_pointer.
+2. Standart implementation used non array delete which resulted to undefined behaviour when such was used
+3. Didn`t work with some containers and algorithms that expect object to be copied and not moved
+
+Currently it is deprecated and replaced with unique_ptr, expected to be removed in C++17.
+=========================================================================================================
+                        Unique_ptr (exclusive-ownership)
+=========================================================================================================
+std::unique_ptr embodies exclusive ownership semantics. You can`t copy it but you can move which transfers
+ownership from the source pointer to the destination pointer, source pointer is set to null. Upon destruction
+a non-null unique_ptr destroys its resource by calling delete on a raw poiner. A common use is a factory
+returning type for objects in a hierarchy.
+---------------------------------------------------------------------------------------------------------
+                         Object allocation/dealocation
+---------------------------------------------------------------------------------------------------------
+unique_ptr, as well as others, expect to get pointer as parameter. Usually you just call `new Type` and
+pass result to pointer constructor. However, object constructor may take plenty of arguments or names
+are just too long to use in place. For this case, there is a special function that forwards arguments to
+object constructor and returns pointer for you.
+unique_ptr<Type> f1 = std::make_unique<Type>(arg1, arg2, arg3, ...);
+auto f1 = std::make_unique<Type>(arg1, arg2, arg3, ...); // even better
+
+Another reason to call make_unique is exception safety. Imagine case when you pass inplace created pointer
+as function argument and function call, as another argument, and it may throw. In such case you could
+allocate object, then call function and only then try to construct unique_ptr.
+some_function(std::unique_ptr<T>(new T), function_that_can_throw_exception());
+If make_unique is used, whether unique_pointer is created first and will be properly cleaned, or function
+throws and pointer was not allocated before.
+
+Deletion can be performed with custom function
+auto delType = [](Type* pOjb) { delete pObj; };
+unique_ptr<Type, decltype(delType)> unique_ptr pType(nullptr, delType);
+pType.reset(new Type( std::forward<Ts>(params)...));
+---------------------------------------------------------------------------------------------------------
+                               Using as argument
+---------------------------------------------------------------------------------------------------------
+It can be safely returned from a function by a value, move semantics will be used.
+You can pass by value to function but it requires explicit move, copy operations are deleted.
+You can pass by reference, then function can use it without assuming ownership. Instead, it`s better to
+just pass the resource itself. This allows the function to remain agnostic of how the caller is managing
+its resources. Raw pointer is accessed with get() member function.
+
+---------------------------------------------------------------------------------------------------------
+                                    Pitfalls
+---------------------------------------------------------------------------------------------------------
+Don`t let multiple classes manage the same resource
+Resource *res = new Resource;
+unique_ptr<Resource> res1(res);
+unique_ptr<Resource> res2(res);
+
+Don`t manually delete resource underneath it.
+Resource *res = new Resource;
+unique_ptr<Resource> res1(res);
+free(res);
+
+Both issues are preventable with make_uniques.
+=========================================================================================================
+                                   Shared_ptr
+=========================================================================================================
+Shared_ptr is meant to solve the case where you need multiple smart pointers co-owning a resource, meaming
+it is fine to have multiple owners of a resource. Internally class maintains a reference counter of owners.
+As long as at least one shared_ptr points to the resource, it is not deallocated.
+
+Resource *res = new Resource;             // Resouce is allocated
+std::shared_ptr<Resource> ptr1(res);
+{
+    std::shared_ptr<Resource> ptr2(ptr1); // ptr2 is copy initialized from ptr1
+    std::cout << "Killing one shared pointer\n";
+}                                        // ptr2 goes out of scope here, but nothing happens
+std::cout << "Killing another shared pointer\n";
+                                         // object gets deallocated
+
+---------------------------------------------------------------------------------------------------------
+                                 Controll block
+---------------------------------------------------------------------------------------------------------
+Under the hood, sharred_ptr holds two pointer, one for resource and another for block holding reference
+counter and some other fields. When the first shared pointer for a resource is allocated, block is allocated
+as well, futher pointer will just assign their pointer to block. Calling `make_shared` may allocate both
+pointer and block in one allocation making faster.
+---------------------------------------------------------------------------------------------------------
+A shared_ptr can be initialized from unique_ptr using rvalue move constructor or assignment operator.
+This means that you can forward ownership from unique_ptr to shared through move. But there is no easy
+way to convert shared into unique.
+
+---------------------------------------------------------------------------------------------------------
+                                    Pitfalls
+---------------------------------------------------------------------------------------------------------
+If shared_pointer was dynamically allocated and missed to be freed or is part of such object, it`s leaked.
+It has no proper implemantation to manage arrays in C++14/17.
+
+=========================================================================================================
+                                    Weak_ptr
+=========================================================================================================
+Weak_ptr comes to solve an issue of cyclyc dependencies withing objects controlled by shared_ptr.
+The problem is that, when there is a cycle between shared pointer, reference counter will not go to zero
+and resource will be leaked. A weak_ptr points to a shared_ptr but does not increase its reference count,
+therefore, object can be deleted independent of pointer.
+This works because we create an instance of shared_ptr from weak for whenever one wants to use the
+underlying object. If object was previously deleted, empty instance of shared_ptr is returned.
+
+class A { shared_ptr<B> b; ... };
+class B { shared_ptr<A> a; ... };
+shared_ptr<A> x(new A);  // 1 reference for A
+x->b = new B;            // 1 reference for B
+x->b->a = x;             // 2 references for A
+// Ref count of 'x' is 2.
+// Ref count of 'x->b' is 1.
+// When 'x' leaves the scope, there will be a memory leak:
+// 2 is decremented to 1, and so both ref counts will be 1.
+// (Memory is deallocated only when ref count drops to 0)
+
+The programmer needs to be aware of the ownership relationship among the objects, or needs to invent an
+ownership relationship if no such ownership exists naturally.
+// Ref count of 'x' is 1.
+// Ref count of 'x->b' is 1.
+// When 'x' leaves the scope, its ref count will drop to 0.
+// While destroying it, ref count of 'x->b' will drop to 0.
+// So both A and B will be deallocated.
+
+The downside of weak_ptr is that it is not directly usable (has no operator->), instead you should convert
+it to shared_ptr first, using `lock()` member function. 
+shared_ptr<A> ptr_s(new A);
+weak_ptr<A> ptr_w(ptr_s);
+auto ptr_s2 = ptr_w.lock();
+
+http://geekwentfreak.com/posts/c/cpp_create_avoid_cyclic_dep/
+https://stackoverflow.com/questions/4984381/shared-ptr-and-weak-ptr-differences
+=========================================================================================================
+                                     Links
+=========================================================================================================
+Cheat-sheet
+https://github.com/gibsjose/cpp-cheat-sheet/blob/master/Data%20Structures%20and%20Algorithms.md
+https://github.com/karansaxena/STL_Cheat_Sheets/blob/master/Data%20structures%20in%20C%2B%2B.pdf
+
+=========================================================================================================
+                                    To study
+=========================================================================================================
+https://embeddedartistry.com/blog/2017/8/23/choosing-the-right-stl-container-general-rules-of-thumb
+https://embeddedartistry.com/blog/2017/8/2/an-overview-of-c-stl-containers
+https://embeddedartistry.com/blog/2017/9/11/choosing-the-right-stl-container-sequential-containers
+=========================================================================================================

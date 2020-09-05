@@ -1,0 +1,1778 @@
+=========================================================================================================
+                            Classes
+=========================================================================================================
+                Public | Private | Protected | Access specifiers
+---------------------------------------------------------------------------------------------------------
+Access speicifiers are one of the mechanisms used to create incapsulation.
+There are three different specifiers: public, private and protected.
+1. Public. Members of a struct or class can be accessed from outside of the struct or class
+2. Private. Members of a class that can only be accessed by other members of the class. This can be
+   another member function with the same constness or friend class.
+3. Protected.
+
+By default all members of struct are public and private for class, the same for default inheritence.
+Fields in class/struct get specifier of previous field. There may multiple access specifiers per class.
+class foo {
+    int private_member1;
+    public: int public_member1;
+    private: int private_member2;
+    public: int public_member2;
+};
+
+=========================================================================================================
+                                  Destructors
+=========================================================================================================
+Special kind of class member function that is executed to deinitialize memory before free.
+Destructor knows how to clean stack allocated members, how to call their destructors but it doesn`t know
+how to deinitialize resources. It must be done mannually by developer. There can be only one destructor
+per class and it must not use any parameters. As well as constructor, it has no return type.
+
+You should never throw from destructor/constructor, since there maybe an array of such object, and if
+atleast two of them throw, you loose the reason of the first one. This is considered to be critical
+error and program aborts, since there is no way to get reason behind the first issue, it is not clear if
+the second was some undefined bahviour, side effect of the first or it is valid. As well it may happen
+during stack unwinding, which is performed when you leave scope, or another exception is thown.
+If you really care about failure in destructor, consider logging instead.
+
+Array are constructed in order from 0 to size and destructer is the reverse
+T arr[10] => arr[0], arr[1] ... arr[9] ... arr[1], arr[0]
+
+It is not allowed to call destructor of automatic variable, since it will be called once more when scope
+is unwinded which result to undefined behaviour.
+
+---------------------------------------------------------------------------------------------------------
+Destructor can`t take parameters. This would make some little sense in place new, since it is applicable
+to call destructor expilictly but puprose of such parameter is not clear. User would be capable to define
+only destructor with parameters, then compiler would have no way to clean automatic variables, unless
+there is a way to oveload such destructor. Another question, how to pass argument to destructors of each
+element in the array. This mechanism does not have much of use and creates many problems.
+
+=========================================================================================================
+                                  Constructor
+=========================================================================================================
+Special member function called to allocate and initialize memory.
+It has special rules for how they should be named:
+1. Constructors must have the same name as the class (with the same capitalization)
+2. Constructors have no return type (not even void)
+Constructor that takes no parameters (or has all parameters assigned default value) is called default
+constructor. It is used if no user defined initialization is provided.
+
+class foo{
+    foo(){};            // Default
+    foo(int x){};       // Non-default
+    foo(const foo&){};  // Non-default, Copy constructor
+}
+foo f1;     // Calls default construcotre
+foo();      // same
+new foo;    // same
+foo(1)      // non-default
+f1 = foo()  // non-default, assignment operator
+
+Don`t call pure virtual functions in constructor/desctructor, since it won`t call definition of derived
+class. Since function is pure, it has no definition, at this point, and program will fail to link.
+This cannot be done, since derived class was not yet initialized.
+If function is virtual but not pure and has definition, than code will work, but only base class definition
+will be called
+
+class A {
+  A() { fn(); }
+  virtual void fn() { _n = 1; }
+  int getn() { return _n; }
+  int _n;
+};
+class B : public A
+{
+  B() : A() {}
+  virtual void fn() { _n = 2; }
+};
+  B b;
+  int n = b.getn(); // 1
+
+If construct fails, user is supposed to handle issue and destructor is not called.
+
+There is a notion of conversion constructor, a constructor that takes one parameter and allows automatic
+conversion to the class being constructed. It can be disabled, by making such constructor explicit
+
+class Test {
+   int x; 
+   Test(int i) {x = i;} 
+};
+Test t(20);
+t = 30; // conversion constructor is called here. 
+
+Constructor cannot be vritual. Virtual is mechanism allowing us to call a function knowing only interface
+of class without having to know exect type of the object. There are numerous reasons why there can be no
+virtual costructs:
+1. Constructor requires full information about class for allocation and initialization while virtual
+   means that we have only interface. As well, it is not clear how it would work, which dynamic type is
+   choosen.
+
+There is an idiom called virtual construct that involves calling virtual interface name clone.
+class Base {
+    virtual Base* clone() { return (new Base(*this)); }
+};
+class Derived: public Base{
+    virtual Derived* clone() { return (new Derived(*this)); }
+};
+void foo(Base *b) {
+    // Base *tmp = new Base(b); // Does not what you would expect, b is sliced
+    Base *tmp = b->clone();
+}
+Derived d;
+foo(d):
+
+Ability to overload function when return type differ but one is derived from another is called co-variant
+return type.
+
+TODO: There is virtual constructor in other languages, how does it work
+---------------------------------------------------------------------------------------------------------
+                      Constructor Member Initializer List.
+---------------------------------------------------------------------------------------------------------
+Member initializer lists allow us to initialize our members rather than assign values to them.
+It is a special syntax used to initialized base classes in inheritance and member variables. One important
+use case is initialization of const pointers and references since they are supposed to be intialized with
+declaration without further possibility to be changed. The syntax is following:
+
+class foo {
+    const int *iPtr;
+    int &iRef;
+    foo(int *ptr): iPtr(ptr), iRef(ptr) { ... };
+};
+
+List is inserted after the constructor parameters, beginning with a colon(:) and then lists each variable
+to initialize along witht the value for that variable separated by a comma.
+NOTE: member variable and parameter may have the same name, it is not ambiguos in this context, however
+you will need to explicitly use variable through *this in the constructor body.
+It can be used as alternative mechanism to provide default value
+
+foo(): member1(default_value), member2(default_value) {}
+
+Note, it is different from 
+
+foo(val1 = default_value, val2 = default_value): member1(val1), member2(val2) {}
+
+Variables are initialized not in list order but in order they were declared. You need to be carefull
+avoiding variables that depends on each other during initialization. Otherwise you will have quite
+unnoticable bug that won`t be explicitly warned by some compilers without all warnings enabled.
+
+---------------------------------------------------------------------------------------------------------
+                              Constructor delegation
+---------------------------------------------------------------------------------------------------------
+Often you find yourself duplicating some part of code to all constructors which is not cool. There is a
+solution which lets you call multiple constructors but create only one object, therefore you can leave
+some common code in one constructor and some instane specific in another construct. This mechanism is
+called constructor delegation. For instance.
+
+class foo {
+public:
+    foo() {
+        // code A
+    }
+    foo (args) {
+        // code A
+        // code B
+    }
+};
+
+Instead, you can write next
+
+class foo {
+public:
+    foo() {
+        // code A
+    }
+    foo (args): foo() {     // Call default construcor first
+        // code B
+    }
+};
+
+Since this feature is avaialable only starting with C++11, you may mimic such functionality by putting
+common logic in a separate method and calling it. This reduces code duplication to the minimum.
+---------------------------------------------------------------------------------------------------------
+
+https://scc.ustc.edu.cn/zlsc/sugon/intel/ssadiag_docs/pt_reference/references/sc_cpp_pure_virtual_call_in_ctor.htm
+=========================================================================================================
+                                Copy constructor
+=========================================================================================================
+A copy constructor is a special type of constructor used to create a new object as a copy of an existing
+object. If you have previously initialized a variable and want to reasign it from another instnace,
+you will use assignment operator.
+
+class Test {
+    Test() {}
+    Test(const Test &t)
+    {
+        cout<<"Copy constructor called "<<endl;
+    }
+    Test& operator = (const Test &t) 
+    {
+        cout<<"Assignment operator called "<<endl; 
+        return *this; 
+    }
+}
+Test t1, t2;
+t2 = t1;            // assignment operator
+Test t3 = t1;       // copy constructor
+Test t4 (t1);       // copy constructor
+
+Copy consutroctors can be classified by how they initialize instance of a class:
+1. Memberwise/Shallow copy. Performed by default generated copy constructor, each member of the copy is
+   directly initialized from the member of the class being copied, like `this->member = other->member`
+   for each member. In C, this is implicitly performed when you assign one instnace of a struct to another.
+2. Deep copy. When designing classs that is responsible for alocating/dealocating dynamic memory.
+   In this case, member wise copy may give access to resource for instance of another class.
+   As result, both of them may try to dealocate/reinitialize the resource, making program behaviour
+   undefined.
+
+Copy initialization is peformed in a few more cases, except these described above.
+Returing by value, but there are exceptions (copy elision).
+
+Test foo(Test t) {
+    return t;
+}
+Test t1;
+foo(t1);             // Calls copy constructor one to pass instance and once to return
+Test t2 = foo(t1);   // Copy constructor during return is elided.
+
+---------------------------------------------------------------------------------------------------------
+                               Preventing copying
+---------------------------------------------------------------------------------------------------------
+You may want to have some class that can`t be copy initialized, for instance some global supervisor or
+singleton. Another common example it the cout/cin stream which are expected to have one instance for an
+entire program. To do this, you need to make copy constructor private or deleted.
+
+---------------------------------------------------------------------------------------------------------
+                                  Copy elision
+---------------------------------------------------------------------------------------------------------
+class foo{
+    foo(){ cout << "Constructor" << std::endl; }
+    foo(const foo&) { cout << "Copy constructor" << std::endl; }
+};
+foo instance(foo());
+
+Firstly, we intialize anonymous object and then copy initialize `instance` from it. Expected output:
+Constructor
+Copy Constructor
+
+But this is really equals to directly intializing of `instnace` therefore compiler is allowed to skip
+constructor and directly intialize object. Or follwing example
+
+foo make(){
+    return {};
+}
+foo instance = make();
+
+Here, `make` creates returns a temporary value that won`t be changed during the call, therefore it can
+be directly used by instance without copying.
+
+Prior to C++17, copy elision is an optimization the compiler can make. As of C++17, some cases of copy
+elision (including the example above) have been made mandatory. Under the hood, C++17 performs deferred
+temporary materialization. Variable get name and scope at the moment of a assignment and not where
+defined/initialized. During return statement we can see if it is assigned to variable of the same type
+and maybe move resource ownership to it.
+
+Note, if copy construct is not accessible, even if copy elision is valid in that code, compile will
+generate an error, since it is semantically incorrect to use copy constructor in such case.
+
+https://devblogs.microsoft.com/cppblog/guaranteed-copy-elision-does-not-elide-copies/
+=========================================================================================================
+                              Assignment operator
+=========================================================================================================
+Operator used to assign value to already allocated instance of class. It has must to be overloaded as a
+member function. If you define one out of class and compiler generates implicit one, it is ambiguos which
+one should be called.
+---------------------------------------------------------------------------------------------------------
+                                    Pitfalls
+---------------------------------------------------------------------------------------------------------
+C++ allows self asignment
+Is simple case, when object does not hold any dynamically allocated resources, it does no harm except
+wastin processor time. However if instance is holding some pointer, it is a change to shoot yourself in leg.
+
+class foo{
+    char *m_data;
+    foo& operator=(const foo& r) {
+        if(m_data) delete m_data;
+        m_data = r.m_data;              // r.m_data is deleted in previous statement;
+        retunr *this:
+
+    }
+};
+foo f1;
+f1 = f1;
+The solution is to check for self assignment
+foo& operator=(const foo& r) {
+    if(this == &r) {
+        return *this;
+    }
+    if(m_data) delete m_data;
+    m_data = r.m_data;
+}
+
+---------------------------------------------------------------------------------------------------------
+Partial allocation/dealocation of resources when exception is thown
+
+Following code has a problem
+TFoo& TFoo::operator=(const TFoo& that) {
+    if (this != &that) {
+        TSuperFoo::operator=(that);
+        TBar* bar1 = 0;
+        try {
+            bar1 = new TBar(*that.fBar1);
+        }
+        catch (...) {
+            delete bar1;
+            throw;
+        }
+        delete fBar1;
+        fBar1 = bar1;
+    }
+    return *this;
+}
+First of all, you may reasign all values of parent class but then fail to allocate member making object
+half copied. You may wan`t to put assignment after catch, but what if assignment operator can thow?
+The solution is to call parent operator after successfully allocating members.
+
+TFoo& TFoo::operator=(const TFoo& that) {
+    if (this != &that) {
+        TBar* bar1 = 0;
+        try {
+            bar1 = new TBar(*that.fBar1);
+            TSuperFoo::operator=(that);
+        }
+        catch (...) {
+            delete bar1;
+            throw;
+        }
+        delete fBar1;
+        fBar1 = bar1;
+    }
+    return *this;
+}
+
+http://www.icu-project.org/docs/papers/cpp_report/the_assignment_operator_revisited.html
+=========================================================================================================
+                                 Copy elision
+=========================================================================================================
+Copy elision is an optimization implemented by most compilers to prevent extra (potentially expensive)
+copies in certain situations. It makes returning by value or pass-by-value feasible in practice.
+Copy elision can be applied even if copying/moving the object has side-effects, therefore, you shouldn`t
+have critical logic inside copy/move constructor or destructors, as you can`t rely on them being called.
+
+Object need to have public constructor, this ensures that copy elision does not allow copying objects
+which are not normally copyable, e.g. because they have a private or deleted copy/move constructor.
+
+Copy elision happens whenever an object is initialized by copying another object of the same type, and
+the source object is no longer accessible afterwards, e.g. leave current scope. In this case, compiler
+treats it as two objects are holding the same place, just skip the copy constructor and replace the place
+with the new name.
+Under the hood, caller allocated memory for variable and compiler, instead of allocationg new buffer for
+function variable, will use your one. Therefore when function is finished, memory allocated by caller, is
+initialized without need of copying.
+
+There are two major cases where copy elision would happen: returning a local variable inside a function,
+and initializing a variable with a temporary value.
+
+struct C {
+  C() {}
+  C(const C&) { std::cout << "A copy was made.\n"; }
+};
+
+C f() {
+  return C(); //Definitely performs copy elision
+}
+C g() {
+    C c;
+    return c; //Maybe performs copy elision
+}
+int main() {
+  std::cout << "Hello World!\n";
+  C obj = f(); //Copy constructor isn't called
+}
+
+The primary limitation of copy elision is that it applies only during initialization of the destination
+object (i.e. when it’s first created), and requires the source object to be completely inaccessible after
+the copy.
+---------------------------------------------------------------------------------------------------------
+                                     [N]RVO
+---------------------------------------------------------------------------------------------------------
+Copy elision has a couple of forms. The most common form is [N]RVO([Named] Return Value Optimization).
+It involves eliminating the temporary object created to hold a function’s return value.
+If returned value had a name, it is called NRVO, otherwise, RVO or URVO
+As long as there are no two distinct names for the same value, it will not invoke the copy constructor.
+
+struct OneStruct {
+  vector<string> v;
+  OneStruct(vector<string> in) {
+    v.swap(in);
+  }
+};
+
+string GenString() {
+  string result("foo");
+  return result;            // NRVO
+}
+
+string GenString() {
+  return "foo";            // RVO
+}
+
+vector<string> GenVector(int n) {
+  vector<string> result;
+  for (int i = 0; i < n; ++i)
+    result.push_back(GenString());
+
+  return result;
+}
+OneStruct one_struct(GenVector(10));    // No copy constructor called
+
+In the above example, the string can be named as v[0], in[0] or even without name at all (the return
+value of GenString()), but it never has more than one name at a time. The value is passed by two features:
+copy elision and move semantics.
+
+---------------------------------------------------------------------------------------------------------
+                                 [N]RVO vs move
+---------------------------------------------------------------------------------------------------------
+There are three opertations tried to return variable by a value in order: copy/move elision, move, copy.
+Move is performed if elision(RVO) is not applicable. One of requisits of RVO is that return type of function
+and returned variable are the same (what about cv?). If you perform move explicitly, argument type will be
+considered as different.
+RVO's conditions are that:
+Object is of the same type as the function return type.
+Object is local.
+
+T fn() {
+  T t;
+  return std::move (t);     // RVO is not applicable, breaks the first rule
+}
+
+Some compilers may warn you about preventing copy elision.
+
+https://stackoverflow.com/questions/17473753/c11-return-value-optimization-or-move
+https://www.ibm.com/developerworks/community/blogs/5894415f-be62-4bc0-81c5-3956e82276f3/entry/RVO_V_S_std_move?lang=en
+https://www.reddit.com/r/cpp_questions/comments/5ro90i/rvo_vs_stdmove/
+https://developers.redhat.com/blog/2019/04/12/understanding-when-not-to-stdmove-in-c/
+---------------------------------------------------------------------------------------------------------
+                             When should i use it?
+---------------------------------------------------------------------------------------------------------
+Generally speaking, you should prefer simpler, safer, more readable code, and only go for something more
+complex if you have concrete evidence that the complex version performs better and that the difference
+matters. That principle certainly applies to this technique: passing by const reference is simpler and
+safer, so it’s still a good default choice. However, if you’re working in an area that’s known to be
+performance-sensitive, or your benchmarks show that you’re spending too much time copying function
+parameters, passing by value can be a very useful tool to have in your toolbox.
+
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/12953127/what-are-copy-elision-and-return-value-optimization/12953150#12953150
+https://zpjiang.me/2018/08/01/Copy-Elision-in-C/
+https://stackoverflow.com/questions/48955310/how-does-c-abi-deal-with-rvo-and-nrvo
+https://en.cppreference.com/w/cpp/language/copy_elision
+=========================================================================================================
+                                     *This
+=========================================================================================================
+There may be some confusion about how compiler knows on which object its member function was called.
+Under the hood compiler sends used object as the first argument, therefore it is clear which object
+will get modified. This looks something like this.
+
+class foo {
+    int m_i;
+    bar(int i){                  // User defined
+      m_i = i;
+    }
+  //bar(foo* const this, int i){ // Preprocessed by compiler
+  //  this->m_i = i;
+  //}
+
+}
+foo f;
+f.bar(1);
+// bar(&f, 1); // Preprocessed by compiler
+
+Usually, you don`t need to use `this` explicitly except a couple of cases.
+1. If parameter passed to a function has the same name as class member, use this to to make it clear which
+   variable is used.
+2. You want to add/remove cv qualifiers of class object.
+3. You return handle like `this` to object, therefore it is possible to chain multiple function calls.
+
+
+=========================================================================================================
+                                  Rule of 3/5
+=========================================================================================================
+C++ has a special member functions, the ones that are generated on its own. These are: default constructor,
+the destructor, copy constructor, copy assignment operator, move copy constructor and move assignment
+operator. All functions are implicitly inlined, public, and non virtuall except destructor.
+
+If a class defines one (or more) of destructor / copy constuctor / copy assignment operator, it should
+probably explicitly define all three/five. If class has no user defined constructors, compiler will
+automatically generate a public defalt constructor for you. This is sometimes called an implicit constructor.
+
+class foo{
+    // Explicitly defined
+    private:
+     int member = 100;
+    // Implicitly defined
+    // public:
+    // foo(){};
+}
+foo obj;    // Works without explicitly defined constructor
+
+Such constructor is needed to creat POD structes or some simple object that doesn`t require logic in
+constructor. Note, it won`t be implicitly defiend if user has provided any other constructor by himself.
+
+class foo{
+    public: foo(int x){};
+}
+foo obj1(1); // Ok
+foo obj;     // Nok, no appropriate constructor defined
+
+Rule: Provide at least one constructor for your class, even if it’s an empty default constructor.
+
+Member objects are constructed using their defaul constructor before entering constructor body. You
+explicitly choose constructor with `constructor member initializer list`.
+
+---------------------------------------------------------------------------------------------------------
+                              Function dependecies
+---------------------------------------------------------------------------------------------------------
+1. Default constructor. Is genetared only if no constructor is declared by user.
+2. Copy constructor. Is generated only if move constructor/assignment operator are not defined
+3. Copy assignment operator. The same as for copy constructor
+4. Destructor
+5. Move constructor. Genereted if none of other are declared by user.
+6. Move assignment operator. The same as for move constructor.
+Empty class has all functions generated.
+
+---------------------------------------------------------------------------------------------------------
+                        Deleting functions
+---------------------------------------------------------------------------------------------------------
+If you don`t want another developer to call some function, you just make it private or don`t define it.
+But what should you do when function is generated instead of you?
+Before C++98 you would declare such function by yourself, without defining, and make declaration private.
+This approach fails when there are friends. Failure will be postponed untill linkage, providing some
+cpytic error as always.
+Proper way to handle this, is to declare function deleted. In such case no one, even friends, can use
+declared method. Error is generated at compile time, but there is a convention, deleted function are
+public, otherwise some compilers will argue about access specifier instead.
+
+As well, when there is ambiguity for function parameter, and it is expected to be casted by compiler, you
+can explicitly ban such cast. Just delete overload for used parameter.
+
+bool foo(int);
+bool foo(double) = delete;
+foo(1,5);       // compilation error
+
+Another usage is banning some types for templates.
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                     Friend
+=========================================================================================================
+                                    Classes
+---------------------------------------------------------------------------------------------------------
+            Friend class can access private parts of the friendly class.
+Occassionally you want to have data private for some part of you system but public for another, how would
+you do this? Example of such situation: you have two separate classes, one for displaying data another
+for keeping data and hiding it`s implementation details to simlify its maintenance. However it is fine
+for display to know internals of data. Possible solutions: providing separate set of apis that may
+provide all needed information to display but this clutter intreface of class and this function will be
+accessible for all others wich breaks incapsulation. To solve this issue, C++ has mechanism of friend
+classes. Friend class can access private parts of the friendly class.
+
+class Storage{
+private:
+    int m_nValue;
+    double m_dValue;
+public:
+    Storage(int nValue, double dValue) {
+        m_nValue = nValue;
+        m_dValue = dValue;
+    }
+    friend class Display;
+};
+class Display {
+private:
+    bool m_displayIntFirst;
+public:
+    Display(bool displayIntFirst) { m_displayIntFirst = displayIntFirst; }
+    void displayItem(const Storage &storage)
+    {
+        if (m_displayIntFirst)
+            std::cout << storage.m_nValue << " " << storage.m_dValue << '\n';
+        else // display double first
+            std::cout << storage.m_dValue << " " << storage.m_nValue << '\n';
+    }
+};
+ 
+Storage storage(5, 6.7);
+Display display(false);
+display.displayItem(storage);
+
+---------------------------------------------------------------------------------------------------------
+                                   Functions
+---------------------------------------------------------------------------------------------------------
+The same idea can be applied to functions. You can define some normal function or function member of another
+class as friend. Just declare such method in class with keyword `friend` at the beggining. It doesn`t
+matter if it is declared in private/public section of class. Note, we need to pass instance of class to
+such functions since they are not members of class.
+class foo {
+private:
+    int value;
+    friend void bar(foo &obj);
+}
+void bat(foo &obj){
+    obj.value = 10;     // Ok
+}
+
+Situation is more complex for friend member functions, since compiler needs to see full function
+(or class?) definiton, before allowing it as friend, forward declaring class is not working. This may
+involve rearanging of class and some forward declarations, but it can be avoided if classes have
+separate sets of files.
+
+class Storage;
+class Display {
+private:
+    bool m_displayIntFirst;
+public:
+    Display(bool displayIntFirst) { m_displayIntFirst = displayIntFirst; }
+    void displayItem(const Storage &storage)
+    {
+        if (m_displayIntFirst)
+            std::cout << storage.m_nValue << " " << storage.m_dValue << '\n';
+        else // display double first
+            std::cout << storage.m_dValue << " " << storage.m_nValue << '\n';
+    }
+};
+
+class Storage{
+private:
+    int m_nValue;
+    double m_dValue;
+public:
+    Storage(int nValue, double dValue) {
+        m_nValue = nValue;
+        m_dValue = dValue;
+    }
+    friend void Display::displayItem(const Storage &storage);
+};
+ 
+Storage storage(5, 6.7);
+Display display(false);
+display.displayItem(storage);
+
+---------------------------------------------------------------------------------------------------------
+
+Friending is uncommonly used when two or more classes need to work together in an intimate way, or much
+more commonly, when defining overloading operators.
+=========================================================================================================
+                              Operator overloading
+=========================================================================================================
+In C++, operators are implemented as functions. By using function overloading on the operator functions,
+you can define your own versions of the operators that work with different data types (including classes
+that you’ve written). Using function overloading to overload operators is called operator overloading.
+
+You commonly use different operators on different objects, often with different types, without noticing
+that each such operation requires different implementation. For instance you use addition operator to
+add ints, int and float, concatenate string with any special syntax. This primitve operations are
+implemented by compiler (maybe, except string unless it is built in), but there are user defined types
+and it would make sense that user can define all this operators for his objects as well. This is what
+operator overloading used for.
+When you do something like `a+b`, it can be thought as operator+(a,b). Compiler looks at used types and
+determine which version is supposed to be used. It is determined using following algorithm:
+1. If all operands are fundamental types, the compiler calls bult-in routine if one exists.
+   If there is no routine, compilation error is returned.
+2. If any of operands are user data types, the compiler looks to see whether the type has a matching
+   overloaded operator function that it can call. If it can`t find one, it will try to convert one more
+   user data types to fundamental data types so it can use matching built-in operator.
+   Otherwise, compilation error is returned.
+
+---------------------------------------------------------------------------------------------------------
+                                  Limitations
+---------------------------------------------------------------------------------------------------------
+You cannot overload: ternar(?:), sizeof, scope(::), member selector(.) and member pointer selector (.*).
+You can`t create new operators, only overload existing ones.
+At least one of operands must be user defined type => you can`t overload operators for fundamental data types.
+It is not possible to change number of arguments operator supports.
+Operator precedence can`t be changed.
+
+Common mistake: you may won`t to overload ^ to do exponentiation, however, it has lower precedence level
+than the basic arithmetic operators, which causes expressions to evaluate incorrectly.
+
+Rule. When overloading operators, it’s best to keep the function of the operators as close to the original
+      intent of the operators as possible.
+Rule: If the meaning of an operator when applied to a custom class is not clear and intuitive, use a named
+      function instead.
+---------------------------------------------------------------------------------------------------------
+                                 Implementation
+---------------------------------------------------------------------------------------------------------
+There are three ways to overload operators: member function, friend function, normal function.
+To declare operator function you need to define name as `<ret_type> operator<op>(<operands>...)`
+
+---------------------------------------------------------------------------------------------------------
+Friend function is more intuitive for most binary operators, for instance:
+
+class customInteger {
+    int value;
+    customInteger(int val){ value = val };
+    friend customInteger operator+(const customInteger &i1, const customInteger &i2);
+}
+customInteger operator+(const customInteger &i1, const customInteger &i2) {
+    return customInteger(i1.value + i2.value);
+}
+customInteger int1(1);
+customInteger int2(2);
+customInteger sum = int1 + int2;
+
+Not everything can be overloaded as a friend function. The assignment (=), subscript ([]),
+function call (()), and member selection (->) operators must be overloaded as member functions, because
+the language requires them to be. The reasoning is that it prevents from some obscure errors, but not
+clear which exactly. It won`t be change to preserve consistancy.
+
+Note, friend function can be defiend within class, even though it is not a member. This can be done for
+trivial operations but not recommended for something more cumbersome.
+
+https://www.quora.com/C++-Why-do-operators-and-cant-be-overloaded-as-non-member-functions-I-couldnt-find-any-proper-answer
+---------------------------------------------------------------------------------------------------------
+Normal function. Access to private data, provided by friend keyword, may be non needed. In such cases you
+can do the same without declaring friend function within class.
+
+class customInteger {
+    int value;
+    customInteger(int val){ value = val };
+    public: int getValue(){ return value; };
+}
+customInteger operator+(const customInteger &i1, const customInteger &i2) {
+    return customInteger(i1.getValue() + i2.getValue());
+}
+customInteger int1(1);
+customInteger int2(2);
+customInteger sum = int1 + int2;
+
+In general, a normal function should be preferred over a friend function if it’s possible to do so with
+the existing member functions available (the less functions touching your classes’s internals, the better).
+However, don’t add additional access functions just to overload an operator as a normal function instead
+of a friend function!
+
+Rule: Prefer overloading operators as normal functions instead of friends if it’s possible to do so without
+      adding additional functions.
+---------------------------------------------------------------------------------------------------------
+Member function. It is simmilar to friend function variant, except left operand becoming implicit *this
+therefore you binary operators will take only one arguemt.
+class customInteger {
+    int value;
+    customInteger(int val){ value = val };
+    customInteger operator+(const customInteger &i2) {
+        return customInteger(value + i2.value);     // value is member of *this
+    }
+}
+customInteger int1(1);
+customInteger int2(2);
+customInteger sum = int1 + int2;
+
+Not everything can be overloaded as a member function. Operator that require some another class as left
+operand require friend function. For instance, IO operators, stream is always left.
+
+---------------------------------------------------------------------------------------------------------
+                                Pitfalls
+---------------------------------------------------------------------------------------------------------
+There is a concept of parameter inheritence, where pointer/reference to base class is taken, you can
+pass an instance of derived class. This doesn`t work for virtual functions since arguments and return
+type are supposed to be of the same type. Operator is actually inherited but not virtuall.
+This has one use case, you can make parent operator vitual and override withing child. When static
+type of object is parent and dynamic is child, virtual operator will use child implementation.
+
+Another problem that would arise if virtual functions supported parameter inheritance would be function
+oveloading. Let`s suppose that base class has virtual operator and child has overriden version.
+If we try to call this operator and pass child as left argument (this) and parent as right argument,
+this would call overriden version even though right operator is parent, likely, resulting into
+crash/undefined behavioure.
+
+Usually, you don`t need virtuall operator, just call parent version from child is enough.
+https://stackoverflow.com/questions/669818/virtual-assignment-operator-c
+---------------------------------------------------------------------------------------------------------
+Overloading || and &&
+https://www.youtube.com/watch?v=hCGadTsT0S0
+---------------------------------------------------------------------------------------------------------
+                                Definiton lookup
+---------------------------------------------------------------------------------------------------------
+Operators may be overloaded, one important use case is fixing ordering issue.
+customType + int => calls operator+(const customType&, const int&);
+int + customType => calls operator+(const int&, const customType&);
+As you can see, often you need to define two versions of same operator, otherwise expression like
+`int + customType`, wouldn`t find appropriate operator and try converting customType to int, which is
+not what you expect.
+
+---------------------------------------------------------------------------------------------------------
+                                I/O overloading
+---------------------------------------------------------------------------------------------------------
+One of the common cases is shift operator used for printing data. This is done by defining shift operator
+that takes stream as the first operand and data type as the second.
+
+friend std::ostream& operator<< (std::ostream &out, const UserType &instance) {
+    out << "Custom type: "<< instance.member << std::endl;
+    return out; // return stream to allow chaining
+}
+friend std::istream& operator>> (std::istream &in, UserType &instance) {
+    in >> instnace.member;
+    return in;
+}
+
+Note, you need to define separate definition for each class, since it can`t be virtual. Workaround is
+defining a separate virtual function and forwarding arguments to it.
+
+class Base {
+public: Base() {}
+	friend std::ostream& operator<<(std::ostream &out, const Base &b) {
+		return b.print(out);
+	}
+	virtual std::ostream& print(std::ostream& out) const {
+		out << "Base";
+		return out;
+	}
+};
+class Child: public Base{
+public: Child() {}
+	virtual std::ostream& print(std::ostream& out) const {
+		out << "Child";
+		return out;
+	}
+};
+
+Note, that compiler will perform implicit upcast for derived class, therefore there is no need to define
+separate operator for derived class.
+
+---------------------------------------------------------------------------------------------------------
+                              Comparsion operators
+---------------------------------------------------------------------------------------------------------
+Quite often it is not clear how to apply less or greater operator to objects, therfore, it is recommended
+to avoid defining them. However, it may have some sense to sort object buy some criteria. Often, this
+is done by some algorithm provided by standart library, however, it`s required to have a way of comparing
+objects. In this case you can define comparsion operators.
+
+---------------------------------------------------------------------------------------------------------
+                          Prefix && Postfix operators
+---------------------------------------------------------------------------------------------------------
+There are actually two versions of the increment and decrement operators: a prefix increment and decrement
+(e.g. ++x; --y;) and a postfix increment and decrement (e.g. x++; y--;). 
+Because the increment and decrement operators are both unary operators and they modify their operands, 
+they’re best overloaded as member functions.
+
+class customInteger {
+    int value;
+    customInteger(int val){ value = val };
+    customInteger operator++() {   // prefix
+        value++;
+        return this;
+    }
+    customInteger operator--() {   // prefix
+        value--;
+        return this;
+    }
+    customInteger operator++(int) {   // postfix
+        int tmp = value;
+        ++(*this);
+        return this;
+    }
+    customInteger operator--(int) {  // postfix
+        int tmp = value;
+        --(*this);
+        return this;
+    }
+}
+
+Note that we’ve distinguished the prefix from the postfix operators by providing an integer dummy parameter
+on the postfix version. Because the dummy parameter is not used in the function implementation, we don`t
+have to name it.
+---------------------------------------------------------------------------------------------------------
+                                Unary operators
+---------------------------------------------------------------------------------------------------------
+Sometimes you will have operators taking one operand, called unary operators. There are following unary
+operators: positive(+), negative(-) and logical not (!). Because they only operate on the object they are
+applied to, typically unary operator overloads are implemented as member functions.
+
+class customInteger {
+    int value;
+    customInteger(int val){ value = val };
+    customInteger operator+() {
+        return +value;
+    }
+    customInteger operator-() {
+        return -value;
+    }
+    customInteger operator!() {
+        return !value;
+    }
+}
+
+customInteger i(0);
+if (!i) { std::cout << "Null" << std::endl; }
+if (-i > 0) { std::cout << "Negative" << std::endl; }
+if (+i > 0) { std::cout << "Positive" << std::endl; }
+
+---------------------------------------------------------------------------------------------------------
+                               Subscript operator
+---------------------------------------------------------------------------------------------------------
+When working with arrays, we typically use the subscript operator[] to index specific elements of an array.
+There are couple moments to be considered if you want to write it right.
+
+class Array{
+    int arr[10];
+public:
+    int& operator[](int index) {
+        assert( index >= 0 && index < 10 )
+        return arr[index];
+    }
+    const int& operator[](int index) const {
+        assert( index >= 0 && index < 10 )
+        return arr[index]
+    }
+}
+
+This operator is commonly expect to return array pointer on index position making it possible to assign
+value (subscript has higher precedence then assignment).
+If you have const object, don`t miss that returned value should be const as well.
+
+This can used for error checking, however, there is convention that subscript doesn`t fail. If invalid
+argument is passed, it will terminate the program. If you don`t want to terminate program, define method
+int& at(int index), which performs checking and throws if something goes wrong or returns NULL.
+
+Don`t mix pointer to objects and overloaded []. For instance:
+Array *arr = new Array();
+arr[0] = 1;    // You dereference Array[] instead of calling operator[] on one instance
+               // If index used is higher that size of dynamically alocated array, you`r lucky, crash
+               // If index in range, you`r unlucky, undefined behaviour
+(*arr)[0] = 1; // Ugly but OK
+
+Note, that operator parameter is not supposed to be exactly integer. It is up to you which type is passed.
+
+---------------------------------------------------------------------------------------------------------
+                                  Parenthesis
+---------------------------------------------------------------------------------------------------------
+All of operators have predefined number of parameters except perenthesis operator.
+Keep in mind, it needs to be a member function.
+
+class Matrix {
+    double& operator()(int row, int col);
+};
+
+double& Matrix::operator()(int row, int col)
+{
+    assert(col >= 0 && col < 4);
+    assert(row >= 0 && row < 4);
+    return data[row][col];
+}
+Marix m;
+m(0,1) = 1;
+
+It is strongly discouraged to be used since it is rarelly clear what operator is doing without look under
+the hood. However, it is commonly used for special type of object called functors (function object) that
+operate like a function with state.
+
+class Accumulator {
+    int m_counter = 0;
+    int operator() (int i) { return (m_counter += i); }
+};
+Accumulator acc;
+std::cout << acc(10) << std::endl; // prints 10
+std::cout << acc(20) << std::endl; // prints 30
+
+---------------------------------------------------------------------------------------------------------
+                                Which to choose
+---------------------------------------------------------------------------------------------------------
+When dealing with binary operators that don’t modify the left operand (e.g. operator+), the normal or
+friend function version is typically preferred, because it works for all parameter types (even when the
+left operand isn’t a class object, or is a class that is not modifiable). The normal or friend function
+version has the added benefit of “symmetry”, as all operands become explicit parameters (instead of the
+left operand becoming *this and the right operand becoming an explicit parameter).
+
+When dealing with binary operators that do modify the left operand (e.g. operator+=), the member function
+version is typically preferred. In these cases, the leftmost operand will always be a class type, and
+having the object being modified become the one pointed to by *this is natural. Because the rightmost
+operand becomes an explicit parameter, there’s no confusion over who is getting modified and who is getting
+evaluated.
+
+Unary operators are usually overloaded as member functions as well, since the member version has no parameters
+---------------------------------------------------------------------------------------------------------
+                                    Typecast
+---------------------------------------------------------------------------------------------------------
+User-defined conversions allow us to convert our class into another data type.
+Image that you have some simple class and it would make sence to be able converting it to some fundamental
+type, for instance you have RGB class and you can convert it as alternative representation of int. Or maybe
+convert it to string describing color.
+
+struct RGB{
+    int r,g,b;
+    operator char*() {...};
+    operator int(){...};
+    operator HSL() {...};
+    operator HexString() {...};
+}
+void print(char*);
+RGB color{0,0,0};
+print(color);           // converts to char* "Black"
+int int_color = color   // returns all colors packed into int
+
+Things to note:
+1. To overload the function that casts our class to an int, we write a new function in our class called
+   operator int(). Note that there is a space between the word operator and the type we are casting to.
+2. User-defined conversions do not take parameters, as there is no way to pass arguments to them.
+3. User-defined conversions do not have a return type. C++ assumes you will be returning the correct type.
+
+=========================================================================================================
+                                  Inheritance
+=========================================================================================================
+Object composition is perfect for building new objects that have a “has-a” relationship with their parts.
+Another way is through inheritance, which models an “is-a” relationship between two objects.
+Unlike object composition, which involves creating new objects by combining and connecting other objects,
+inheritance involves creating new objects by directly acquiring the attributes and behaviors of other
+objects and then extending or specializing them. The idea, as well as for other relations, was taken from
+like, for intance you inherete genes from your parents.
+
+---------------------------------------------------------------------------------------------------------
+                               Construction order
+---------------------------------------------------------------------------------------------------------
+Instnace of class is devided into parent parts and child. A parent is the first to be initialized and
+last to be freed, this is a side effect of memory layout. Be carefull with member intialization lists
+since they intialize member in order they were declared.
+Child is responsible for calling wanted parent constructor, otherwise default one is used. This can be
+done with constructor forwarding. It is important, since there are reference or const variables that can
+only be intialized form constuctor member initialization list. After that, Child left to initalize it`s
+own fields. 
+---------------------------------------------------------------------------------------------------------
+                                Access specifiers
+---------------------------------------------------------------------------------------------------------
+Private. Child class can`t access private data of parent directly.
+Protected. Members are not accessible for outside of the class but accessible for childs and friend classes.
+This should be used with care, since every time you change protected member, you have to change it`s usage
+withing childs and friends.
+
+---------------------------------------------------------------------------------------------------------
+                                    Types
+---------------------------------------------------------------------------------------------------------
+There are three different ways for classes to inherit from other classes: public, private, and protected.
+Default is private for class and public for struct.
+When members are inherited, the access specifier for an inherited member may be changed (in the derived
+class only) depending on the type of inheritance used. Put another way, members that were public or
+protected in the base class may change access specifiers in the derived class.
+
+Keep in mind the following rules:
+1. A class can always access its own (non-inherited) members.
+2. The public accesses the members of a class based on the access specifiers of the class it is accessing.
+3. A class accesses inherited members based on the access specifier inherited from the parent class.
+   This varies depending on the access specifier and type of inheritance used.
+
+Public inheritance works as decribed above. Private inheritance makes all members of parent to be private.
+Note that this does not affect the way that the derived class accesses members inherited from its parent!
+It only affects the code trying to access those members through the derived class.
+
+class Base {
+public: int m_public;
+private: int m_private;
+protected: int m_protected;
+};
+ 
+class Pri: private Base {
+public:
+    Pri()
+    {
+        m_public = 1; // okay: m_public is now private in Pri
+        m_private = 2; // not okay: derived classes can't access private members in the base class
+        m_protected = 3; // okay: m_protected is now private in Pri
+    }
+};
+    Base base;
+    base.m_public = 1; // okay: m_public is public in Base
+    base.m_private = 2; // not okay: m_private is private in Base
+    base.m_protected = 3; // not okay: m_protected is protected in Base
+ 
+    Pri pri;
+    pri.m_public = 1; // not okay: m_public is now private in Pri
+    pri.m_private = 2; // not okay: m_private is inaccessible in Pri
+    pri.m_protected = 3; // not okay: m_protected is now private in Pri
+
+Private inheritance can be useful when the derived class has no obvious relationship to the base class,
+but uses the base class for implementation internally. In such a case, we probably don’t want the public
+interface of the base class to be exposed through objects of the derived class (as it would be if we
+inherited publicly). In practice, private inheritance is rarely used.
+
+Protected inheritance is the last method of inheritance. It is almost never used, except in very particular
+cases. With protected inheritance, the public and protected members become protected, and private members
+stay inaccessible.
+
+---------------------------------------------------------------------------------------------------------
+                                   Destructor
+---------------------------------------------------------------------------------------------------------
+When a derived class is destroyed, each destructor is called in the reverse order of construction.
+
+---------------------------------------------------------------------------------------------------------
+                              Functionality hiding
+---------------------------------------------------------------------------------------------------------
+There is no way to remove or restrict functionality from a base class without modifing code. However, in
+a derived class, it is possible to hide functionality that exists in the base class so it can not be
+accesswd through the derived class. This can be done by changing the relevant access specifier. Another
+soultion is to inherit privately or mark publicly inherited functionality as deleted.
+
+---------------------------------------------------------------------------------------------------------
+                           Changing access specifiers
+---------------------------------------------------------------------------------------------------------
+C++ gives us the ability to change an inherited member’s access specifier in the derived class. This is
+done by using a using declaration to identify the (scoped) base class member that is having its access
+changed in the derived class, under the new access specifier.
+
+class Base {
+private: int m_value;
+public: Base(int value) : m_value(value) {}
+protected: void printValue() { std::cout << m_value; }
+};
+
+class Derived: public Base {
+public: Derived(int value) : Base(value) { }
+    // Base::printValue was inherited as protected, so the public has no access
+    // But we're changing it to public via a using declaration
+    using Base::printValue; // note: no parenthesis here
+};
+    Derived derived(7);
+    derived.printValue(); // prints 7
+
+Note, derived class can`t change access specifier of members it has not access to (private members).
+Syntax used above is C++11 variant and there is variant without `using` used in some older codebase.
+
+---------------------------------------------------------------------------------------------------------
+                              Mutiple Inheritance
+---------------------------------------------------------------------------------------------------------
+Multiple inheritance enables a derived class to inherit members from more than one parent. This may seem
+to be quite use full for free but really it is a source for much of ambiguity. For instance
+class USBDevice {
+private: long m_id;
+public: USBDevice(long id) : m_id(id) { }
+        long getID() { return m_id; }
+};
+class NetworkDevice {
+private: long m_id;
+public: NetworkDevice(long id) : m_id(id) { }
+        long getID() { return m_id; }
+};
+class WirelessAdapter: public USBDevice, public NetworkDevice {
+public: WirelessAdapter(long usbId, long networkId) : USBDevice(usbId), NetworkDevice(networkId) {}
+};
+    WirelessAdapter c54G(5442, 181742);
+    std::cout << c54G.getID(); // Which getID() do we call?
+
+Multiple classes may provide function with the same name and declaration making it ambiguos which one to
+call. Definition can be explicitly choosen with scope operator but it`s primary purpose is different and
+you should avoid it in such context.
+
+most of the problems that can be solved using multiple inheritance can be solved using single inheritance
+as well. Many object-oriented languages (eg. Smalltalk, PHP) do not even support multiple inheritance.
+Many relatively modern languages such as Java and C# restrict classes to single inheritance of normal
+classes, but allow multiple inheritance of interface classes (which we will talk about later). The driving
+idea behind disallowing multiple inheritance in these languages is that it simply makes the language too
+complex, and ultimately causes more problems than it fixes.
+
+It should be used judiciously. Example of usage is stream library.
+
+---------------------------------------------------------------------------------------------------------
+                                     Final
+---------------------------------------------------------------------------------------------------------
+If you want to prevet class from being inherited, use final keyword.
+struct Base1 final {};
+struct Derived1 : Base1 {}; // ill-formed because the class Base1 has been marked final
+
+---------------------------------------------------------------------------------------------------------
+                              Virtual Inheritance
+---------------------------------------------------------------------------------------------------------
+There is a famouse diamond problem, when you have a common base amoung parent classes. In this situation
+it is not clear whether you want to access Base part through one parent class or another.
+
+class A { };
+class B:public A { };
+class C:public A { };
+class D:public B, public C { };
+
+You can ask compiler to avoid duplication of such base using virtual inheritance. But another problem
+arisses, who is responsible for initialization of such base class. The answeel is the the most derived
+class has the most information and he is responsible for inializing both parents and base. If parents
+call base constructor during initialization, it will be ignored in this case.
+All classes inheriting a virtual base class will have a virtual table, even if they would normally not
+have one otherwise, and thus be larger by a pointer.
+
+class B : virtual public A { };
+class C : virtual public A { };
+class D : public B, public C {
+    D():B(),C(),D(){
+        ...
+    }
+};
+
+int main()
+{
+    D obj;
+    obj.show();
+}
+
+=========================================================================================================
+                                    Binding
+=========================================================================================================
+Binding generally refers to a mapping of one thing to another. In the context of compiled languages,
+binding is the link between a function call and the function definition. When a function is called in C++,
+the program control binds to the memory address where that function is defined.
+There are two type of binding
+- Static. Requested function call is determined at compile time and funcion addresses are linked at compile
+  time. It is performed when there is all neede information at time of compilation. Usual function,
+  overloaded operators/functions are statically binded.
+- Dynamic. Needed function is determined at runtime, e.g. through virtual methods. This makes code more
+  flexible but decreases execution speed, since time is spent for dispatch table allocation and method lookup?
+
+=========================================================================================================
+                               Virtuall Functions
+=========================================================================================================
+For every class that contains virtual functions, the compiler constructs a virtual table, a.k.a vtable.
+The vtable contains an entry for each virtual function accessible by the class and stores a pointer to its
+definition. Only the most specific function definition callable by the class is stored in the vtable.
+Entries in the vtable can point to either functions declared in the class itself, or virtual functions
+inherited from a base class. That vtables exist at the class level, meaning there exists a single vtable
+per class, and is shared by all instances. Each instance has a vpointer for it`s vtable so it can to
+dispatch method. When a call to a virtual function on an object is performed, the vpointer of the object
+is used to find the corresponding vtable of the class. Next, the function name is used as index to the
+vtable to find the correct (most specific) routine to be executed. Done!
+
+---------------------------------------------------------------------------------------------------------
+                                Vtable and Vptr
+---------------------------------------------------------------------------------------------------------
+Vtable is a dispatch table that contains addresses to all last overriden definitions of class. It is
+instantiated once per class, not object. Each object has a pointer to it. When you call a virtual function,
+pointer dereferences a table, fetches address of the function and it gets executed.
+Vtable is probably created at compiletime, since all needed information is present.
+Vpointer is probably initialized after construction of base subobjects and before construction of members.
+
+https://stackoverflow.com/questions/3849498/when-is-vtable-in-c-created
+---------------------------------------------------------------------------------------------------------
+                                   Destructor
+---------------------------------------------------------------------------------------------------------
+Usually you want to declare destructor virtual as well, it should clean all derived dynamic types and then
+the base, however, if have destructor method overrided with the definition of dynamic type, how do we
+call destructor for everything. This is probably works as following, compiler inject code before and after
+user defined destructor. Code before is responsible for pointing vptr to corrent table. Code after, cleans
+members objects, by calling theirs destructors, and calls next parent class. It`s enough to clean all
+members at once and then we are left to clean all parents one by one. This may work somewhat different for
+case with virtual inheritance
+
+If we so often want to have virtual destructor, why shouldn`t we make it virtual by default and use some
+identifier to make it no virtual when not needed. Well, default destructor would require generating
+vtable/pointer for even POD classes which would be high overhead for nothing. As well this would break
+already existing code. Another reason, it quite common to have POD or base classes that has no usage
+of virtual destructor.
+
+Calling non virtuall destructor when you have derived dynamic type is undefined behaviour.
+
+https://softwareengineering.stackexchange.com/questions/284561/when-not-to-use-virtual-destructors
+https://stackoverflow.com/questions/7750280/how-does-virtual-destructor-work-in-c
+---------------------------------------------------------------------------------------------------------
+                               Override specifier
+---------------------------------------------------------------------------------------------------------
+If you want to be sure that class is overriding parents function, use override identifier
+
+class base {
+    virtual int foo(float x) = 0; 
+};
+class derived: public base {
+     int foo(float x) override { ... do stuff with x and such ... }
+}
+class derived2: public base {
+     int foo(int x) override { ... }    // Error
+};
+
+If you want to prevent function overriding, use final identifier
+
+struct Base2 { virtual void f() final; };
+struct Derived2 : Base2 {
+    void f(); // ill-formed because the virtual function Base2::f has been marked final
+};
+
+As well, it let`s compiler perform some optimizations, like function inlining.
+NOTE: neither override nor final are language keywords. They are technically identifiers; they only gain
+special meaning when used in those specific contexts. In any other location, they can be valid identifiers.
+int const final = 0;     // ok
+int const override = 1;  // ok
+
+---------------------------------------------------------------------------------------------------------
+                                     Final
+---------------------------------------------------------------------------------------------------------
+There may be cases where you don’t want someone to be able to override a virtual function, or inherit from
+a class. The final specifier can be used to tell the compiler to enforce this. User trying to override it
+will receive a compilation error
+
+class A {
+public: virtual const char* getName() { return "A"; }
+};
+class B : public A {
+public:
+	// note use of final specifier on following line -- that makes this function no longer overridable
+	virtual const char* getName() override final { return "B"; } // okay, overrides A::getName()
+};
+class C : public B {
+public: virtual const char* getName() override { return "C"; }
+                                      // compile error: overrides B::getName(), which is final
+};
+
+---------------------------------------------------------------------------------------------------------
+                Parameter inheritance and covariant return type
+---------------------------------------------------------------------------------------------------------
+Virtuall functions support covariant return type, meaning that parent and child has the same virtual function
+but parent return ptr/ref to it instance if parent class and child does the same but for instnace of child
+class. Even though it is require for functions to have same declaration, this two will be considered the
+same.
+However, this doesn`t work with parameter iheritance. Parameter inheritance means that you can pass ptr/ref
+to child where parent is require, this works for simple function but not for virtual. That is the reason
+why operator are inherited but not overriding child ones, they are considered to be different functions.
+
+---------------------------------------------------------------------------------------------------------
+                             Pure virtual functions
+---------------------------------------------------------------------------------------------------------
+There is an option to make function virtual without defining its body and force child to define it.
+Just assign 0 to virtual function (doesn`t work with non virtual ones). Such function is called pure
+virtual function and class an abstract base class, which means it can not be instantiated.
+
+A pure virtual function is useful when we have a function that we want to put in the base class, but only
+the derived classes know what it should return. A pure virtual function makes it so the base class can not
+be instantiated, and the derived classes are forced to define these functions before they can be
+instantiated.  This helps ensure the derived classes do not forget to redefine functions that the base
+class was expecting them to.
+
+Pure virtual function may have body defined, providing default implementation for child classes. Note,
+it requires to be explicitly called since child should define function by itself. Such definition must
+be provided separetly and not inline.
+
+---------------------------------------------------------------------------------------------------------
+                                Interface class
+---------------------------------------------------------------------------------------------------------
+An interface class is a class that has no member variables, and where all of the functions are pure virtual!
+In other words, the class is purely a definition, and has no actual implementation. Interfaces are useful
+when you want to define the functionality that derived classes must implement, but leave the details of
+how the derived class implements that functionality entirely up to the derived class.
+Interface classes are often named beginning with an I. Here’s a sample interface class:
+
+class IErrorLog {
+public:
+    virtual bool openLog(const char *filename) = 0;
+    virtual bool closeLog() = 0;
+    virtual bool writeError(const char *errorMessage) = 0;
+    virtual ~IErrorLog() {} // make a virtual destructor in case we delete an IErrorLog pointer, so the proper derived destructor is called
+};
+
+Note, parameter inheritance works with interfaces therefore you may use ptr/ref for instnace of interface.
+---------------------------------------------------------------------------------------------------------
+                                Pitfalls
+---------------------------------------------------------------------------------------------------------
+Default values are not inherited. Which default is used -- ie, the base class' or a derived class' -- is
+determined by the static type used to make the call to the function. If you call through a base class
+object, pointer or reference, the default denoted in the base class is used. Conversely, if you call
+through a derived class object, pointer or reference the defaults denoted in the derived class are used.
+
+struct A {
+  virtual void f(int a = 7);
+};
+struct B : public A {
+  void f(int a);
+};
+  B* pb = new B;
+  A* pa = pb;
+  pa->f(); //OK, calls pa->B::f(7)
+  pb->f(); //error: wrong number of arguments for B::f()
+
+https://stackoverflow.com/questions/3533589/can-virtual-functions-have-default-parameters
+---------------------------------------------------------------------------------------------------------
+https://stackoverflow.com/questions/8824587/what-is-the-purpose-of-the-final-keyword-in-c11-for-functions
+=========================================================================================================
+                             New && Delete
+=========================================================================================================
+To allocate a signle variable dynamicallym we use the scalar (non-array) form of the new operator, you
+can initialize it the same time:
+int *ptr = new int;
+int *ptr = new int (1);
+int *ptr = new int {1};
+delete ptr;
+
+Pointer that points to deallocated memory is called a dangling pointer. Dereferencing or deleting it leads
+to undefined behaviour. But deleting nullpts is has no sideefects, there it is preferable to null pointer
+after cleaning it for the first time.
+int *ptr = new int;
+delete ptr;
+std::cout << "Value of dungling pointer " << ptr
+
+If new fails to allocate memory, it throws bad_alloc which is quite cumbersome to handle. You can make
+new return `nullptr` instead using `new (std::nothrow) type`.
+
+It is posible to allocate/dealocate arrays at runtime of variable lenght by using brackets.
+int *ptr = new type[lenght];
+int *ptr = new type[lenght]();              // 0 initialized
+int *ptr = new type[lenght]{1, 2, 3, 4};
+char *ptr = new type[lenght]{"String"};
+delete[] ptr;
+
+NOTE: calling delete[] after new or delete after new[] is undefined behaviour.
+Exception. typedef T type[N]; T * pT = new type; delete[] pT;
+
+---------------------------------------------------------------------------------------------------------
+                                   Reasoning
+---------------------------------------------------------------------------------------------------------
+One the reasons to have a `new` operator is, that we need to cast void* returned from malloc resulting to
+int *p = static_cast<int*>(malloc(sizeof(*p)));
+which is quite unsafe and ugly, therefore it can more cleanly written as
+int *p = new int;
+
+---------------------------------------------------------------------------------------------------------
+                                 Placement new
+---------------------------------j------------------------------------------------------------------------
+Operator new performs both allocation and intialization but what if you need only to allocate memory and
+use it later. You can use malloc or preferable way is to use special variant of operator new, called
+placement new. For instance, you have an dynamically allocated array of data that is oftern freed and
+then allocated againt with different content. It would be much fuster to initialize/deinitialize memory
+without allocating it each time. Another use case, you have a piece of code that shouldn`t fail,
+therefore, all buffers are allocated before.
+
+char *buf  = new char[sizeof(string)];        // pre-allocated buffer
+string *p = new (buf+offset) string("hi");    // placement new
+string *q = new string("hi");                 // ordinary heap allocation
+p->~String();                                 // deinitializing the memory
+
+NOTE: this is the one moment when you can explicitly call destructor on instance.
+
+https://stackoverflow.com/questions/222557/what-uses-are-there-for-placement-new
+---------------------------------------------------------------------------------------------------------
+                                      This
+---------------------------------------------------------------------------------------------------------
+It is legal to delete `this` but it becomes dangling after that therefore you shouldn`t dereference it
+after. This include implicit dereferencing unsing member variables. It usually found in reference-conted
+classes that, when the ref-count is decremented to 0, calls release function and deletes this.
+
+It is considered to be bad idea, since it is easy to accidentally use member variables after delete or
+caller function may not expect that object was deleted. As well, it means that your code might not have a
+symemetric strategy for object ownership (who allocates and who deletes).
+
+As well, you can`t use `delete this` in a destructor, since it result to infinit loop.
+Don`t forget, object should be allocated with new before deleting.
+
+https://stackoverflow.com/questions/550189/is-it-safe-to-delete-this
+=========================================================================================================
+                                 Object slicing
+=========================================================================================================
+This problem can be faced with data wrappers like vectors, lists.
+std::vector<Base> v;
+v.push_back(Base(5));    // add a Base object to our vector
+v.push_back(Derived(6)); // derived is sliced to base
+
+You may try to use refernence or pointer and that is the last one is valid but it is not fully clear how
+to apply refernce in such case. The stundart library provied a usefull workaround: the reference_wrapper.
+It is a class that works like a reference but allows assignment and copying. When you create
+reference_wrapped object, it can`t be anonymous since it would result to dungling pointer, as well, you
+to get object from wrapper before using.
+std::vector<std::reference_wrapper<Base> > v;
+Base b(5); // b and d can't be anonymous objects
+Derived d(6);
+v.push_back(b); // add a Base object to our vector
+v.push_back(d); // add a Derived object to our vector
+// Print out all of the elements in our vector
+for (int count = 0; count < v.size(); ++count)
+    // we use .get() to get our element from the wrapper
+     std::cout << "I am a " << v[count].get().getName() << " with value " << v[count].get().getValue() << "\n";
+
+Another common issue is trying to assign dynamic type though static.
+Derived d1(5);
+Derived d2(6);
+Base &b = d2;
+b = d1; // this line is problematic
+
+This assignments calls base class assignment operator. There’s no easy way to prevent this from happening,
+usually you will try to avoid such situation. Othwise, you have an option to provide virtual assignment
+operator for child case.
+
+=========================================================================================================
+                                    Casting
+=========================================================================================================
+There are following casts in C++: static_cast, dynamic_cast, reinterpret_cast, cost_cast.
+It is preferred to use C++ casts over C style casts, since C++ style casts are checked by the compiler,
+while C style casts aren't and can fail at runtime. As well C++ casts can make intent of developer more
+clear.
+
+---------------------------------------------------------------------------------------------------------
+Static_cast
+---------------------------------------------------------------------------------------------------------
+Static_cast. This is a formal form of implicit conversion, with a few restrictions and additions.
+This cast performs no runtime check, therefore it is expected that you know that you refer to an object
+of a specific type, and thus check wiuld be unnecessary. Should be used instead of C style casting.
+Should be used for upcasting and can be used with care for downcasting, you should be certain that there
+is a child part and it`s type, otherwise undefined behaviour. Developer may be tempted to wrap usage of
+static cast into some form of RTTI which is bad idea in terms of code quality/performance.
+
+void func(void *data) {
+  MyClassBase *b = static_cast<MyClassBase*>(data);
+  MyClassChild *c = static_cast<MyClassChild*>(b);
+  ...
+}
+
+Don`t do the following
+
+enum ClassID
+{
+	BASE,
+	DERIVED
+	// Others can be added here later
+};
+virtual ClassID getClassID() {...}
+Base *b = getObject(true);
+if (b->getClassID() == DERIVED)
+{
+	// We already proved b is pointing to a Derived object, so this should always succeed
+	Derived *d = static_cast<Derived*>(b);
+	std::cout << "The name of the Derived is: " << d->getName() << '\n';
+}
+
+---------------------------------------------------------------------------------------------------------
+Dynamic_cast
+---------------------------------------------------------------------------------------------------------
+Dynamic_cast. Used when you don`t know what the dynamic type of object is. It returns a null pointer if
+the object referred to doesn`t contain the type casted to as a base class (when you cast to reference,
+a bad_cast exception is thrown in that case). It is more safe then static_cast but has considerable
+performance overhead.
+
+if (Class1 *c1 = dynamic_cast<Class1*>(&data)) {
+  ...
+} else if (Class2 *c2 = dynamic_cast<ExprStm*>(&data)) {
+  ...
+}
+
+try
+{
+  MyChild &child = dynamic_cast<MyChild&>(*base);
+}
+catch(std::bad_cast &e) 
+{
+  std::cout << e.what(); // bad dynamic_cast
+}
+
+Note, you can`t use dynamic_cast for downcast when argument is not polymorphic (class without virtual
+functions). It is probably an undefined behaviour?
+
+In general, using a virtual function should be preferred over downcasting. However, there are times when
+downcasting is the better choice:
+1. When you can not modify the base class to add a virtual function (e.g. because the base class is part
+   of the standard library)
+2. When you need access to something that is derived-class specific (e.g. an access function that only
+   exists in the derived class)
+3. When adding a virtual function to your base class doesn’t make sense (e.g. there is no appropriate
+   value for the base class to return). Using a pure virtual function may be an option here if you don’t
+   need to instantiate the base class.
+
+---------------------------------------------------------------------------------------------------------
+Reinterpret_cast
+---------------------------------------------------------------------------------------------------------
+Reinterpret_cast. The same as C-style cast, is simply perform a binary copy of the data without altering
+the underlying bit patter.
+
+char c = 10;
+int *r = reinterpret_cast<int*>(&c); # takes address of character and converts it to int pointer
+
+---------------------------------------------------------------------------------------------------------
+Const_cast
+---------------------------------------------------------------------------------------------------------
+Const_cast. Used to remove/add cv modifier. Casting const away may let you to change value of variable
+but doing so is still invalid code that may cause a run-time error (what if variable is located in a
+section of read-only memory). It is used for cases, when library function takes non-const variable without
+changing it. Or to prevent code duplication, you can define const variant and call it from nonconst by
+casting `this` pointer. Or if you want to force usage of const function during function overloading.
+
+Const and Volatile are orthogonal. Const means the data is read-only and is probably in read-only memory.
+Volatile means the variable could be changing due to external reasons so the compiler needs to read the
+variable from memory time it is referenced. Note, you can avoid volatile usage with memory barrier wich
+force the compiler into not caching the variable.
+
+https://stackoverflow.com/questions/2491495/may-volatile-be-in-user-defined-types-to-help-writing-thread-safe-code
+---------------------------------------------------------------------------------------------------------
+C cast
+---------------------------------------------------------------------------------------------------------
+Regular cast (C cast). It is the same to calling all C++ cast in defined order and taking cast that works
+without considering dynamic_cast. It`s really powerfull but not safe. Note, that while reinterpret_cast
+performs bitwise copting, regular cast may be smarted and know how to convert some pritive types so they
+stil have some valid value e.g. if you reinterpret_cast int to float, it will have no sense and value
+will be undefined, C will use convertion rulles, as well as static_cast.
+
+---------------------------------------------------------------------------------------------------------
+                               Upcast && Downcast
+---------------------------------------------------------------------------------------------------------
+There are two possible directions of cast in classes: derived class can be casted to base and base can
+be casted to derived (if it dynamic type allows). Both upcasting and downcasting do not change object by
+itself. When you use upcasting or downcasting you just "label" an object in different ways.
+
+class Employee {};
+class Manager: class Employee {};
+class Clerk: class Employee {};
+
+void do_work(Employee *ptr);
+
+Upcasting is a process of treating a pointer or a reference of derived class object as a base class pointer.
+You do not need to upcast manually. You just need to assign derived class pointer (or reference) to base
+class pointer:
+
+Manager m1;
+Employee *emp = &m1;                    // implicit upcasting
+do_work(m1)                             // implicit upcasting
+do_work(static_cast<Employee*>(m1));     // explicit upcast
+
+Downcasting is an opposite process for upcasting. It converts base class pointer to derived class pointer.
+Downcasting must be done manually. It means that you have to specify explicit type cast. This one is
+unsafe and requires explicit cast as well check if it was successfull.
+
+Employee* emp = new Manager();
+Manager* m = (Manager*)(emp);   // C style, not safe, prefer dynamic cast
+
+Dynamic_cast work is type of RTTI (Run-time Type identification), it answers the question of whether we
+cas safely assign the address of an object to a pointer of particular type. There is one more operator
+for RTTI called `typeid()`. It provides some compiler dependent output that can be used as follows
+
+if (typeid(Class) == typeid(object_of_class)) {
+    Class *ptr = (Class*)&object_of_class;
+    ptr->doWork();
+}
+
+It returns of object of type_info class object. Usually, you want to avoid any form of RTTI in production
+code, but it feasable for testing purposes. For instance you may have test to see if factory returns
+expected class. If you find yourself needing to write code that behaves differently based on the class of
+an object, consider one of the following alternatives to querying the type:
+- Virtual methods are the preferred way of executing different code paths depending on a specific subclass
+  type. This puts the work within the object itself.
+  If the work belongs outside the object and instead in some processing code, consider a double-dispatch
+  solution, such as the Visitor design pattern. This allows a facility outside the object itself to
+  determine the type of class using the built-in type system.
+- Decision trees based on type are a strong indication that your code is on the wrong track. Such code
+  will break when new classes are added. If properties of a subclass change, it is difficult to find and
+  modify all the affected code segments.
+
+Because RTTI has a pretty significant space performance cost, some compilers allow you to turn RTTI off
+as an optimization. Needless to say, if you do this, dynamic_cast won’t function correctly.
+
+https://www.bogotobogo.com/cplusplus/dynamic_cast.php
+---------------------------------------------------------------------------------------------------------
+                                Access rights
+---------------------------------------------------------------------------------------------------------
+C style cast allow you to safely cast to a private base-class, while static_cast would give you a compile
+time error for that. 
+
+---------------------------------------------------------------------------------------------------------
+                                    Explicit
+---------------------------------------------------------------------------------------------------------
+The compiler is allowed to make one implicit conversion to resolve the parameters to a function,
+If a class has a constructor which can be called with a single argument, then this constructor becomes
+conversion constructor because such a constructor allows conversion of the single argument to the class
+being constructed. This limit was lifted in C++11 whith introduction if uniform initialization syntax.
+This implicit convertion can be prevented for one constructor a time with keyword explit, before
+constructor name.
+
+class Foo {
+  Foo (int foo) : m_foo (foo) { }
+  int GetFoo () { return m_foo; }
+  int m_foo;
+};
+void DoBar (Foo foo) {
+  int i = foo.GetFoo ();
+}
+DoBar (42);
+
+If constructor is define as `explicit Foo (int foo) : m_foo (foo) {}`, previous call provides an eror.
+You can explicitly call constructor of wanted class or cast argument to class and pass it as argument.
+
+DoBar (Foo(42));
+DoBar ((Foo)42);
+
+class String {
+    String(int n);          // allocate n bytes to the String object
+    String(const char *p);  // initializes object with char *p
+};
+String mystring = 'x';  // calls int constructor
+
+You can disable the `operator cast` using implicit
+/* Another implicit cast that you can ban is operator cast. */
+
+https://stackoverflow.com/questions/121162/what-does-the-explicit-keyword-mean
+---------------------------------------------------------------------------------------------------------
+                                Double dispatch
+---------------------------------------------------------------------------------------------------------
+So, you are in the situation when you’ve already considered adding another virtual function on the base
+class, but you’re worried about how many virtual functions are already there, or the impact that this might
+have on consumers of the base class.
+You desided to:
+1. Use dynamic_cast to find out actual type of a pointer, then moving on to do what you really want
+2. Check some enum in a base class to see which derived class it really is so that you can perform type
+   specific operations on it. (At least, don`t use enum/string and prefer typeid)
+
+Double-dispatch Visitor pattern is possible solution for this type of a problem. With it, you can trim down
+long if-else if blocks, separate responsibility into manageable pieces, and stabilize your interface better.
+You may be tempted to create a table, mapping class type to action, but this is the poor implementation
+of virtual table.
+
+ReactionHash& Person::GetReactionFunctions() const{
+  return {
+           {CAT, &amp;TryToPet},
+           {DOG, &amp;RunAwayFrom},
+           {PIG, &amp;TryToPet},
+           // etc.
+         };
+}
+ 
+void Person::ReactTo(Animal* _animal){
+  const auto& reactionFunctions = GetReactionFunctions();
+  reactionFunctions[_animal->GetType()](_animal);
+}
+
+The first variation of visitor is Single-Dispatch. We need to define visitor, responsible for holding
+possible visitors, and virtual function `Visit` to object whose dynamic type we don`t know.
+
+struct ReactionVisitor
+{
+  explicit ReactionVisitor(Person* _person) : person_{_person} {}
+  Person* person_ = nullptr; // person doing the reacting
+};
+
+struct Animal
+{
+  virtual std::string Noise() const = 0;
+  virtual ~Animal() = default;
+  virtual void Visit(ReactionVisitor& _visitor) = 0;
+};
+
+void Dog::Visit(ReactionVisitor& _visitor){
+  Person* personWhoIsReacting = _visitor.person_;
+  if (my_breed == DogBreed.Daschund)
+    personWhoIsReacting.TryToPet(this);
+  else
+    personWhoIsReacting.RunAwayFrom(this);
+}
+
+# Person reaction looks like
+void Person::ReactTo(Animal* _animal){
+  ReactionVisitor visitor{this};
+  _animal->Visit(visitor);
+}
+
+This way, we removed any derived information from base class, separated all the per-animal reaction logic,
+it`s fairly easy to add a new derived Animal class and enforce that Person has to react to in in some way.
+If we want to allow for a default action, then we can implement the virtual function on the base Animal
+class itself. Performance-wise, it’s the same as RTTI approach.
+
+Problems of such approach:
+1. Dog should not dictate how a Person reacts to it. Implementation details of the Person class are leaked.
+2. What if the Person class has other behaviors they want to implemented?
+   We’ve separated responsibility but at the cost of being extremely invasive to the Animal classes.
+
+Solutiong is to make animal detect it`s own dynamic type and pass `this` to visitor which overrides definiton
+for all required childs. Calls stach will look like follows
+
+void Person::ReactTo(Animal* _animal) {
+    ReactionVisitor visitor{this};
+    _animal->Visitor(&visitor);
+}
+void Cat::Visitor(AnimalVisitor* _visitor) {
+    _visitor->Visit(this);
+}
+void ReactionVisitor::Visit(Cat* _cat) {
+    ...
+}
+
+https://gieseanw.wordpress.com/2018/12/29/stop-reimplementing-the-virtual-table-and-start-using-double-dispatch/
+=========================================================================================================

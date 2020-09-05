@@ -1,0 +1,191 @@
+=========================================================================================================
+                              Object relationships
+=========================================================================================================
+Programming is also full of recurring patterns, relationships and hierarchies. Particularly when it comes
+to programming objects, the same patterns that govern real-life objects are applicable to the programming
+objects we create ourselves. By examining these in more detail, we can better understand how to improve
+code reusability and write classes that are more extensible.
+
+There are many different kinds of relationships two objects may have in real-life, and we use specific
+"relation type" words to describe these relationships. There are following relations: part-of, has-a,
+uses-a, depends-on, and member-of.
+---------------------------------------------------------------------------------------------------------
+                                  Composition
+---------------------------------------------------------------------------------------------------------
+Object composition. Process of building complex objects from simpler ones. In real-life, complex objects
+are often built from smaller, simpler objects. For example, a car is built using a metal frame, an engine
+Object composition models a “has-a” relationship between two objects. A car “has-a” transmission. Your
+computer “has-a” CPU.
+
+There are two basic subtypes of object composition: composition and aggregation.
+To qualify as a composition, an object and a part must have the following relationship:
+The part (member) is part of the object (class)
+The part (member) can only belong to one object (class) at a time
+The part (member) has its existence managed by the object (class)
+The part (member) does not know about the existence of the object (class)
+
+While object composition models has-a type relationships (a body has-a heart, a fraction has-a denominator),
+we can be more precise and say that composition models “part-of” relationships (a heart is part-of a body,
+a numerator is part of a fraction). Composition is often used to model physical relationships, where one
+object is physically contained inside another.
+
+Although most compositions directly create their parts when the composition is created and directly destroy
+their parts when the composition is destroyed, there are some variations of making it more flexible.
+1. A composition may defer creation of some parts until they are needed. For example, a string class may
+   not create a dynamic array of characters until the user assigns the string some data to hold.
+2. A composition may opt to use a part that has been given to it as input rather than create the part itself.
+3. A composition may delegate destruction of its parts to some other object (e.g. to a garbage collection routine).
+
+You may question yourself when do you need to use a subclass instead of directly implementing a feature.
+1. Each individual class can be kept relatively simple and straightforward, focused on performing one task
+   well. This makes those classes easier to write and much easier to understand, as they are more focused.
+2. Each subclass can be self-contained, which makes them reusable. You may want to reuse this class in
+   another application. As well, it is quite simple to change implementation within class definition
+   instead of changing parts around entire application.
+3. The parent class can have the subclasses do most of the hard work, and instead focus on coordinating
+   the data flow between the subclasses. This helps lower the overall complexity of the parent object,
+   because it can delegate tasks to its children, who already know how to do those tasks.
+
+A good rule of thumb is that each class should be built to accomplish a single task. That task should
+either be the storage and manipulation of some kind of data (e.g. Point2D, std::string), OR the
+coordination of subclasses (e.g. Creature). Ideally not both.
+
+---------------------------------------------------------------------------------------------------------
+                                  Aggregation
+---------------------------------------------------------------------------------------------------------
+To qualify as an aggregation, a whole object and its parts must have the following relationship:
+The part (member) is part of the object (class)
+The part (member) can belong to more than one object (class) at a time
+The part (member) does not have its existence managed by the object (class)
+The part (member) does not know about the existence of the object (class)
+
+Unlike a composition, parts can belong to more than one object at a time, and the whole object is not
+responsible for the existence and lifespan of the parts. When an aggregation is created, the aggregation
+is not responsible for creating the parts. When an aggregation is destroyed, the aggregation is not
+responsible for destroying the parts.
+Consider a car and an engine. A car engine is part of the car. And although the engine belongs to the car,
+it can belong to other things as well, like the person who owns the car. We can say that aggregation models
+“has-a” relationships 
+
+Term destroy is not always applicable to such realtions, instead you should understand it as freeing
+instance from object responsibility.
+
+Since, aggregation and composition are so close, their implementatation is close as well. The difference
+is more semantic then syntactic. For compostion you would use simple members and maybe pointers, if class
+is responsible for dynamic memory. Aggregation means using pointers and references to define relation
+between objects.
+
+For a variety of historical and contextual reasons, unlike a composition, the definition of an aggregation
+is not precise -- so you may see other reference material define it differently from the way we do. That’s
+fine, just be aware.
+
+Note, there are terms that mean not would you expect.
+Aggregate data type. Data types (structs/classes) that group multiple variables together.
+Aggregate class. Struct/Class that has no provided constructor, destructor, overloaded assignment, has
+all public members, and does not use inheritance - POD, plain old data structure.
+
+---------------------------------------------------------------------------------------------------------
+                                Association
+---------------------------------------------------------------------------------------------------------
+To qualify as an association, an object and another object must have the following relationship:
+The associated object (member) is otherwise unrelated to the object (class)
+The associated object (member) can belong to more than one object (class) at a time
+The associated object (member) does not have its existence managed by the object (class)
+The associated object (member) may or may not know about the existence of the object (class)
+
+Unlike a composition or aggregation, where the part is a part of the whole object, in an association, the
+associated object is otherwise unrelated to the object. Just like an aggregation, the associated object
+can belong to multiple objects simultaneously, and isn’t managed by those objects. However, unlike an
+aggregation, where the relationship is always unidirectional, in an association, the relationship may be
+unidirectional or bidirectional (where the two objects are aware of each other).
+
+For instnace, doctor and patiente are associated but not parts of each other. Doctor may have multiple
+patience, one after another, as well as patient may go different doctors.
+We can say that association models as “uses-a” relationship. The doctor “uses” the patient (to earn income).
+The patient uses the doctor (for whatever health purposes they need).
+
+Associtation may be used in multile different ways but the most common it the pointer.
+
+Reflexive association. Relationship with other objects of the same type. A good example of a reflexive
+association is the relationship between a university course and its prerequisites (which are also
+university courses).
+---------------------------------------------------------------------------------------------------------
+Property                                | Composition    | Aggregation    | Association
+Relationship type                       | Whole/part     | Whole/part     | Otherwise unrelated
+Members can belong to multiple classes  | No             | Yes            | Yes
+Members existence managed by class      | Yes            | No             | No
+Directionality                          | Unidirectional | Unidirectional | Unidirectional or bidirectional
+Relationship verb                       | Part-of        | Has-a          | Uses-a
+
+=========================================================================================================
+                        OOP | Object Oriented Programming
+=========================================================================================================
+OOP is built on 4 major principles: Encapsulation, Data Abstraction, Polymorphism and Inheritence
+---------------------------------------------------------------------------------------------------------
+Encapsulation
+---------------------------------------------------------------------------------------------------------
+Mechanism of hiding data implementation by restricting access to public methods. Instance variables are
+kept private and accessor methods are made public to achieve this. This way, user is independent of
+implementation as far as interface is the same, making it easy to change implementation without user
+noticing. Otherwise user would be required to change his code using your class whenver you changed it.
+
+---------------------------------------------------------------------------------------------------------
+Abastraction
+---------------------------------------------------------------------------------------------------------
+Abstract means a concept or an Idea which is not associated with any particular instance. Using abstract
+class/Interface we express the intent of the class rather than the actual implementation.  Usually
+implemented with some form of interface. Anyone working with instance of it, doesn`t need to know
+implementation details, knowing interface is enough.
+This is needed for big/scalable projects where it is much easier and maintainable to provide some high
+level mechanism for using it. Preferably, this mechanism should be easy to use and should rarely change
+over time.
+
+---------------------------------------------------------------------------------------------------------
+Inheritance
+---------------------------------------------------------------------------------------------------------
+Often you have mamy similar objects that may use some common definiton and redefine it if needed.
+Inheritance expresses `is-a` relationship, making it possible to reuse implementation of super class
+withoud duplicating the code. Such code is considered to be reusable, and it is much more easy to maintain.
+If you find probleb in derived method, you need to fix it once and each class will have proper definition.
+
+---------------------------------------------------------------------------------------------------------
+Polymorphism
+---------------------------------------------------------------------------------------------------------
+Means one name for many forms. There are static and dynamic polymorphism.
+- Static. Method overloading, you know which function will be called at compile time.
+- Dynamic. Using method overriding, you don`t know which definiton is called until runtime.
+
+---------------------------------------------------------------------------------------------------------
+https://www.freecodecamp.org/news/object-oriented-programming-concepts-21bb035f7260/
+https://medium.com/@cancerian0684/what-are-four-basic-principles-of-object-oriented-programming-645af8b43727
+=========================================================================================================
+                                     Mixins
+=========================================================================================================
+Mixin is a class that contains methods for use by other classes without having to be the parent class of
+those otherclasses. How those other classes gain access to the mixin`s methods depends on the language.
+Ther are sometimes described as being included rather than inherited.
+
+Advantages
+It provides a mechanism for multiple inheritance by allowing multiple classes to use the common functionality,
+but without the complex semantics of multiple inheritance.
+Code reusability: Mixins are useful when a programmer wants to share functionality between different
+classes. Instead of repeating the same code over and over again, the common functionality can simply be
+grouped into a mixin and then included into each class that requires it.
+Mixins allow inheritance and use of only the desired features from the parent class, not necessarily all
+of the features from the parent class.
+
+=========================================================================================================
+      RAII (Resource Acquisition Is Initialization) | SBRM (Scope Based Resource Managment)
+=========================================================================================================
+It is a programming technique whereby resource use is tied to the lifetime of objects with automatics
+duration. In C++, it is implemeted with Constructor/Destructor. The idea behinde it is preventing of
+resource leak, as all resource-holding objects are cleaned up automatically.
+Under RAII, objects holding resource should not be dynamically allocated, since such objects are freed
+when scope is left and there is no need to worry about a resource eventually getting cleaned up.
+For dynamically allocated objects, the user is responsible for deletion -- if user miss to do it, memory
+used for object and resource is leaked.
+
+Rule: If your class dynamically allocates memory, use the RAII paradigm, and don’t allocate objects of
+your class dynamically.
+
+https://embeddedartistry.com/blog/2017/7/17/migrating-from-c-to-c-take-advantage-of-raiisbrm

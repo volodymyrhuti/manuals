@@ -134,8 +134,8 @@ It is DMA capable
 
 USB (Universal Serial Bus) is host controlled, there can only be one host per bus.
 
-HCI (Host Controller Interface) => register-level interface that enables a host controller for USB to
-communicate with a host controller driver in software. There are next types of HCI
+HCI (Host Controller Interface). Register-level interface that enables a host controller for USB to
+communicate with a host controller driver in software. There are next types of HCI:
 - UHCI (Universal Host Controller Interface)
 - EHCI (Enhanced Host Controller Intreface)
 - XHCI (Extensible Host Controller Intreface)
@@ -160,7 +160,7 @@ Virual files are computed on request or are a mapping into a different file syst
 
 A file system consists of two or three layers, which are explicitly separated, and sometimes the functions
 are combined. Example of layers =>
-- Logica file system => responsible for interaction with the user applicatiob. It provides the API
+- Logica file system => responsible for interaction with the user application. It provides the API
   for file operations OPEN, CLOSE, READ ... and passes the requested operation to the layer below it
   for processing. The logical file system manages open file table entries and per-process file descriptors
   The layer provides file acess, directory operations, security and protection
@@ -311,6 +311,16 @@ mount /dev/<usb> /media/usb    # mount
 
 ? How to detect drives on system of different type hdd ssd flash
 
+=========================================================================================================
+                                    FS types
+=========================================================================================================
+Windows sypport FAT32, NTFS, exFAT. All Windows fs organize block of data into groups called clusters size
+of which varies according to the fs and the size of the partition. It is used to overcomem some of the
+limitations in addressing inherent to each fs.
+
+
+NOTE, different OS may or may ot be able to read other OS FS, for instance, most Linux systems easily read
+Windows` NTFS.
 =========================================================================================================
                            MIME(Internet Media Types)
 =========================================================================================================

@@ -1,0 +1,89 @@
+=========================================================================================================
+                                     Random
+=========================================================================================================
+                               C/Cpp interpreter
+---------------------------------------------------------------------------------------------------------
+There are quite a few but most of them are designed to be cross-platform therefore they include only limited
+set of functionality by default. Most likely, you will look for one designed specifically designed for
+single target, e.g. tcc for Linux, so you have all need libraries available.
+In general, there are 2 quite famous interpreters used for physics, `cint` and it`s successor `cling`.
+Some other projects include
+https://github.com/jpoirier/picoc       # picoc
+http://www.ddj.com/cpp/184402054        # ch
+https://www.softintegration.com/
+
+https://root.cern.ch/cint
+https://stackoverflow.com/questions/584714/is-there-an-interpreter-for-c
+https://stackoverflow.com/questions/69539/have-you-used-any-of-the-c-interpreters-not-compilers/72792#72792
+=========================================================================================================
+                                Output buffering
+=========================================================================================================
+Flushing for stdout is determined by its buffering behaviour. The buffering can be set to three modes:
+_IOFBF full buffering: waits until fflush() if possible,
+_IOLBF line buffering: newline triggers automatic flush,
+_IONBF direct write always used.
+Support for these characteristics is implementation-deﬁned, and may be affected via the setbuf() and setvbuf() functions.
+
+https://stackoverflow.com/questions/13932932/why-does-stdout-need-explicit-flushing-when-redirected-to-file/13933741#13933741
+=========================================================================================================
+                                    C vs C++
+=========================================================================================================
+---------------------------------------------------------------------------------------------------------
+                                    Features
+---------------------------------------------------------------------------------------------------------
+C has VLA (Variable Length arrays) =>
+~ Allocation on stack, but you can`t return stack allocated variables from functions
+~ Variable lenght on creating, but can`t be changed after
++ No need to deallocate
+- Can`t be extern/static, only works if placed in the end of a structure.
+- Cannot have an initializer
+C++ has pleanty of generic data structures that can somewhat replace VLAs, for instance, vector.
+
+Difference is void pointer casting. In C, pointer conversions to and from void* are always implicit.
+C++ is more strongly typed therefore converting T* to void* are implicit, but void* to anything else 
+requires a cast.
+
+Initializers. In C you have ability to initize the data in the struct directly, but it makes no much sense
+for C++ with its OOP and private membmers.
+
+---------------------------------------------------------------------------------------------------------
+Array without explicit size defined
+---------------------------------------------------------------------------------------------------------
+The number of elemnts of an array must be detemined either at compile time or since C99 can be evaluated
+at runtime at the point of creation. You can define an aeeay without explicit suze for the leftmost
+dimension if you provice an initialized.  The compiler will infer size from intializer
+int m[][2] = {{ 1, 2 }, { 3, 4 }};  // equivalent to int m[2][2] = {{ 1, 2 }, { 3, 4 }};
+int m[][] = {{ 1, 2 }, { 3, 4 }};  // not valid
+
+=========================================================================================================
+                                    Size of
+=========================================================================================================
+Sizeof is pure compile time in C++ and C prior to C99 based on compile time information. Starting with C99
+there are variable length array size of which is handled at runtime. Any other operands/types (not allocated
+dynamically) are computed at compile time. When using C99+, sizeof doesn`t return at compile time therfore
+it`s value cannot be used in scope where such value is requied - for example initializing static variables,
+unless a compiler specific extension allows it.
+
+=========================================================================================================
+                                   Attributes
+=========================================================================================================
+Attributes allow you mark functions, vaiables, and other entities with compiler-specific or standart
+properties.  C++17 adds three attributes for programmers to better express
+their intent to the compiler and readers of the code: maybe_unused, fallthrough, nodiscard.  Before C++17
+attributes are noreturn, deprecated (entity is going to be removed in a later version, usage results in a
+compiler warning) and carries_dependency(used for optimizing atomic operations). 
+[[maybe_unused]] => var_type var_name => now it is a standart way to avoid compiler warnings, maybe usefull
+                    when variable usage is closed under defines and is used in release/debug version
+[[falthrough]]   => indicates a fallthrough in a switch statement is intentional, otherwise compiler may
+                    warn abouy missed break/return.
+[[nodiscard]]    => function declared with it indicate that return value shouldn`t be ignored by the caller.
+                    Usefull for ensuring caller check a return value,or that some scope guard object has
+                    a resonable liftime.
+                    [[nodiscard]] struct lock_guard;
+                    lock_guard lock(mutex& m);
+                    {
+                        lock(mutex);    // Warning, ignored returned value
+                    }
+
+https://blog.tartanllama.xyz/c++17-attributes/
+=========================================================================================================

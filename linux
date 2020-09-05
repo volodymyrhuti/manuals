@@ -512,20 +512,44 @@ d / -     |rw(x|s)|rw(x|s)| rwx
 and can be changed using chmod or chown
 
 ---------------------------------------------------------------------------------------------------------
-                               SUID (Set User ID)
+                              Special permissions
 ---------------------------------------------------------------------------------------------------------
-Run command as owner of the file
+By default the ownership of files is based on uid/gid of the user who have created them, the same rule
+applies to launching a process. This can be changed using a special type of permission flags.
 
-chmod (1|2|4)777
 ---------------------------------------------------------------------------------------------------------
-                              SGID (Set Group ID)
+SUID (Set User ID)
+---------------------------------------------------------------------------------------------------------
+When an executable is launched, it runs with the privileges of the file owner. If file is owned by root
+and has SUID bit set, when launched by a normal user, it will run with root privileges.
+Example, `passwd` is accessible by any user so he can change his password.
+  $ chmod 4775 test
+  $ chmod u+s test
+  $ ls -l /bin/passwd
+      -rwsr-xr-x. 1 root root 27768 Feb 11  2017 /bin/passwd
+Where `s` implies `suid + x`, while `S` only `suid`
+---------------------------------------------------------------------------------------------------------
+SGID (Set Group ID)
 ---------------------------------------------------------------------------------------------------------
 The SGID bit on a directory means that any files created in that directory will be owned by group that
 owns the directory, regardless of who created them. It is marked as an `s` in place of `x` where group
 permission go.
-chmod g+s <dir/file>
-On files causes files to be executed with group owner permissions.
+  $ chmod 2775 test
+  $ chmod g+s <dir/file>
+
+Causes files to be executed with group owner permissions.
 On directories makes all new files to be created with the same group id as directory.
+
+---------------------------------------------------------------------------------------------------------
+Sticky bit
+---------------------------------------------------------------------------------------------------------
+There is a situation when you want to have a directory accessible by all but file modifiable by it`s owners
+only. This can be done with Sticky bit and is used for `/tmp` files
+  $ chmod 1775 test
+  $ chmod o+t test
+  $ ls -ld /tmp
+    drwxrwxrwt. 14 root root 300 Nov  1 16:48 /tmp
+Where `t` implies both Sticky + `x`, while `T` implies only Sticky bit
 
 ---------------------------------------------------------------------------------------------------------
                                       UID
@@ -533,10 +557,9 @@ On directories makes all new files to be created with the same group id as direc
 UIDs below 1000 are typically reserved for system accounts.  Root has always UID 0 and conventially
 UID 65534 is nobody. UID ranges allocation can be found in `/etc/login.defs`
 
-https://stackoverflow.com/questions/1013516/what-are-the-well-known-uids
-
 Debin related rules
 https://unix.stackexchange.com/questions/254245/what-is-an-appropriate-uid-and-gid-for-a-debian-package-file-owner
+https://stackoverflow.com/questions/1013516/what-are-the-well-known-uids
 ---------------------------------------------------------------------------------------------------------
                                Adduser vs Useradd
 ---------------------------------------------------------------------------------------------------------
@@ -590,7 +613,6 @@ setfacl -d -m #(g|u|o)::rwx #dir
 getfacl #dir
 
 https://askubuntu.com/questions/971836/at-what-point-is-the-bashrc-file-created
-
 =========================================================================================================
                                Session managment
 =========================================================================================================
@@ -843,8 +865,10 @@ to busybox and hope that it is not called with unknown, for busybox, flags.
 
 https://busybox.net/downloads/BusyBox.html
 =========================================================================================================
-                              Boot troubleshooting
+                              Troubleshooting
 =========================================================================================================
+                                      Boot
+---------------------------------------------------------------------------------------------------------
 To enter grub menu, press quickly left Shift? during boot
 
 To boot system into shell, start from grup menu, choose boot img and issue `e`, this will open configuration
@@ -882,7 +906,27 @@ using menu entires from `/boot/grub/grub.cfg`, like
              | The menu entry           |>| The kernel entry             |
 GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 5.4.0-custom"
 
+---------------------------------------------------------------------------------------------------------
+You can boot into BIOS from CLI using
+sudo systemctl reboot --firmware-setup
 
+---------------------------------------------------------------------------------------------------------
+                                     Sound
+---------------------------------------------------------------------------------------------------------
+speaker-test -c2 
+sudo apt install --reinstall alsa-base alsa-utils pulseaudio linux-sound-base libasound2
+sudo add-apt-repository ppa:ubuntu-audio-dev
+sudo apt-get update
+sudo apt-get dist-upgrade
+
+
+
+https://askubuntu.com/questions/426648/how-to-reinstall-pulseaudio-ubuntu-12-04
+https://linuxhint.com/pulse_audio_sounds_ubuntu/
+https://www.unixmen.com/2012003-howto-resolve-nosound-problem-on-ubuntu/
+https://dev.to/setevoy/linux-alsa-lib-pcmdmixc1108sndpcmdmixopen-unable-to-open-slave-38on
+https://help.ubuntu.com/community/SoundTroubleshootingProcedure
+https://support.system76.com/articles/audio/
 =========================================================================================================
                                Package managment
 =========================================================================================================
@@ -925,7 +969,24 @@ All authentication tasks are separated into four independent managment groups:
 4. Session modules. Defines actions that are performed at the beginning and end of sessions.
    A session starts after the user has successfully authenticated.
 
+PAM aware application use following files for configuration: /etc/pam.conf and the /etc/pam.d/.
+These files contain rules of form:
+  service | type | control-flag | module | module-arguments
+- service      | actual application name.
+- type         | module type/context/interface.
+- control-flag | indicates the behavior of the PAM-API should the module fail to succeed in its
+               | authentication task.
+- module       | the absolute filename or relative pathname of the PAM.
+- module-arguments: space separated list of tokens for controlling module behavior.
+Note, there is no need to specify service for files in /etc/pam.d/
+Some PAM modules require configuration files beside the PAM configuration to operate.
+These module-specific configuration files are stored in /etc/security.
+
 NOTE: Erroneous PAM configuration can disable access to your system partially, or completely.
+
+https://dzone.com/articles/linux-pam-easy-guide
+https://www.tecmint.com/configure-pam-in-centos-ubuntu-linux/
+https://www.opennet.ru/base/dev/pam_linux.txt.html
 =========================================================================================================
                                Package managment
 =========================================================================================================
@@ -1023,6 +1084,36 @@ meminfo                 #
 
  /stack              # kernell stack?
 
+
+=========================================================================================================
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+sudo ubuntu-drivers devices     # lists capable drives and recommends one
+sudo apt-get install nvidia-<num>
+sudo ubuntu-drivers autoinstall
+
+# install default nouveau driver
+sudo apt-get autoremove --purge nvidia-*
+sudo service lightdm stop
+sudo apt-get install xserver-xorg-video-nouveau
+
+# pulse
+sudo apt-get --purge --reinstall install pulseaudio
+
+/proc/driver/nvidia/version
+/proc/driver/nvidia/warnings
+/proc/driver/nvidia/gpus/domain:bus:device.function/information
+https://download.nvidia.com/XFree86/Linux-x86_64/340.108/README/commonproblems.html
+modprobe -r nouveau
+/var/log/Xorg.0.log
+sudo X -configure
+ /etc/X11/xorg.conf
+https://askubuntu.com/questions/28033/how-to-check-the-information-of-current-installed-video-drivers
+
+systemctl isolate multi-user.target     # lvl 3
+systemctl isolate graphical.target      # lvl 5
+
+cat  ~/.local/share/xorg/Xorg.0.log
 
 =========================================================================================================
 TODO

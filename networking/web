@@ -1,0 +1,101 @@
+=========================================================================================================
+                               URI vs URL vs URN
+=========================================================================================================
+URI(Uniform Resource Identifier). String of characters that unambiguosly identifies a particular resource.
+To stay unambiguos, all URIs follow a predefined set of syntax rules, also extensibilty is maintained
+through a separately defined naming scheme (e.g. http://). Such indetifiers allow interaction with
+representation of the resource over a network. Scheme specify a concrete syntax and associated protocols
+define each URI. The most common form of URI is URL and more rarely URN, which was designed to add
+resource identifier namespaces.
+
+It can be a name, locator, or both for an online resource where a URL is
+just the locator. URLs are a subset of URIs
+
+URL(Uniform Resource Locator) is a URI that specifies how to obtain resource , i.e. both its primary
+mechanism and network location. For example, http://example.com/res refers to resouce identified as res
+and in form of HTML related code it is obtained via the http: from a network whose domain name is
+example.com
+
+URN(Uniform Resource Name). URI that identifies a resource by name in a particular namespace.
+URN may be used to talk about a resource without giving location or how to access it. URN for a book may
+look like `urn:isbn:0-486-12345-4`, here isbn is the namespace.
+
+URI identifies a resource either by location, or a name, or both.
+A URI is an identifier for some resource, but a URL gives you specific information as to obtain that
+resource. A URI is a URL and it is now considered incorrect to use URL when describing applications.
+Generally, if the URL describes both the location and name of a resource, the term to use is URI. Since
+this is generally the case most of us encounter everyday, URI is the correct term.
+
+https://webmasters.stackexchange.com/questions/19101/what-is-the-difference-between-a-uri-and-a-url
+https://damnhandy.com/2007/11/19/uri-vs-url-whats-the-difference/
+https://www.keycdn.com/support/comparing-uri-vs-url
+=========================================================================================================
+                                      HTTP
+=========================================================================================================
+HTTP (Hypertext Transfer Protocol) is an application protocol for transmitting hypermedia documents, such
+as HTML. It defines how messages are formatted and transmitted, and what actions Web servers and browsers
+should take in resposne to various commands. It is a stateless protocol, meaning that the server does not
+keep any data(state) between two requests, however, some web applications implement states or server side
+sessions using cookies or hidden batiables whithin web form.
+
+HTTP resources are indentified and located on the network by URLs (Uniform Resource Locators), using the
+URI`s(Uniform Resource Indentifiers) schemes http and https. 
+
+Scheme|  | Userinfo     | |    Host       | |Port | | Path  | |           Query             | Fragment
+---------------------------------------------------------------------------------------------------------
+http:  // login:password @ www.example.com :  123  /  forum/ ?  tag=networking&order=newest#  top
+---------------------------------------------------------------------------------------------------------
+        |       Authority                         |
+
+
+---------------------------------------------------------------------------------------------------------
+                                 Requst methods
+---------------------------------------------------------------------------------------------------------
+The client sends requests to the server and the server sends response. Request message consists of the
+following:
+- a request line (GET /images/tmp.png which requests a image from the server)
+- request header fields
+- an empty line
+- an optional message body
+Node that lines in message must be finished with <CR><LF> no other nul variant.
+Desired action performed on specified resource is name method. Desired method is sent withing message
+and it is case sensitive in contrast to header field names which are case-insensitive. Number of methods
+is not limited and new methods can be added without breaking existing infrastructure. 
+Common methods:
+1. GET. Requests specified resource. Should be used only for data retrieve and should have no other effect.
+2. HEAD. Requests for response identical to that of GET request, but without response body. Used to retrive
+   meta-information in response body without transporting entire content
+3. POST. Requests server to accept the entity in the reqest as a new subordinate of the wev resource identified
+   by the URI. This can be item to add to a database, item identifying behavior of server ...
+4. PUT. Requests server that enclosed entity be stored under the supplied URI. If the URI refers to an
+   already existing resource, it is modified; if the URI does not point to an existing resource, then the
+   server can create the resource with that URI.
+5. DELETE. Deletes the specified resource
+6. TRACE. Used to see if any changes are made by intermediate servers
+7. OPTIONS. Returns the HTTP methods that the server supports for the resource
+8. CONNECT. Request connection to a transparant TCP/IP tunnel, usually to facilitate SSL-encrypted communication
+   through an unencrypted HTTP proxy.
+
+---------------------------------------------------------------------------------------------------------
+                                    Headers
+---------------------------------------------------------------------------------------------------------
+HTTP headers let the client and the server pass additional information with an HTTP request or response.
+An HTTP header consists of its case-insensitive name followed by a colon (:), then by its value.
+Whitespace before the value is ignored.
+
+Headers can be grouped according to their contexts:
+- General headers.
+  Apply to both requests and responses, but with no relation to the data transmitted in the body.
+- Request headers.
+  Contain more information about the resource to be fetched, or about the client requesting the resource.
+- Response headers
+  Hold additional information about the response, like its location or about the server providing it.
+- Entity headers
+  Contain information about the body of the resource, like its content length or MIME type.
+
+Headers can also be grouped according to how proxies handle them: Connection, Keep-Alive,
+Proxy-Authenticate, Proxy-Authorization, TE, Trailer, Transfer-Encoding, Upgrade.
+
+https://github.com/for-GET/know-your-http-well/blob/master/headers.md
+https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
+=========================================================================================================

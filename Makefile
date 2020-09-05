@@ -1,6 +1,6 @@
 merge: clean
 	@echo Merging mannuals
-	@find -maxdepth 1 -type f ! -path '*/\.*'                     \
+	@find -type f ! -path '*/\.*'                                 \
 		! -name 'mannual.txt' ! -name 'Makefile' ! -name 'README' \
 		-exec cat {} \; >> mannual.txt
 

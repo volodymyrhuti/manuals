@@ -6,7 +6,7 @@ ${@} all arguments passed quoted and space separated, like "$1" "$2" "$3"
 This expansions doesnt return $0, and if no argument is passed, expands to nothing
 The first form is usefull for outputing, when you want to return results separated by
 same character, like IFS=',' echo $*
-The seconf form is used when you want to forward the same list of argument to another
+The second form is used when you want to forward the same list of argument to another
 function
 
 To set positional arguemnts from program use `set`
