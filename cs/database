@@ -1,0 +1,41 @@
+                                    Database
+=========================================================================================================
+                                  SQL vs NoSQL
+---------------------------------------------------------------------------------------------------------
+1. Language structure is different
+   SQL databases use Structured Query Language for defining and manipulating data. Structed means that
+   you use predefined schemas to determine the structure of your data before you work with it.
+   All of your data must follow the same structure which may require significant up-front preparation.
+   Change in the structure may be both difficult and disruptive to your whole system.
+
+   NoSQL databases have dynamic schemas for unstructured data, and data is stored in many ways.
+   They can be column-oriented, document-oriented, graph-based or organized as a KeyValue store.
+   This flexibility means that:
+   - You can create documents without having to first define their structure
+   - Each document can have its own unique structure
+   - The syntax can vary from database to database, and
+   - You can add fields as you go.
+
+2. The Scalability
+   In most situations, SQL databases are vertically scalable, which means that you can increase the load
+   on a single server by increasing things like CPU, RAM or SSD.
+   NoSQL databases are horizontally scalable. This means that you handle more traffic by sharding, or
+   adding more servers in your NoSQL database.
+   The latter can ultimately become larger and more powerful, making NoSQL databases the preferred
+   choice for large or ever-changing data sets.
+
+3. The Structure
+  SQL databases are table-based. Is better option for applications that require multi-row transactions
+  - such as an accounting system - or for legacy systems that were built for a relational structure
+
+  NoSQL databases are either document-based, key-value pairs, graph databases or wide-column stores. 
+
+https://www.xplenty.com/blog/the-sql-vs-nosql-difference/
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+todo
+https://www.geeksforgeeks.org/difference-between-sql-and-nosql/
+https://www.xplenty.com/blog/the-sql-vs-nosql-difference/ describe difference between known DBs
+=========================================================================================================
+

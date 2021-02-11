@@ -1,0 +1,19 @@
+                                Machine learning
+=========================================================================================================
+Algebra. A set of objects (symbols) and rules to manipulate these objects.
+Linear algebra. The study of vectors and certain rules to manipulate vectors.
+
+For a systematic approach to solving systems of linear equations we will introduce a useful compact
+notation. We collect the coefficients a_ij into vectors and collect the vectors into matrices.
+Matrices can be used to compactly represent systems of linear equations, but they also represent linear
+functions (linear mappings).
+
+=========================================================================================================
+TODO: check SVM support vector machine
+https://en.wikipedia.org/wiki/Support_vector_machine
+https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_%D0%BE%D0%BF%D0%BE%D1%80%D0%BD%D1%8B%D1%85_%D0%B2%D0%B5%D0%BA%D1%82%D0%BE%D1%80%D0%BE%D0%B2
+https://habr.com/en/company/iticapital/blog/216937/
+https://www.quantstart.com/articles/Successful-Backtesting-of-Algorithmic-Trading-Strategies-Part-I/
+https://www.quantstart.com/articles/Successful-Backtesting-of-Algorithmic-Trading-Strategies-Part-II/
+https://queue.acm.org/detail.cfm?id=2534976
+https://patentimages.storage.googleapis.com/2f/2b/0c/1e23b61ecc6839/US20130325684A1.pdf

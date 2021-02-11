@@ -1,0 +1,734 @@
+ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ip link set dev bridge1 up
+ip link add name bridge2 type bridge vlan_filtering 1
+ip link set dev bridge2 up
+ip link set dev eth1p24 master bridge1
+ip link set dev eth1p25 master bridge1
+ip link set dev eth1p48 master bridge2
+ip link set eth1p1  up
+ip link set eth1p24 up
+ip link set eth1p25 up
+ip link set eth1p48 up
+ip addr add 90.60.30.1/24 dev eth1p1
+ip addr add 100.50.0.1/16 dev eth1p1
+ip addr add 90.60.40.1/24 dev bridge1
+ip addr add 100.51.0.1/16 dev bridge1
+ip addr add 90.60.50.1/24 dev bridge2
+ip addr add 100.52.0.1/16 dev bridge2
+
+
+ip link set dev eth1p24 nomaster
+ip link set dev eth1p25 nomaster
+ip link set dev eth1p48 nomaster
+ip link set dev eth1p24 master bridge2
+ip link set dev eth1p25 master bridge2
+ip link set dev eth1p48 master bridge1
+ip addr del 100.51.0.1/16 dev bridge1
+ip addr del 100.52.0.1/16 dev bridge2
+ip addr add 100.52.0.1/16 dev bridge1
+ip addr add 100.51.0.1/16 dev bridge2
+
+
+ip l del bridge1
+ip l del bridge2
+ip addr flush dev eth1p1
+
+ip neigh flush dev eth1p1
+ip neigh flush dev eth1p24
+ip neigh flush dev eth1p25
+ip neigh flush dev eth1p48
+ip link set bridge1 type bridge fdb_flush
+---------------------------------------------------------------------------------------------------------
+
+ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ip link set dev bridge1 up
+ip link add name bridge2 type bridge vlan_filtering 1
+ip link set dev bridge2 up
+ip link set dev eth1p24 master bridge1
+ip link set dev eth1p25 master bridge1
+ip link set dev eth1p48 master bridge2
+ip link set eth1p1  up
+ip link set eth1p24 up
+ip link set eth1p25 up
+ip link set eth1p48 up
+ip addr add 90.60.30.1/24 dev eth1p1
+ip addr add 100.50.0.1/16 dev eth1p1
+ip addr add 90.60.40.1/24 dev bridge2
+ip addr add 100.51.0.1/16 dev bridge2
+ip addr add 90.60.50.1/24 dev bridge1
+ip addr add 100.52.0.1/16 dev bridge1
+
+
+---------------------------------------------------------------------------------------------------------
+ip link add name br1 type bridge vlan_filtering 1
+ip link set eth1p25 master br1
+ip link set eth1p1 master br1
+ip link set br1 up
+ip link set eth1p25 up
+ip link set eth1p1 up
+ip link add link br1 name br1.10 type vlan id 10
+ip link set br1.10 up
+bridge vlan add dev br1 vid 10 self
+bridge vlan add dev eth1p1 vid 10
+bridge vlan add dev eth1p25 vid 10
+ip addr add 130.0.0.1/24 dev br1.10
+
+ip l del br1.10
+ip addr del 130.0.0.1/24 dev br1.10
+
+---------------------------------------------------------------------------------------------------------
+sysctl -w net.ipv4.ip_forward=1
+ip l add br0 type bridge vlan_filtering 1
+ip l set eth1p1 master br0
+ip l set eth1p24 master br0
+ip l set eth1p25 master br0
+ip l set br0 up
+ip l set eth1p1 up
+ip l set eth1p24 up
+ip l set eth1p25 up
+ip addr add 110.0.0.1/24 dev br0
+
+ip addr del 110.0.0.1/24 dev br0
+
+---------------------------------------------------------------------------------------------------------
+ip link add name br1 type bridge vlan_filtering 1
+ip link set eth1p25 master br1
+ip link set eth1p24 master br1
+ip link set eth1p1 master br1
+ip link set br1 up
+ip link set eth1p25 up
+ip link set eth1p24 up
+ip link set eth1p1 up
+ip link add link br1 name br1.10 type vlan id 10
+ip link set br1.10 up
+bridge vlan add dev br1 vid 10 self
+bridge vlan add dev eth1p1 vid 10 pvid
+bridge vlan add dev eth1p24 vid 10 pvid
+bridge vlan add dev eth1p25 vid 10 pvid
+ip addr add 110.0.0.1/24 dev br1.10
+ip addr del 110.0.0.1/24 dev br1
+
+---------------------------------------------------------------------------------------------------------
+
+ip link add name br0 type bridge vlan_filtering 1
+ip link set dev br0 up
+ip l set eth1p1 master br0
+ip l set eth1p25 master br0
+ip link set dev eth1p48 master br0
+ip addr add 90.60.30.1/24 dev br0
+ip addr add 100.50.0.1/16 dev br0
+
+ip neigh add 130.0.0.3 lladdr 00:00:0f:5b:af:7a nud stale dev eth1p1
+ip neigh add 130.0.0.4 lladdr 00:00:0f:5b:af:8a nud stale dev br0
+---------------------------------------------------------------------------------------------------------
+ ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ ip link set dev bridge1 up
+ ip link add bridge2 type bridge vlan_default_pvid 0 vlan_filtering 0
+ ip link set dev bridge2 up
+ ip link set dev eth1p24 master bridge1
+ ip -j -d link show master bridge1
+ ip link set dev eth1p25 master bridge2
+ ip link set dev eth1p48 master bridge2
+ ip -j -d link show master bridge2
+ bash -c 'for x in eth1p1 eth1p24 eth1p25 eth1p48; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ bash -c 'for x in bridge1 bridge2; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ ip -j -d link show master bridge1
+ ip -j -d link show master bridge2
+ ip -j -d link
+ ip addr add 192.168.20.1/24 dev eth1p1
+ ip addr add 21.0.0.1/16 dev eth1p24
+ ip addr add 22.0.224.1/20 dev eth1p25
+ ip addr add 23.0.0.1/8 dev eth1p48
+ ip neigh add 21.0.0.2 lladdr 00:98:50:73:9E:18 dev eth1p24
+ ip neigh add 22.0.224.2 lladdr 00:B7:B3:4E:E6:E2 dev eth1p25
+ ip neigh add 23.0.0.2 lladdr 00:71:B3:43:06:A7 dev eth1p48
+ ip route add 15.0.0.0/12 nexthop via 21.0.0.2 weight 1   \
+                          nexthop via 22.0.224.2 weight 1 \
+                          nexthop via 23.0.0.2 weight 1
+ ip -j ro show 15.0.0.0/12
+ 
+ ip link delete dev bridge2
+
+---------------------------------------------------------------------------------------------------------
+
+sudo ifconfig eth1p50 192.168.9.1
+sudo ifconfig eth1p40 192.168.10.1
+sudo ip netns add subnet1
+sudo ip netns add subnet2
+sudo ip netns add subnet3
+# sudo ip link add veth0 type veth netns subnet1 peer name veth1 netns subnet2
+sudo ip link add veth0 type veth peer name veth1 
+sudo ip link add veth2 type veth peer name veth3 
+sudo ip link add veth4 type veth peer name veth5 
+sudo ip link set veth0 netns subnet1
+sudo ip link set veth3 netns subnet2
+sudo ip link set veth4 netns subnet2
+sudo ip link set veth5 netns subnet3
+sudo brctl addbr br1
+sudo brctl addbr br2
+sudo brctl addif br1 eth1p50
+sudo brctl addif br1 veth1
+sudo brctl addif br2 eth1p40
+sudo brctl addif br2 veth2
+sudo ip netns exec subnet1 ifconfig veth0 192.168.9.2
+sudo ip netns exec subnet1 ip route add default via 192.168.9.1
+sudo ip netns exec subnet2 ifconfig veth3 192.168.10.2
+sudo ip netns exec subnet2 ip route add default via 192.168.10.1
+sudo ip netns exec subnet2 ifconfig veth4 192.168.11.1
+sudo ip netns exec subnet3 ifconfig veth5 192.168.11.2
+sudo ip netns exec subnet3 ip route add default via 192.168.11.1
+ip route add 192.168.11.2 via 192.168.10.2
+sudo ip netns exec subnet1 ping 192.168.11.2
+
+
+---------------------------------------------------------------------------------------------------------
+
+bridge vlan del vid 1 dev eth0          # delete a default vlan from trunk port
+bridge vlan add 10 dev eth0             # allow vlan to be forwarded through trunk
+bridge vlan add vid 10 pvid 10 untagged dev eth1    # eth1 will receive untagged packet and mark them as 10
+
+bridge vlan add vid 10 pvid untagged dev veth53 # unttaged on eggers with 10 as pvid
+bridge vlan add vid 20 untagged dev veth53      # outgoing packet should have vid 20 then it will be untagged and
+                                                  sent
+
+http://www.microhowto.info/tutorials/802.1q.html
+ip link add link eth0 name eth0.2 type vlan id 2
+Incomming packets with vlan 2 gets untagged 
+Outbound get tagged with 2 and passed to master interface
+
+ tagged trafic enters not tagged port => traffic is droped
+ tagged trafic enters tagged port => traffic is droped
+ tagged trafic enters tagged port => is accepted if tag == PVID
+http://forums.dlink.com/index.php?topic=72435.0
+
+PVID is a vid that will be applied when untagged traffic is received, there can be only a one per port
+VID is vlan allowed on the port, there can be a one of access and multiple on the trunk
+
+ In real and virtual Ethernet cards so called sub-interfaces associated with VLAN IDs typically send/receive tagged packets into/from VLANs. In (virtual) bridges ports can be associated with VLAN IDs and open only for packets with matching "tags". A VLAN ID assigned to a port is called a "VID". An Ethernet packet normally has one VLAN tag, identifying to which VLAN it belongs to. Such a tag can be set, changed or removed in certain VLAN aware devices.
+
+Whenever we use the word "trunk" in connection with VLANs we mean that an interface, port or a limited connection line behaves neutral with respect to multiple VLAN IDs and allows the transport of packets from different VLANs to some neighbor device - which then may differentiate again. 
+
+We can assign one or more VIDs to a bridge port. A VID (VLAN ID) is an integer number; the default value is 1. At a port with one or more VIDs both incoming tagged packets from the bride's outside and outgoing tagged packets forwarded from the bridge's inside are filtered with respect to their tag number and the port VID(s): Only, if the packet's tag number is equal to one of the VIDs of the ports the packet is allowed to pass. 
+
+Among the VIDs of a port we can choose exactly one to be a so called PVID (Port VLAN ID). The PVID number is used to tag (untagged) incoming packets. The new tag is then used for filtering inside the bridge at target ports. A port with a PVID is also called "access port".
+TODO: try deleteing pvid
+
+
+ip link set br0 type bridge vlan_filtering 1
+ip link set eth3 master br0
+ip link set eth0 master br0
+bridge vlan add dev eth3 vid 10
+bridge vlan add dev eth0 vid 10 pvid untagged
+bridge vlan delete dev eth0 vid 1
+
+Note: If you want the Linux host itself to participate in multiple VLANs, then you will still need 'vlan' interfaces, and you will also have to add the VLAN IDs to the filter (using the self keyword).
+
+bridge vlan add dev br0 vid 10 self
+ip link add br0.10 link br0 type vlan id 10
+ip addr add x.x.x.x/xx dev br0.10
+
+https://www.actualtechmedia.com/wp-content/uploads/2018/01/CUMULUS-Understanding-Linux-Internetworking.pdf
+Understanding Linux Internetworking8
+sudo modprobe 8021q
+sudo ip link add br0 type bridge vlan_filtering 1
+sudo ip link set eth1 master br0
+sudo ip link set eth2 master br0
+sudo ip link set eth3 master br0
+sudo bridge vlan add dev eth1 vid 11 pvid untagged 
+sudo bridge vlan add dev eth3 vid 12 pvid untagged 
+sudo bridge vlan add dev eth2 vid 11 
+sudo bridge vlan add dev eth2 vid 12 
+sudo ip link set up dev br0
+sudo ip link set up dev eth1
+sudo ip link set up dev eth2
+sudo ip link set up dev eth3
+
+https://www.linuxjournal.com/article/10821
+ If you've been keeping track, you know there are three things you need to configure for each port of each ethitch:
+    Member VLANs (list of VIDs).
+    PVID (must be one of the member VLANs).
+    Whether packets should be left Tagged or Untagged when sent (egress). 
+
+Run the following commands to add a new interface associated with eth0 and VID 5:
+vconfig add eth0 5
+ip link set eth0.5 up
+This will create the virtual interface eth0.5, which will have the following special VLAN-specific behaviors:
+    Packets sent from eth0.5 will be Tagged with VID 5 and sent from eth0.
+    Packets received on eth0 Tagged with VID 5 will show up on eth0.5 as normal (that is, Untagged) packets. 
+
+https://linux-blog.anracom.com/tag/linux-bridge/
+bridge vlan add vid 2-4094 dev eth0
+
+---------------------------------------------------------------------------------------------------------
+ip link add name br1 type bridge vlan_filtering 1
+ip link set eth1p24 master br1
+ip link set eth1p25 master br1
+ip link set br1 up
+ip link set eth1p24 up
+ip link set eth1p25 up
+ip link add link br1 name br1.10 type vlan id 10
+ip link set br1.10 up
+bridge vlan add dev br1 vid 10 pvid untagged self
+ip addr add 130.0.0.1/24 dev br1.10
+ip n add 130.0.0.2 lladdr 00:00:01:00:06:00 dev br1.10 nud permanent
+
+ip n add 130.0.0.2 lladdr 00:00:01:00:06:00 dev br1.10 nud permament
+---------------------------------------------------------------------------------------------------------
+
+ip link add name br1 type bridge vlan_filtering 1
+ip link set eth1p1 up
+ip addr add 110.0.0.1/24 dev eth1p1
+ip link set eth1p25 master br1
+ip link set eth1p1 master br1
+ip link set br1 up
+ip link set eth1p25 up
+ip link add link br1 name br1.10 type vlan id 10
+ip link add link br1 name br1.100 type vlan id 100
+ip link set br1.10 up
+ip link set br1.100 up
+bridge vlan add dev br1 vid 10 self
+bridge vlan add dev br1 vid 100 self
+bridge vlan add dev eth1p1 vid 10
+bridge vlan add dev eth1p1 vid 100
+bridge vlan add dev eth1p25 vid 10
+bridge vlan add dev eth1p25 vid 100
+
+---------------------------------------------------------------------------------------------------------
+
+ip link add name br1 type bridge vlan_filtering 1
+ip link set eth1p24 master br1
+ip link set eth1p25 master br1
+ip link set br1 up
+bridge vlan add dev eth1p24 vid 10 pvid untagged
+bridge vlan add dev eth1p25 vid 10 pvid untagged
+ip link set eth1p24 up
+ip link set eth1p25 up
+ip link add link br1 name br1.10 type vlan id 10
+ip link set br1.10 up
+bridge vlan add dev br1 vid 10 self
+ip addr add 130.0.0.1/24 dev br1.10
+ip addr add 120.0.0.1/24 dev br1.10
+
+ifconfig eth1p24 up
+ifconfig eth1p24 130.0.1.1
+
+ip neigh add 130.0.0.3 lladdr 00:00:0f:5b:af:7a nud stale dev br1.10
+
+ip addr del 120.0.0.1/24 dev br1.10
+ip addr del 130.0.0.1/24 dev br1.10
+arp -s 130.0.0.3 00:00:0f:5b:af:7a
+
+ip addr add 130.0.0.1/24 dev br1
+ip addr add 120.0.0.1/24 dev br1
+ip addr del 120.0.0.1/24 dev br1
+ip addr del 130.0.0.1/24 dev br1
+
+ip n add 130.0.0.3 lladdr 00:00:0f:5b:af:7a #dev br1.10
+
+bridge vlan del dev eth1p24 vid 10 pvid untagged
+bridge vlan del dev eth1p25 vid 10 pvid untagged
+---------------------------------------------------------------------------------------------------------
+
+ip link add name bridge_q type bridge vlan_filtering 1
+ip link set dev bridge_q up
+ip link set dev eth1p24 master bridge_q
+ip link set dev eth1p25 master bridge_q
+ip link add link bridge_q name bridge_q.10 type vlan id 10
+ip link set dev bridge_q.10 up
+ip link add link bridge_q name bridge_q.20 type vlan id 20
+ip link set dev bridge_q.20 up
+bridge vlan add vid 10 dev bridge_q self 
+bridge vlan add vid 20 dev bridge_q self 
+bridge vlan add vid 10 dev eth1p24 untagged 
+bridge vlan add vid 20 dev eth1p25 untagged 
+ip l set eth1p24 up
+ip l set eth1p25 up
+
+ip addr add 6.0.0.1/8 dev bridge_q.10
+ip addr add 7.0.0.1/8 dev bridge_q.20
+ip addr add 8.0.0.1/8 dev bridge_q
+ip addr add 9.0.0.1/8 dev eth1p24
+ip addr add 10.0.0.1/8 dev eth1p25
+
+ip addr flush dev eth1p24
+ip addr flush dev eth1p25
+ip addr flush dev bridge_q
+ip addr flush dev bridge_q.10
+ip addr flush dev bridge_q.20
+
+ip l del bridge_q
+
+---------------------------------------------------------------------------------------------------------
+
+ip link add name bridge_d type bridge
+ip link set dev bridge_d up
+ip link set dev eth1p24 master bridge_d
+ip link set dev eth1p25 master bridge_d
+ip l set eth1p24 up
+ip l set eth1p25 up
+
+ip addr add 8.0.0.1/8 dev bridge_d
+ip addr add 9.0.0.1/8 dev eth1p24
+ip addr add 10.0.0.1/8 dev eth1p25
+
+ip addr flush dev eth1p24
+ip addr flush dev eth1p25
+ip addr flush dev bridge_d
+
+ip l del bridge_d
+
+---------------------------------------------------------------------------------------------------------
+
+ip link add br0 type bridge
+ip link set br0 up
+ip link set eth1p1 up
+ip link set eth1p25 up
+ip link set eth1p1 master br0
+ip link set eth1p25 master br0
+ip a a 192.168.1.3/24 dev br0
+ip a a 192.168.1.1/24 dev eth1p1
+ip lin set eth1p1 up
+ip route a 3.3.3.0/24 via 192.168.1.4
+
+ip l del br0
+ip a flush eth1p1
+
+
+---------------------------------------------------------------------------------------------------------
+ bash -c 'for x in eth1p1 eth1p24 eth1p25 eth1p48; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ sysctl -n net.ipv4.ip_forward
+ sysctl -wq net.ipv4.ip_forward=1
+ ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ ip link set dev bridge1 up
+ ip link add name bridge2 type bridge vlan_filtering 1
+ ip link set dev bridge2 up
+ ip link set dev eth1p24 master bridge1
+ ip link set dev eth1p25 master bridge1
+ ip -j -d link show master bridge1
+ ip link set dev eth1p48 master bridge2
+ ip addr add 90.60.30.1/24 dev eth1p1
+ ip addr add 90.60.40.1/24 dev bridge1
+ ip addr add 90.60.50.1/24 dev bridge2
+ ip addr add 100.50.0.1/16 dev eth1p1
+ ip addr add 100.51.0.1/16 dev bridge1
+ ip addr add 100.52.0.1/16 dev bridge2
+ ip -j addr show dev eth1p1
+ ip -j addr show dev bridge1
+ ip -j addr show dev bridge2
+ ip -j addr show dev eth1p1
+ ip -j addr show dev bridge1
+ ip -j addr show dev bridge2
+ ip -j neigh show dev eth1p1
+ ip -j neigh show dev bridge1
+ ip -j neigh show dev bridge2
+ ip -j route show
+ bash -c 'for x in bridge1; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} down; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ bash -c 'for x in bridge1; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ ip -j -d link
+ ip link set dev eth1p24 nomaster
+ ip link set dev eth1p48 nomaster
+ ip link set dev eth1p48 master bridge1
+ ip link set dev eth1p24 master bridge2
+ ip link delete dev bridge2
+ 
+
+
+
+bash -c 'for x in eth1p1 eth1p24 eth1p25 eth1p48; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+sysctl -n net.ipv4.ip_forward
+sysctl -wq net.ipv4.ip_forward=1
+ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ip link set dev bridge1 up
+ip link add name bridge2 type bridge vlan_filtering 1
+ip link set dev bridge2 up
+ip link set dev eth1p24 master bridge1
+ip link set dev eth1p25 master bridge1
+ip -j -d link show master bridge1
+ip link set dev eth1p48 master bridge2
+ip addr add 90.60.30.1/24 dev eth1p1
+ip addr add 90.60.40.1/24 dev bridge1
+ip addr add 90.60.50.1/24 dev bridge2
+ip addr add 100.50.0.1/16 dev eth1p1
+ip addr add 100.51.0.1/16 dev bridge1
+ip addr add 100.52.0.1/16 dev bridge2
+ip -j addr show dev eth1p1
+ip -j addr show dev bridge1
+ip -j addr show dev bridge2
+ip -j addr show dev eth1p1
+ip -j addr show dev bridge1
+ip -j addr show dev bridge2
+ip -j neigh show dev eth1p1
+ip -j neigh show dev bridge1
+ip -j neigh show dev bridge2
+ip -j route show
+bash -c 'for x in bridge1; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} down; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+bash -c 'for x in bridge1; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ip -j -d link
+ip link delete dev bridge2
+
+---------------------------------------------------------------------------------------------------------
+
+ip link add link bond name bridge_q.10 type vlan id 10
+ip link set dev bond.10 up
+ip link add link bond name bridge_q.20 type vlan id 20
+ip link set dev bond.20 up
+bridge vlan add vid 10 dev bridge_q self 
+bridge vlan add vid 20 dev bridge_q self 
+bridge vlan add vid 10 dev eth1p24 untagged 
+bridge vlan add vid 20 dev eth1p25 untagged 
+
+ip link add name br0 type bridge vlan_filtering 1 vlan_default_pvid 10
+ip link set eth1p42 master br0
+ip link set br0 up
+ip addr add 192.168.1.2/24 dev br0
+reboot
+---------------------------------------------------------------------------------------------------------
+
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+sudo ip link set dev bridge1 up
+sudo ip link add name bridge2 type bridge vlan_filtering 1
+sudo ip link set dev bridge2 up
+sudo ip link set dev ens9 master bridge1
+sudo ip link set dev ens10 master bridge2
+sudo ip link set ens9 up
+sudo ip link set ens10 up
+sudo ip addr add 90.60.40.1/24 dev bridge1
+sudo ip addr add 90.60.50.1/24 dev bridge2
+
+---------------------------------------------------------------------------------------------------------
+
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+sudo ip link set dev bridge1 up
+sudo ip link add name bridge2 type bridge vlan_filtering 1
+sudo ip link set dev bridge2 up
+sudo ip link set dev eth1p48 master bridge1
+sudo ip link set dev eth1p24 master bridge2
+sudo ip link set eth1p48 up
+sudo ip link set eth1p24 up
+sudo ip addr add 90.60.40.1/24 dev bridge1
+sudo ip addr add 90.60.50.1/24 dev bridge2
+
+
+ip link set dev eth1p24 nomaster
+ip link set dev eth1p25 nomaster
+ip link set dev eth1p48 nomaster
+ip link set dev eth1p24 master bridge2
+ip link set dev eth1p25 master bridge2
+ip link set dev eth1p48 master bridge1
+ip addr del 100.51.0.1/16 dev bridge1
+ip addr del 100.52.0.1/16 dev bridge2
+ip addr add 100.52.0.1/16 dev bridge1
+ip addr add 100.51.0.1/16 dev bridge2
+ip neigh flush dev eth1p1
+ip neigh flush dev eth1p24
+ip neigh flush dev eth1p25
+ip neigh flush dev eth1p48
+ip link set bridge1 type bridge fdb_flush
+
+
+ip addr flush eth1p1
+ip addr flush eth1p24
+ip addr flush eth1p25
+ip addr flush eth1p48
+
+---------------------------------------------------------------------------------------------------------
+
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+sudo ip link set dev bridge1 up
+sudo ip link set dev eth1p48 master bridge1
+sudo ip link set eth1p48 up
+sudo ip link set eth1p24 up
+sudo ip addr add 90.60.40.1/24 dev bridge1
+sudo ip addr add 90.60.50.1/24 dev eth1p24
+
+
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo ip link set eth1p48 up
+sudo ip link set eth1p24 up
+sudo ip addr add 90.60.50.1/24 dev eth1p24
+sudo ip addr add 90.60.40.1/24 dev eth1p48
+
+
+ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ip link set dev bridge1 up
+ip link add name bridge2 type bridge vlan_filtering 1
+ip link set dev bridge2 up
+ip link set dev eth1p24 master bridge1
+ip link set dev eth1p25 master bridge1
+ip link set dev eth1p48 master bridge2
+ip link set eth1p1  up
+ip link set eth1p24 up
+ip link set eth1p25 up
+ip link set eth1p48 up
+ip addr add 100.52.0.1/16 dev bridge1
+ip addr add 100.51.0.1/16 dev bridge2
+ip link set dev eth1p24 nomaster
+ip link set dev eth1p25 nomaster
+ip link set dev eth1p48 nomaster
+ip link set dev eth1p24 master bridge2
+ip link set dev eth1p25 master bridge2
+ip link set dev eth1p48 master bridge1
+
+
+
+
+
+ip l add br0 type bridge
+ip l set eth1p1 master br0
+ip addr add ... dev br0
+ip l set eth1p1 nomaster
+ip l add br1 type bridge
+ip l set eth1p2 master br1
+ip l set eth1p1 master br0
+
+
+
+---------------------------------------------------------------------------------------------------------
+ip link add bridge1 type bridge vlan_default_pvid 0 vlan_filtering 0
+ip link set dev bridge1 up
+ip link add name bridge2 type bridge vlan_filtering 1
+ip link set dev bridge2 up
+ip link set dev eth1p24 master bridge1
+ip link set dev eth1p48 master bridge2
+ip link set eth1p24 up
+ip link set eth1p48 up
+ip addr add 90.60.40.1/24 dev bridge1
+ip addr add 90.60.50.1/24 dev bridge2
+
+
+ip link set dev eth1p24 nomaster
+ip link set dev eth1p48 nomaster
+ip link set dev eth1p24 master bridge2
+ip link set dev eth1p48 master bridge1
+
+
+ip addr del 100.51.0.1/16 dev bridge1
+ip addr del 100.52.0.1/16 dev bridge2
+ip addr add 100.52.0.1/16 dev bridge1
+ip addr add 100.51.0.1/16 dev bridge2
+
+---------------------------------------------------------------------------------------------------------
+ip link add name bridge2 type bridge vlan_filtering 1
+ip link set dev bridge2 up
+ip link set dev eth1p48 master bridge2
+ip link set eth1p24 up
+ip link set eth1p48 up
+ip addr add 90.60.50.1/24 dev bridge2
+ip addr del 90.60.50.1/24 dev bridge2
+
+
+
+# ip link set dev eth1p24 nomaster
+# ip link set dev eth1p48 nomaster
+# ip link set dev eth1p24 master bridge2
+# ip link set dev eth1p48 master bridge1
+
+
+ip addr del 100.51.0.1/16 dev bridge1
+ip addr del 100.52.0.1/16 dev bridge2
+ip addr add 100.52.0.1/16 dev bridge1
+ip addr add 100.51.0.1/16 dev bridge2
+
+
+ip l set eth1p1 up
+ip l set eth1p24 up
+ip r del default via 172.20.10.1
+ip address add 192.168.10.3/24 dev eth1p24
+sleep 4
+ip route add default via 192.168.10.250 dev eth1p24
+
+
+
+
+ip address add 192.168.9.2/24 dev eth1p1
+
+
+ip addr add 110.0.0.1/24 dev eth1p1
+ip addr add 120.0.0.1/24 dev eth1p24
+ip ro add 120.0.10.5/32 via 120.0.0.2
+ip ro add 120.0.10.8/30 via 120.0.0.2
+ip ro add 140.0.10.5/32 via 120.0.0.2
+ip ro add 140.0.10.8/30 via 120.0.0.2
+
+
+ip link set eth1p1  up
+ip link set eth1p24 up
+ip link set eth1p25 up
+ip addr add 130.0.0.1/24 dev eth1p25
+ip addr add 110.0.0.1/24 dev eth1p1
+ip addr add 120.0.0.1/24 dev eth1p24
+
+ip r del default via 172.20.10.1
+ip route add default via 130.0.0.2  dev eth1p25
+
+
+ip route del default via 130.0.0.2  dev eth1p25
+ip addr flush eth1p25
+ip l add br0 type bridge
+ip l set eth1p25 master br0
+ip l set br0 up
+ip addr add 130.0.0.1/24 dev br0
+ip route add default via 130.0.0.2 dev br0
+
+
+---------------------------------------------------------------------------------------------------------
+
+
+ip l add br0 type bridge
+ip l add br1 type bridge
+ip l set eth1p1 master br0
+ip l set eth1p24 master br0
+ip l set br0 up
+ip l set br1 up
+ip l set eth1p1 up
+ip l set eth1p24 up
+ip addr add 1.1.1.1/24 dev br0
+ip l set eth1p1 master br1
+ip l set eth1p24 master br1
+ip addr add 2.1.1.1/24 def br1
+
+ip l set eth1p25 master br1
+ip l set eth1p48 master br1
+ip l set eth1p25 up
+
+
+---------------------------------------------------------------------------------------------------------
+bash -c 'for x in eth1p1 eth1p24 eth1p25 eth1p48; do for count in $(seq 1 1); do { out=$( { ip link set dev ${x} up; } 2>&1 ); }; echo \|${count}\|$x\|"$?"\|$out; done; done'
+ip link add name bridge_q type bridge vlan_filtering 1
+ip link set dev bridge_q up
+ip link set dev eth1p24 master bridge_q
+ip link set dev eth1p25 master bridge_q
+ip link set dev eth1p48 master bridge_q
+ip link add link bridge_q name bridge_q.10 type vlan id 10
+ip link set dev bridge_q.10 up
+ip link add link bridge_q name bridge_q.20 type vlan id 20
+ip link set dev bridge_q.20 up
+bridge vlan add vid 10 dev bridge_q self 
+bridge vlan add vid 20 dev bridge_q self 
+bridge vlan add vid 10 dev eth1p24 untagged 
+bridge vlan add vid 20 dev eth1p25 untagged 
+ip link add link bridge_q name bridge_q.100 type vlan id 100
+ip link set dev bridge_q.100 up
+ip link add link bridge_q name bridge_q.200 type vlan id 200
+ip link set dev bridge_q.200 up
+bridge vlan add vid 100 dev bridge_q self 
+bridge vlan add vid 200 dev bridge_q self 
+bridge vlan add vid 100 dev eth1p24 untagged pvid 
+bridge vlan add vid 200 dev eth1p25 untagged pvid 
+
+ip addr add 5.0.0.1/8 dev eth1p1
+ip addr add 6.0.0.1/8 dev bridge_q.10
+ip addr add 7.0.0.1/8 dev bridge_q.20
+ip addr add 11.0.0.1/16 dev bridge_q.100
+ip addr add 12.0.0.1/16 dev bridge_q.200
+
+bridge vlan add vid 10 dev eth1p24 pvid 
+bridge vlan add vid 20 dev eth1p25 pvid 
+ip neigh flush dev eth1p1
+ip neigh flush dev eth1p24
+ip neigh flush dev eth1p25
+ip neigh flush dev bridge_q.10
+

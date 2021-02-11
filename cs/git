@@ -1,8 +1,6 @@
-
 =========================================================================================================
                                       Git
 =========================================================================================================
----------------------------------------------------------------------------------------------------------
                                  Debug options
 ---------------------------------------------------------------------------------------------------------
 GIT_CURL_VERBOSE=1                         # use these before as prefix to cmd
@@ -17,9 +15,11 @@ GIT_CURL_VERBOSE=1 GIT_TRACE=1 GIT_TRACE_PACKET=1
 Local branches are mapped to remite ones with a special syntax called `refspec`, that takes the form
 <source>:<destination>. Here, <source> is a branch that exists on a remote repository, while <destination>
 is the branch it should map to in the local repo.
+
 Example of refspec may look like `fetch: +refs/heads/master:refs/remotes/origin/master`, meaning that
 next time we fetch, git will update local master from remote one. The `+` tells git to perform a merge
 if no fast-forwarding is appropriate during a fetch.
+
 Aother example `fetch = +refs/pull/*/head:refs/pull/origin/*` would create a local branch for each
 pull request in repo on a fetch.
 
@@ -28,11 +28,11 @@ https://stackoverflow.com/questions/47814644/how-to-understand-remote-origin-fet
 =========================================================================================================
                                     Branches
 =========================================================================================================
-Branch => active parallel line of development, usefull for isolation and separation different types of work.
-A single repository can have an arbitrary numer of branches. There are next types of brnaches:
-Branches on local machine:
-Local branches can be divided into: non-tracking local, local-tracking and remote-tracking.
-To list local branches issue `git branch`
+Branch. Active parallel line of development, usefull for isolation and separation different types of work.
+A single repository can have an arbitrary numer of branches.
+
+There are next types of brnaches:
+# Branches on local machine. To list local branches issue `git branch`
 1. Non-tracking local branch
    Standalone branches not associated with any other branches, newly crated branches with `git branch <name>`
 2. Local-tracking branch
@@ -56,14 +56,14 @@ To list local branches issue `git branch`
    References to the state of branches in yout remote machines. You can`t move them but can update with
    `git fetch`. This one has form of <remote>/<branch>. You can list them with `git branch -r`
 
-Branches on remote machine
+Branches on remote machine:
 1. Remote branch. It is a branch located on a remote machine/server. You can view all the remote branches
    with `git remote show <remote>` or `git ls-remote --heads <remote>`
 
-Default branch (probably named master) is considered the base branch in your repository, against which
-all pull requests and code commits are automatically made unless you specify a different branch. Note
-that this applies only to GitHub and not git. This way people will, by default, clone branch defined by
-you, and upstream will be the same  branch? but this doesn`t stop you from commiting into master.
+Default branch. Usually - master. Considered the base branch in your repository, against which all pull
+requests and code commits are automatically made unless you specify a different branch. Note that this
+applies only to GitHub and not git. This way people will, by default, clone branch defined by you, and
+upstream will be the same branch? but this doesn`t stop you from commiting into master.
 There is option to set hooks with permisions on branch therefore, you can specify who can change branch
 and who don`t.
 
@@ -86,7 +86,7 @@ https://help.github.com/en/articles/setting-the-default-branch
                                Comparing branches
 ---------------------------------------------------------------------------------------------------------
 You can look which commits are present on one branch and abscent on another using `show-branch`
-git show-branch feature_branch master origin/master
+    git show-branch feature_branch master origin/master
 This can be used to find the closest common commit between them.
 
 Another thing that you can do is taking diff between HEAD of branches
@@ -113,6 +113,9 @@ git branch --set-upstream my_branch origin/origin_branch    # set upstream branc
 =========================================================================================================
                                      Remote
 =========================================================================================================
+Remote. The remote version, which is mostly use for archiving, collaboration, sharing, and CI triggers.
+Usually, whenever you read “repo” or “Git repo”, it’s your local, interactive repo (that is, with a working
+directory alongside its .git root).
 
 git remote add  <remote_name> <location>          # adds remote to your local repo
                                git@github.com:User/UserRepo.git
@@ -168,10 +171,8 @@ Before force pushing, fetch changes and apply them to your tree, otherwise you w
 Note, there still may be a race condition if somebody pushes changes between when you fetch and you push,
 you may still overwrite them. To avoid this, communicate with your team.
 
-
-Safer alternative:
-Force-with-lease. Let`s you change the history, but will stop if there are some new commits on the remote
-branch
+Force-with-lease (safer alternative). Let`s you change the history, but will stop if there are some new
+commits on the remote branch.
 
 https://willi.am/blog/2014/08/12/the-dark-side-of-the-force-push/
 ---------------------------------------------------------------------------------------------------------
@@ -210,16 +211,14 @@ file from contents, rather than seeing it as a new untracked file, and keep the 
 =========================================================================================================
                                     Fetching
 =========================================================================================================
-Fetch is an operation of downloading changes (newer/older) from a remote server. When you clone your
-project, it automatically gets remote-tracking master branch. After that, git tries to checkout your
-local master, however it is not present, therefore git guess that you wanted to make a new local branch
-`master` pointing to remote `master.
-This provides git with location information about where it should get changes from.
+Fetch. Operation of downloading changes (newer/older) from a remote server. When you clone your project,
+it automatically gets remote-tracking master branch. After that, git tries to checkout your local master,
+however it is not present, therefore git guess that you wanted to make a new local branch `master` pointing
+to remote `master`. This provides git with location information about where it should get changes from.
 Remote branch is called an upstream.
 
 git fetch <remote> <remote_branch>:<local_branch>           # fetch branch from remote into local non existing branch
-git checkout <local_branch>
-# Short form of previous solution
+git checkout <local_branch>                                 # short form of previous solution
 git checkout -b <local_branch> <remote>/<remote_branch>     # fetche remote branch and make local branch
                                                               point to remote one.
 git checkout --track <remote>/<branch>                      # the same as previous but shorter
@@ -231,6 +230,7 @@ https://stackoverflow.com/questions/37770467/why-do-i-have-to-git-push-set-upstr
 git apply --check                   # dry run
 git apply --reject                  # apply any valid hunks and save rejected to *.rej files
           --directiry="prefix/"     # add prefix directory when applying patches with different root path
+
 If git apply makes no output, and changes are not applied, try -v flag. If there is no output as well
 check paths used during patch creating and try applying from another directory.
 
@@ -383,11 +383,10 @@ git grep -n ‘log_syslog’ v1.5.3.8 v1.0.0 -- *.c
 ---------------------------------------------------------------------------------------------------------
 git reflog                                   # create a branch for deleted commit so it won`t be cleaned 
 git reflog show --all | grep <commit_hash>   # can be use to find first occurence of commit
+
 =========================================================================================================
                                      Blame
 =========================================================================================================
-
----------------------------------------------------------------------------------------------------------
                                     Pickaxe
 ---------------------------------------------------------------------------------------------------------
 The problem of blame is showing the latest syntactic change instead of semantic, therefore if you will try
@@ -500,9 +499,52 @@ https://travisjeffery.com/b/2012/02/search-a-git-repo-like-a-ninja/
 =========================================================================================================
                                    Submodules
 =========================================================================================================
+Submodules, like subtrees, aim to reuse code from another repo somewhere inside your own repo’s tree.
+The goal is usually to benefit from central maintenance of the reused code across a number of container
+repos, without having to resort to clumsy, unreliable copy-pasting.
+Submodules rely on nesting repos: you have repos within… repos. The module has its own repo, somewhere
+inside the working directory of its container repo.
+Submodules use a simple .git file with a single gitdir: line mentioning a relative path to the actual repo
+folder, now located inside the container’s .git/modules.
+
+There are a number of situations where the physical presence of module code inside container code is mandated,
+usually because of the technology or framework being used. For instance, themes and plugins for Wordpress,
+Magento, etc. are often de facto installed by their mere presence at conventional locations inside the
+project tree, and this is the only way to “install” them.
+
+Submodules are the right choice when your codebase is massive and you don’t want to have to fetch it all
+every time, a situation many tentacular code bases grapple with. You then resort to submodules so your
+collaborators don’t necessarily have to fetch entire blocks of the code base.
+
+You should strive for submodule code to remain independent of particularities of the container
+(or at least, rely on external configuration to handle such particularities), as submodule code is central
+code, shared across all container projects.
+
+---------------------------------------------------------------------------------------------------------
+Disadvantages:
+- Every time you add a submodule, change its remote’s URL, or change the referenced commit for it, you
+  demand a manual update by every collaborator
+- Forgetting this explicit update can result in silent regressions of the submodule’s referenced commit.
+- Commands such as status and diff display precious little info about submodules by default.
+- Because lifecycles are separate, updating a submodule inside its container project requires two commits
+  and two pushes.
+- Submodule heads are generally detached, so any local update requires various preparatory actions to
+  avoid creating a lost commit.
+- Removing a submodule requires several commands and tweaks, some of which are manual and unassisted.
+- You need to know what you`re doing
+---------------------------------------------------------------------------------------------------------
+
 git submodele add ../mainmod.git submod
 git submodule update
+git pull --recurse-submodules --jobs=10
+git submodule update --recursive --remote
 
+git clone
+git submodule init
+git submodule update
+                     --init               # to avoid separate init command
+git clone --recursive remotes/main local  # to avoid init&update
+https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407
 =========================================================================================================
                                     Stashing
 =========================================================================================================
@@ -549,6 +591,7 @@ https://stackoverflow.com/questions/61212/how-to-remove-local-untracked-files-fr
 git commit --amend --no-edit
 git commit --amend -m "Your new commit message"
 git commit --amend <<< :wq  -- will merge last commit and current changes?
+
 =========================================================================================================
                                      Diffs
 =========================================================================================================
@@ -564,19 +607,24 @@ You can take diff between HEADs of different branches like follows
 git diff <branch_a>..<branch_b>
 git diff master..development
 
+diff -rq            #
+     --brief        # list fils that are different without content
+     -N             # list file that is present in 1 dir but not other
+
 
 https://stackoverflow.com/questions/8554776/how-to-filter-git-diff-based-on-file-extensions
 ---------------------------------------------------------------------------------------------------------
                           Diff strategies(algorithms)
 ---------------------------------------------------------------------------------------------------------
-There are 4 different diff strategies: myer, patience, histogram and minimal. Myer is the default mode
-that is used when taking diff, it is faster then others but quality isn`t the best. Patience was the first
-implementation of quality oriented diff. histogram is version implemented by jgit project that is supposed
-to be both fast and provide decent quality. Minimal is extension of myer, which will perform for some
-predefined CPU time and then return the best (smallest) diff it made.
+There are 4 different diff strategies: myer, patience, histogram and minimal.
+1. Myer. The default mode that is used when taking diff, it is faster then others but quality isn`t the best.
+2. Patience. The first implementation of quality oriented diff.
+3. Histogram. Version implemented by jgit project that is supposed to be both fast and provide decent quality.
+4. Minimal. Extension of myer, which will perform for some predefined CPU time and then return the best
+   (smallest) diff it made.
+
 To define one algorithm by default there is configuration variable diff.algorithm that can be one of the
     'myers' 'minimal' 'patience' 'histogram'.
-
 
 It is possible to use external diff engine by defining GIT_EXTERNAL_DIFF
 
@@ -599,6 +647,9 @@ do      # get changes from other window into current (dg?)
 dp      # put the changes from current window into the other window
 ]c      # jump to the next change
 [c      # jump to the previous change
+
+:diffup     | recolor diff
+
 
 https://stackoverflow.com/questions/242646/use-vimdiff-with-a-diff-file
 ---------------------------------------------------------------------------------------------------------
@@ -720,14 +771,14 @@ https://stackoverflow.com/questions/40978921/how-to-add-chmod-permissions-to-fil
 =========================================================================================================
 Git won`t cross symbolic linked directories. There are a couple of workarounds,
 1. You can mv wanted directory to git, and create link at original position (won`t help if you want link
-directory into multiple git repos)
+   directory into multiple git repos)
 2. There is a GitBLSR repo, which provides reworked logic for symlinck check mechanism, you just prelod
-it with LD_PRELOAD
-alias git="LD_PRELOAD=/path/to/gitbslr.so git"
+   it with LD_PRELOAD
+        alias git="LD_PRELOAD=/path/to/gitbslr.so git"
 3. You can use bind mount
 4. Change git working tree for the specific actions. (Not sure how it works or supposed to work?)
-git --work-tree=/home/project/ add /home/static/
-git --work-tree=/home/project/ commit /home/static/
+        git --work-tree=/home/project/ add /home/static/
+        git --work-tree=/home/project/ commit /home/static/
 
 https://superuser.com/questions/174833/how-can-i-make-git-commit-files-in-a-symlinked-folder
 =========================================================================================================
@@ -760,11 +811,13 @@ Write your commit message in the imperative: "Fix bug" and not "Fixed bug" or "F
 ---------------------------------------------------------------------------------------------------------
 wget --no-check-certificate --content-disposition https://URL-RAW   # download one file
 curl -LJO                                                           #
+
 =========================================================================================================
                                     Amending
 =========================================================================================================
 To change commit msg or merge currently staged objects to your last local commit, from directory with
 repository issue (commit window will popup)
+
 git commit --amend
 git commit --amend --no-edit     # if you don`t want to change commit message
 git commit --amend -c <hash>     # ammend specific commit

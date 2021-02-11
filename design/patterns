@@ -1,0 +1,36 @@
+                                    Patterns
+=========================================================================================================
+Decomposing code is a hallmark of object-oriented programming. The subject of design patterns is concerned
+with finding good ways to achive code-reuse. Broadly speaking, design patterns are grouped into: creational,
+structural, and behavioral patterns. Many specific patterns are very natural - strategy objects, adapters,
+builders, ets., appear in a number of places in out codebase.
+
+Class. An encapsulation of data and methods that operate on that data. Classes match the way we think
+about computation. They provide encapsulation, which reduces the conceptual burden of writing code, and
+enable code reuse, through the use of inheritance and polymorphism. However, naive use of OO constructs
+can result in a code that is hard to maintain.
+A design pattern is a general repeatable solution to a commonly occuring problem.
+
+=========================================================================================================
+                          Procedural language patterns
+=========================================================================================================
+1. Handles (encapsulation).
+   The construct function doesn`t return a struct or an object but a handle - opaque pointer or just an
+   integer, like socket. In C: fopen - opaque pointer to file, open - integer file descriptor.
+2. Contexts.
+   An object that contains the state of some system.
+   object.method(param) => function(&context, param)
+3. Callbacks.
+   A function pointer that allows to add custom behaviour to a system.
+4. Setup structs.
+   When function can be parameterized in lots of ways. Function has a special structure associated with
+   it where depending on members filed different actions will be taken.
+5. Variable size data in C.
+
+=========================================================================================================
+TODO
+---------------------------------------------------------------------------------------------------------
+https://cpppatterns.com/patterns/virtual-constructor.html
+PIMPL
+named parameter idiom
+The Curiously Recurring Template Pattern (CRTP)

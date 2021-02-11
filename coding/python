@@ -1,0 +1,177 @@
+                                     Python
+=========================================================================================================
+Python is a software package called an interpreter. An interpreter is a kind of program that executes other
+programs. It reads the Python program and carries out the instructions it contains. The interpreter is a
+layer of software logic between your code and the computer hardware on your machine.
+
+When you instruct Python to run your script it first compiles it to `byte code` and then routes it to a
+`virtual machine`. The byte code is saved to the `.pyc` file (c - compiled) directly within compilation
+directory (v<3) or in __pycache__ subdirectory. It is done to optimize the startup speed by caching already
+compiled file.
+Note, you can ship the compiled files and interpreter can run them. Otherwise, you want a frozen binaries
+- fully compiled python code packaged with a 3rd party application. Usually, such application just compiles
+all of the needed files/data into the package + PVT, so it can run it on the system without need to install
+PVT.
+---------------------------------------------------------------------------------------------------------
+                                    Debugging
+---------------------------------------------------------------------------------------------------------
+dir([object[.property]])       # fetch a list of the object properties
+                               # without arguments => list local variables
+                               # with propertie => displays the property documentation
+help(object)
+time, timeit, profile modules for isolating bottlenecks
+
+---------------------------------------------------------------------------------------------------------
+                               Version difference
+---------------------------------------------------------------------------------------------------------
+Currently, there are two main stream versions of Python, 2.7 and 3.5. Although Python 2.7 is still
+widely used, it is going to `retire` and no longer be maintained by January 1, 2018.
+
+Differences:
+1. Legacy code. There is a plenty of legacy code written in Python 2, but most of new applications are
+   written in Python3.
+2. Library. Many older libraries built for Python 2 are not forwards-compatible and new ones are not
+   backward compatbile
+3. Strings. Python 2 holds all string in memory as ASCII while Python 3 as Unicode
+4. Integer division.
+   Python 2:   5/2 = 2    but   5.0/2 = 2.5
+   Python 3:   5/2 = 2.5
+5. Print. Python 2 had a print statement, while python3 replaced it with a function
+   Python 2:   print "Hello"
+               print "Hello", "World"
+               print ("Hello", "World")
+               print "Hello",; print "World"
+   Python 3:   print("Hello")
+               print("Hello", "World")
+               print("Hello", end="")
+               print(" World")
+   Note, print ("Hello", "World") doesn`t work like you expect in different versions
+   Python 2: since `print` is a built in statement accepting an object, fields are passed as tuple
+       print('a', 'b')  ==>  ('a', 'b')
+       print 'a', 'b'   ==>  a b
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                    Objects
+=========================================================================================================
+Object classifications
+Object type    | Category   | Mutable?
+---------------|------------|--------------
+Numbers (all)  | Numeric    | No
+Strings (all)  | Sequence   | No
+Lists          | Sequence   | Yes
+Dictionaries   | Mapping    | Yes
+Tuples         | Sequence   | No
+Files          | Extension  | N/A
+Sets           | Set        | Yes
+Frozenset      | Set        | No
+bytearray      | Sequence   | Yes
+
+=========================================================================================================
+                               Formatting
+=========================================================================================================
+'$s $s' % ("foo", "bar")          # any python
+'{0} {1}'.format("foo", "bar")    # 2.6+, 3.0+
+'{} {}'.format("foo", "bar")      # 2.7+, 3.1+
+'{0:o}, {1:x}, {2:b}'.format(64, 64, 64)     # Numbers=>digits, 2.6+
+'%o, %x, %x, %X' % (64, 64, 255, 255)        # Similar, in all Pythons
+
+---------------------------------------------------------------------------------------------------------
+List comprehension. A way to build a new list by running an expression on each itme in a sequence, one at
+a time, from left to right. Can also be used to collect multiple values, as long as we wrap those values
+in a nested collection.
+
+col2 = [row[1] for row in M]
+       [row[1] for row in M if row[1] % 2 == 0]     # filter out odd items
+diag = [M[i][i] for i in [0, 1, 2]]                 # collect a diagonal
+double = [c * 2 for c in `spam`]                    # repeat characters in a string
+[[x ** 2, x ** 3] for x in range(4)]
+[[x, x / 2, x * 2] for x in range(-6, 7, 2) if x > 0]
+L = ['abc', 'ABC', 'aBe']
+sorted([x.lower() for x in L])
+D = {x : x*2 for x in range(10)}
+
+=========================================================================================================
+                                Data structures
+=========================================================================================================
+Largely because of their implementation, sets can only contain immutable (hashable) object types. Hence,
+lists and dictionaries cannot be embedded in sets, but typles can if you need to store compound values.
+
+All collection data types in Python can nest inside each other arbitrarily.
+
+---------------------------------------------------------------------------------------------------------
+                                     Tuples
+---------------------------------------------------------------------------------------------------------
+Tupels are not used  as often as lists in practice, but their immutability is the whole point. If you
+pass a collection of objects around your program as a list, it can be changed anywhere; if you use a
+tuple, it cannot. That is, tuples provide a sort of integrity constraint that is convenient is large
+programs.
+Also, note that ommutability applies only to the top level of the tuple itself, not to its contents,
+therefore, a list inside a tuple, can be chagned as usual.
+
+()
+T = (0,)                # parentheses can also enclose expression, therefore, you add comma to make it clear
+                        # that this is a tuple
+T = (0, 1, "123", 1.1)
+T = 0, 1, "123", 1.1    # is valid, unless syntactically ambiguous
+
+Note, since it is immutable, operations like `+*` return a new object. To sort a tuple, you need to
+convert it to list, so it is mutable, or use a new method `sorted(T)`
+
+Tuples provide less information comparing to `map` since it does not support key lookup, however, this
+can fixed by using a `namedtuple` from the standard library.
+One of interesting supported operation is called tuple unpacking
+bob = ('bob', 40, ['developer'])
+name, age, jobs = bob
+
+---------------------------------------------------------------------------------------------------------
+                                  Dictionaries
+---------------------------------------------------------------------------------------------------------
+Dictionary creation:
+{'prop1': 'val1', 'prop2': 'val2'}              # traditional literal expression
+                                                # if you can spell out dict ahead of time
+D = {}                                          # assign by keys dynamically
+                                                # if you create a dict one field a time on a fly
+D['prop1'] = 'val1'
+D['prop2'] = 'val2'
+dict(prop1 = 'val1', prop2 = 'val2')            # dict keyword argument form
+                                                # less typing, but requires all the keys to be strings
+dict([('prop1', 'val1'), ('prop2', 'val2')])    # dict key/value tuples form
+                                                # if you need to build keys and values as sequences at time
+dict.fromkeys([list_of_keys], default_value)    # default_values is None if omitted
+dict(zip([key_list], [value_list]))
+
+=========================================================================================================
+                              Reference managment
+=========================================================================================================
+L = [1,2,3]
+M = [1,2,3]
+X = 42
+Y = 42
+L == M => True          # Same values
+L is M => False         # Same referenced object
+X == Y => True
+X is Y => True          # Same object, caching works
+sys.getrefcount(val)    # get reference counter
+
+Because you cannot change immutable numbers or strings in place, it doesn`t matter how many references there
+are to the same object - every reference will always see the same uchanging value.
+
+=========================================================================================================
+                              Iterators/Generators
+=========================================================================================================
+An object is iterable if it either a physically stored sequence in memory, ot an object that generates one
+item at a time in the context of an iteration operation - a sort of `virtual` sequence. More formally, both
+objects support the iteration protocol - they respond to the `iter` call with an object that advances in
+response to `next` call and raises an exception when finished producing values.
+
+Map is a built-in that applies a function call to each item in the passed-in iterable object. It is similar
+to a list comprehension but is more limited because it requires a function instead of an arbitrary
+expression. It also returns an iterable object itself, so we must wrap it in a list call to force it to
+give us all its values at once.
+
+=========================================================================================================
+    To study
+=========================================================================================================
+https://benhoyt.com/writings/pygit/
+https://wyag.thb.lt/
+https://github.com/danistefanovic/build-your-own-x#build-your-own-git

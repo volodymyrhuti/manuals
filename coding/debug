@@ -266,3 +266,9 @@ Some modern computer architectures support an exception model called zero-cost e
 if supported, have no additional runtime cost in the non-error case (which is the case we most care about
 performance). However, they incur an even larger penalty in the case where an exception is found.
 =========================================================================================================
+                               Random helper code
+=========================================================================================================
+
+#undef syslog
+#define syslog(level, fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+=========================================================================================================

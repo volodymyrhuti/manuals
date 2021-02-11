@@ -30,7 +30,7 @@ Wait-for graph
                                Mutex vs Semaphore
 =========================================================================================================
 Mutex and semaphore are kernel resources that provide synchronization services (also called as synchronization
-primitives). Lets look at them in scope of producer-consumer problem ( producer fills 4096 byte buffer,
+primitives). Lets look at them in scope of producer-consumer problem (producer fills 4096 byte buffer,
 consumer reads it, threads should not run at the same time).
 
 Using Mutex:
@@ -106,6 +106,7 @@ function and send signal faster then you waited. When thread is notified, it awa
 the lock.
 
 Example with a bug =>
+---------------------------------------------------------------------------------------------------------
 struct counter {
     int count;
     thread_mutex lock;
@@ -113,16 +114,14 @@ struct counter {
 }
 increment(struct counter *c){
     thread_mutex_lock(&c->lock);
-    int n = c->count;
-    c->count = n+1;
+    ++c->count;
     if (c->count > 0)
         pthread_cond_signal(c->above_zero);
     thread_mutex_unlock(&c->lock)
 }
 decrement(struct counter *c){
     thread_mutex_lock(&c->lock);
-    int n = c->count;
-    c->count = n-1;
+    ++c->count;
     thread_mutex_unlock(&c->lock)
 }
 print_val(struct count *c){
@@ -138,6 +137,7 @@ T3 => print , wake up, c->count ! <= 0
 Proper way is to check and wait in loop
     while(c->count <= 0)
         thread_cond_wait(&c->above_zero,&c->lock)
+---------------------------------------------------------------------------------------------------------
 
 Conditional variables gives ability to cover multiple conditions. For instance, there may be multpile users
 trying to withdrow funds from a bank, and if there is not much funds but we can still supplie at list one

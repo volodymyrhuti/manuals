@@ -975,7 +975,74 @@ https://www.viewsonic.com/library/business/monitor-resolution-aspect-ratio
 =========================================================================================================
                                    Keyboards
 =========================================================================================================
+Keyboard types:
+1. Membrane. There is a rubber membrane under each key which closes the contact on the typing plate. These
+   keyboards are easy to make, hence thir low price. Such keyboards tend to lag on press. The issue is in
+   the technology and has nothing to do with the brand.
+2. Mechanical. The most attractive option for a gamer. 
+3. Scissor. This is a technology used in laptops mainly. Deep embedment of the keys is a typical feature
+   of the design of such keyboards. 
 
+Type       | Hit (mlns) | The key stroke (depth) | Price | Game Plat Comfort Level
+---------------------------------------------------------------------------------------------------------
+Membrane   | 5          | Deep                   | Low   | Average
+Mechanic   | 50         | Deep                   | High  | High
+Scissor    | 10         | Mediocre               | High  | High
+
+Keys material plastic:
+1. ABS-plastic
+   It costs much
+   Doesn`t rub off, no unpleasant gloss appears in due course
+   It has increased temperature resistance (up to 300* F) and strength
+2. PBT-plastic
+   It is cheap and light
+   the characters can get erased and the keyboard becomes glossy
+   Will melt after a few hours in the sun
+
+Assuming that you are choosing a mechanical model, there are still a few more things you should know.
+Beneath each key, there`s a physical switch that registers a keystroke. There are dozens of mechanical
+switch types and manufacturers, and keeping them all straight can be difficult.
+- Cherry MX. Industry-standard. They come in a variety of colors, the most common are Red, Brown, and Blue
+  Red keys are quite and respond to a soft-touch
+  Brown keys are quiet but resistant
+  Blue keys are clackety and resistant
+  Black keys are shallow and stiff
+  Greens are louder and more resistant than Blues
+
+Illumination. When it comes to backlighting, there are generally three choices in keyboards: none, one
+color, or full RGB.
+
+Key Rollover. How many keypresses your keyboard can register at once. Most standard keyboards offer 1- or
+2-Key Rollover (1/2KRO). Press more than that at once, and the additional keystrokes either won’t register,
+or your keyboard will register additional unpressed keys. This is an issue more commonly known as "ghosting."
+To avoid ghosting, quality gaming keyboards come with a minimum 6-Key Rollover.
+
+Form Factor. 
+- A full-size board has all the keys you need to operate a computer without worrying about any function
+  layers. There’s a full number pad as well.The main drawback of this size is that it’s rather large and
+  inefficient.
+- Tenkeyless. TKL. Sometimes known as 80 percent keyboards. These boards still don’t rely on function
+  layers for basic features, but there’s no number pad. 
+- 60% boards. A 60 percent board just has the alphas, number row, and modifiers. There are no dedicated
+  arrow keys, no F-row, and no number pad. All those features are there, but they’re in the function layer.
+  So, you hold function and press a different key.
+- Exotic layouts.
+- Super small 40 percent category. These boards have just alpha keys and a few modifiers.
+  They’re essentially pocket size and usually have at least two function-key layers to get all the basic
+  keyboard commands covered.
+
+=========================================================================================================
+                                     Mouse
+=========================================================================================================
+DPI. Dots per inch. Measurement of how sensitive a mouse is. The higher a mouse’s DPI, the farther the
+cursor on your screen will move when you move the mouse. For example, if your mouse has 1600 DPI, then
+moving it exactly one inch (2.54 cm) will move the cursor 1600 pixels on your screen. A mouse with a higher
+DPI setting detects and reacts to smaller movements.
+
+Polling rate. How often it reports its position to a computer. Polling rate is measured in Hz. If a mouse
+has a 125 Hz polling rate, it reports its position to the computer 125 times every second—or every 8
+milliseconds. A 500 Hz rate means that the mouse is reporting its position to the computer every 2
+milliseconds.
 
 =========================================================================================================
                                       GPU

@@ -1,7 +1,6 @@
-=========================================================================================================
 John R.Levine Linkers & Loaders
 =========================================================================================================
-What do linker and loaders do?
+                         What do linker and loaders do
 =========================================================================================================
 Linker and loaders binds more abstract names to more concrete names, which permits programmers to write
 code using the more abstract names. For example it takes a name written by a programmer such as getline
@@ -25,7 +24,7 @@ necessary, linker doing part of the address binding, assigning relative addresse
 the loader doing a final relocation step to assign actual addresses.
 
 =========================================================================================================
-Linking vs Loading
+                               Linking vs Loading
 =========================================================================================================
 Program loading => copying a program from secondary storage into main memory so it`s ready to run.
 This may invole alocating storage, setting protection bits, or arranging virtual memory
@@ -41,19 +40,14 @@ the symbol by noting the location assigned to symbols and patching the caller`s 
 instruction refers to that locations
 
 Loader does the program loading; the linker does the symbol resolutin; and either of them can do the relocation
-=========================================================================================================
-Dynamic linking
-=========================================================================================================
-Dynamic linking refers to the linking that is done during load or run-time and not when the execuatble
-is created. This is done with some system api like dlopen which will provide you handle to library
-loaded into memory. Now you want to call some function, to do this we have api which will try to resolve
-function from loaded library by name.
-=========================================================================================================
-Dynamic loading
-=========================================================================================================
-Dynamic loading refers to code loading/relocating at run-time. This is required for shared libries which
-are mapped at non known address and on some old systems require relocation fix-up.
-=========================================================================================================
+
+Dynamic linking. Linking that is done during load or run-time and not when the execuatble is created.
+This is done with some system api like dlopen which will provide you handle to library loaded into memory.
+Now you want to call some function, to do this we have api which will try to resolve function from loaded
+library by name.
+
+Dynamic loading. Code loading/relocating at run-time. This is required for shared libries which are mapped
+at non known address and on some old systems require relocation fix-up.
 
 Linking a two-pass process, firstly it scan input files to find the sizes of the segments and collects the
 definitions and references of all of the symbols. This information is used to create segment list and symbol
@@ -65,7 +59,7 @@ to call routines in overlays? or in dynamically linked libraries or an array of 
 routines that need to be called at program startup time (for instace _start method for C).
 
 =========================================================================================================
-Object file format
+                               Object file format
 =========================================================================================================
 Design of an object format is a compromise driven by the various uses to which an object file will be put.
 A file may be one or combination of following:
@@ -73,9 +67,8 @@ A file may be one or combination of following:
 2. Executable. Capable of being  loaded into memory and run as a program
 3. Loadable. Capable of being loaded into memory as a library along with a program
 
-
 =========================================================================================================
-Storage Allocation
+                               Storage Allocation
 =========================================================================================================
 Allocation is the first major task of linker/loaded. Every object or executable file uses a model of the
 target address space. The fundamental issue in a relocating linker.loader is to ensure that all the 
@@ -105,7 +98,7 @@ required routines and inserted before/after program entry point. Still there are
 oreder is unpredictable and you can`t be 100% sure that one object will be initialized before another.
 
 =========================================================================================================
-Symbol management
+                               Symbol management
 =========================================================================================================
 The linker reads all of the symbol tables in the input module and extract information used for building the
 link-time symbol tables that will guide the linking process. Output file may have multiple symbol tables,
@@ -145,22 +138,24 @@ linker calculates hash and then traverses need bucket while comaring symbol name
 may have the same symbol name but different logical usage. In such cases has value is stored with symbol and
 symbols are not compered unless hash matches hash of wanted symbol. If symbol is not found, it can be added
 to the chain or linker may report an error.
-=========================================================================================================
-References
-=========================================================================================================
+
+---------------------------------------------------------------------------------------------------------
+                                   References
+---------------------------------------------------------------------------------------------------------
 Many object format qualify a reference as weak or strong. A strong reference must be resolved, a weak
-reference may be resolved if there is defenition, but it is not an error if it`s not defined  
-=========================================================================================================
-Relocations
-=========================================================================================================
-Hardware relocation ?
+reference may be resolved if there is defenition, but it is not an error if it`s not defined.
+
+---------------------------------------------------------------------------------------------------------
+                                  Relocations
+---------------------------------------------------------------------------------------------------------
 Hardware relocation means allocation virtuall memory, therefore executable can be loaded at fixed known
 address, which makes program loading easier and prevents programs in one address space from damaging programs
 in other address space. Software relocation combines input files into one that is ready to be loaded into
 the address space provided by hardware relocation, usually without loadtime fixing up.
-=========================================================================================================
-Load-time vs link-time relocation
-=========================================================================================================
+
+---------------------------------------------------------------------------------------------------------
+                       Load-time vs link-time relocation
+---------------------------------------------------------------------------------------------------------
 A linker combines a set of input files into a single output file that is ready to loaded in a specific
 address.  If storage at that address isn`t abailable, the loader has to relocate the loaded program to
 reflect the actual load address. At link-time different addresses need to be relocated by different amounts,
@@ -168,7 +163,7 @@ depending on the size and locations of the segments. At load-time you hust adjus
 difference between the nominal and actual load addresses.
 
 =========================================================================================================
-PIC
+                                      PIC
 =========================================================================================================
 PIC (Position Independent Code) => solution to dilemmna of loading the same program at different addresses.
 This becomes an issue when shared librires are mapped into processes at different location, therefore any
@@ -212,7 +207,7 @@ https://reverseengineering.stackexchange.com/questions/1992/what-is-plt-got
 https://www.quora.com/Systems-Programming/What-is-the-exact-difference-between-dynamic-loading-and-dynamic-linking/answer/Jeff-Darcy
 What relocatable means ?
 =========================================================================================================
-Shared library
+                                 Shared library
 =========================================================================================================
 Each shhared library exports symbols, both code and data, and usually also imports symbols if library depends
 on other libraries. It is possible to link routines together into a shared library in a haphazard order

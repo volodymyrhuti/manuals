@@ -1,0 +1,112 @@
+=========================================================================================================
+                                 Regex engines
+=========================================================================================================
+There are two fundamentally different types of regex engines: one called “DFA”  and one called “NFA” 
+Both engine types have been around for a long time, but the NFA type seems to be used more often. Tools
+that use an NFA engine include the .NET languages, PHP, Ruby, Perl, Python, GNU Emacs, ed, sed, vi, most
+versions of grep, and even a few versions of egrep and awk. On the other hand, a DFA engine is found in
+almost all versions of egrep and awk, as well as lex and flex. Some systems have a multi-engine hybrid
+system, using the most appropriate engine for the job (or even one that swaps between engines for different
+parts of the same regex, as needed to get the best combination of features and speed).
+
+=========================================================================================================
+                                     Regex
+=========================================================================================================
+Regular expressions (or regexps for short) are tools used to manipulate text and data. They don't exist
+as a standalone product but usually are a part of some program/utility. The best known example is UNIX
+grep, a program to search files for lines that match certain pattern. The search pattern is described in
+terms of regular expressions. You can think of regexps as a specialized pattern language. Regexps are
+quite useful and can greatly reduce time it takes to do some tedious text editing.
+
+=========================================================================================================
+                                      Grep
+=========================================================================================================
+Examples
+grep "..34"                        # '.' is not escaped therefore matches any 2 symbols followed with '34'
+     "t[wo]o"                      # find `two` or `too`
+     "[^c]ode"                     # any `ode` not started with `c`
+     "^[A-Z]"                      # any line starting with capital letter
+     "([a-zA-Z ]*)"                # any text enclosed into braces, note space in character list
+     "\(grouping\)"                # doesn`t match (, instead take `grouping` regex and save as \1
+     "\(grouping1\|grouping2\)"    # alternation
+     "\<word\>"                    # match word as one word
+---------------------------------------------------------------------------------------------------------
+Extended Regular Expressions (-E)
+grep -E 
+     "(grouping)"            # more readable then non-extended one
+                              ? need to escape to match literally
+     "(grouping1|grouping2)" # alternation
+
+---------------------------------------------------------------------------------------------------------
+Charracter classes
+grep "^[[:upper:]]"         # the same as `^[A-Z]`
+       [[:alnum:]]          # alphanumeric characters.
+       [[:alpha:]]          # alphabetic characters
+       [[:blank:]]          # blank characters: space and tab.
+       [[:digit:]]          # digits: ‘0 1 2 3 4 5 6 7 8 9’.
+       [[:lower:]]          # lower-case letters: ‘a b c d e f g h i j k l m n o p q r s t u v w x y z’.
+       [[:space:]]          # space characters: tab, newline, vertical tab, form feed, carriage return, and space.
+       [[:upper:]]          # upper-case letters: ‘A B C D E F G H I J K L M N O P Q R S T U V W X Y Z’.
+---------------------------------------------------------------------------------------------------------
+Quantifiers (meta characters extending previous character)
+grep -E "(copy)?right"     # optional group, matches `copyright` and `right`
+        "free\ +"          # 1+, matches free followed by atleast one space
+        "[a-z]{3}"         # match repetition, 3 consecutive letters
+              {3,}         #                   at least 3, or more
+              {3,5}        #                   at least 3, at most 5
+
+---------------------------------------------------------------------------------------------------------
+Logical operations:
+grep -E 'PATTERN1.*PATTERN2' FILE                       # logical `and`
+grep -E 'pattern1' filename | grep -E 'pattern2'
+grep "PATTERN1\|PATTERN2" FILE                          #         `or`
+grep -E "PATTERN1|PATTERN2" FILE
+grep -e PATTERN1 -e PATTERN2 FILE
+grep -v 'PATTERN1' FILE                                 #         `not`
+
+
+In basic regular expressions the meta-characters ?, +, {, |, (, and ) lose their special meaning; instead
+use the backslashed versions \?, \+, \{, \|, \(, and \).
+
+Traditional egrep did not support the { meta-character, and some egrep implementations support \{ instead,
+so portable scripts should avoid  {  in grep -E patterns and should use [{] to match a literal {.
+
+GNU grep -E attempts to support traditional usage by assuming that { is not special if it would be the
+start of an invalid interval specification.  For example, the command grep -E '{1' searches for the
+two-character string {1 instead of reporting a syntax  error  in  the  regular  expression.
+POSIX.2 allows this behavior as an extension, but portable scripts should avoid it.
+
+https://www.shellhacks.com/grep-or-grep-and-grep-not-match-multiple-patterns/
+https://www.digitalocean.com/community/tutorials/using-grep-regular-expressions-to-search-for-text-patterns-in-linux
+=========================================================================================================
+To read
+
+https://devopedia.org/regex-engines
+=========================================================================================================
+
+man 7 regex for lookup
+Meta characters
+
+Start of the line '^'
+End of the line '$'
+Grouping
+   [Jj] => J or j
+   [^Jj] => not J or j
+   (1|2) => string with 1 or 2
+Ranges and multipliers
+   [0-9]{4}' [range]{multiplier}
+Word boundaries
+   \<   => Word start
+   \>   => Word end
+Counting
+    ?   => zero or one
+    +   => one or more
+    *   => any
+
+sed    's/from/to' file  # substitute
+    -i                   # inline 
+
+
+Perl Compatible Regular Expression (PCRE)
+\K => keep, dont include preceding symbols to result
+grep -Po <img>\K[^<]*   # returns anything within img tag

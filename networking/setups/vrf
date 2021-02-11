@@ -1,0 +1,340 @@
+---------------------------------------------------------------------------------------------------------
+ip link add vrf_1 type vrf table 1
+ip link set dev vrf_1 up
+ip link add name br1 type bridge
+ip link set eth1p1 master br1
+ip link set eth1p13 master br1
+ip link set eth1p1 up
+ip link set eth1p13 up
+ip addr add 1.1.1.1/24 dev br1
+ip link set br1 up
+ip link set br1 master vrf_1
+ip link add vrf_2 type vrf table 2
+ip link set dev vrf_2 up
+ip link add name br2 type bridge
+ip link set eth1p25 master br2
+ip link set eth1p48 master br2
+ip link set eth1p25 up
+ip link set eth1p48 up
+ip addr add 1.1.1.1/24 dev br2
+ip link set br2 up
+ip link set br2 master vrf_2
+ip route add table 1 unreachable default
+ip route add vrf vrf_1 192.168.1.0/24 dev br1
+ip route add vrf vrf_1 1.1.1.0/24 dev br1
+ip route add table 2 unreachable default
+ip route add vrf vrf_2 192.168.1.0/24 dev br2
+ip route add vrf vrf_2 1.1.1.0/24 dev br2
+
+---------------------------------------------------------------------------------------------------------
+sudo sh -c 'echo 1 > /proc/sys/net/ipv4/conf/all/forwarding'
+ip link add name br0 type bridge vlan_filtering 1
+ip addr add 100.0.0.1/8 dev br0
+ip addr add 200.0.0.1/8 dev br0
+ip link set eth1p1 master br0
+ip link set eth1p24 master br0
+ip link set eth1p1  up
+ip link set eth1p24 up
+ip link set dev br0 up
+ip link del br0
+
+sysctl -w net.ipv4.ip_forward=1
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link add name vrf-red type vrf table 20
+ip link set dev vrf-red up
+ip route add table 10 unreachable default
+ip route add table 20 unreachable default
+ip link set dev eth1p3 master vrf-blue
+ip link set dev eth1p5 master vrf-blue
+ip link set dev eth1p4 master vrf-red
+ip link set dev eth1p6 master vrf-red
+ip address add 192.168.100.1/24 dev eth1p3
+ip address add 192.168.101.1/24 dev eth1p5
+ip address add 192.168.100.1/24 dev eth1p4
+ip address add 192.168.200.1/24 dev eth1p6
+ip route show table 10 dev eth1p3
+ip rule show
+---------------------------------------------------------------------------------------------------------
+
+ip link add dev vrf-blue type vrf table 1
+ip link set dev vrf-blue up
+ip link add dev vrf-red type vrf table 2
+ip link set dev vrf-red up
+ip route add table 1 unreachable default
+ip route add table 2 unreachable default
+ip link set dev eth1p17 master vrf-blue
+ip link set dev eth1p15 master vrf-red
+ip link add br0 type bridge vlan_filtering 1
+ip link set eth1p16 master br0
+ip link set eth1p18 master br0
+ip link set br0 up
+ip link set eth1p15 up
+ip link set eth1p16 up
+ip link set eth1p17 up
+ip link set eth1p18 up
+
+17        15
+   bridge
+  16 + 18
+
+15 - 18
+16 - 17
+
+15 \/ 18
+16 /\ 17
+
+---------------------------------------------------------------------------------------------------------
+
+ip link set eth1p1 up
+ip link set eth1p24 up
+ip addr add 1.1.1.1/24 dev eth1p1
+ip addr add 2.2.2.2/24 dev eth1p24
+ip link add name vrrp1 link eth1p1 type macvlan
+ip link add name vrrp24 link eth1p24 type macvlan
+ip addr add 3.3.3.3/24 dev vrrp1
+ip addr add 4.4.4.4/24 dev vrrp24
+ip l del dev vrrp1
+ip l del dev vrrp24
+ip addr flush dev eth1p24
+ip addr flush dev eth1p1
+
+
+
+---------------------------------------------------------------------------------------------------------
+ip link set eth1p1 up
+ip link set eth1p24 up
+ip link add br0 type bridge vlan_filtering 1
+ip link set dev br0 up
+ip link set dev eth1p1 master br0
+ip link set dev eth1p24 up
+ip link set dev eth1p1 up
+ip addr add 192.168.1.2/24 dev br0
+ip addr add 169.254.0.1/8 dev eth1p24
+ip link add name vrrp0 link br0 type macvlan
+ip addr add 192.168.1.3/24 dev vrrp0
+ip link set vrrp0 up
+ip link del br0
+ip a flush eth1p24
+
+ip addr flush dev vrrp0
+
+---------------------------------------------------------------------------------------------------------
+
+ip link add dev eth1p15 type vrf table 100
+ip -4 route add table 10 unreachable default metric 4278198272
+
+cat /etc/iproute2/rt_tables
+
+ip route show table 1000
+ip route show table l3mdev-table
+ip vrf exec veth1p17 ip route
+ip route show table all 
+
+ip route show vrf vrf-blue
+ip route show vrf vrf-red
+---------------------------------------------------------------------------------------------------------
+
+
+ip addr add 192.168.122.1/24 dev  eth1p1
+ip link set dev eth1p1 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p1 master vrf-blue
+
+
+ip link set eth1p14 up
+ip addr add 192.168.122.2/24 dev eth1p14 
+ip vrf exec vrf-blue ping 192.168.0.1
+
+
+ip vrf exec vrf-blue ping 130.0.0.1
+
+---------------------------------------------------------------------------------------------------------
+sysctl -w net.ipv4.ip_forward=1
+ip link set dev eth1p24 up
+ip link set dev eth1p25 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p24 master vrf-blue
+ip addr add 120.0.0.1/24 dev eth1p24
+ip addr add 130.0.0.1/24 dev eth1p25
+
+ip vrf exec vrf-blue ping 120.0.0.2
+
+ip link del vrf-blue
+ip addr del 120.0.0.1/24 dev eth1p24 
+ip addr del 130.0.0.1/24 dev eth1p25 
+
+15 - 18
+16 - 17
+---------------------------------------------------------------------------------------------------------
+
+15 -- 18 loopback
+
+sysctl -w net.ipv4.ip_forward=1
+ip addr add 120.0.0.4/24 dev eth1p18
+ip link set dev eth1p15 up
+ip link set dev eth1p18 up
+
+ip link add name vrf-red type vrf table 20
+ip link set dev vrf-red up
+ip link set dev eth1p15 master vrf-red
+ip addr add 120.0.0.3/24 dev eth1p15
+
+ip vrf exec vrf-red ping 120.0.0.4
+ip vrf exec vrf-red ping 120.0.1.6
+
+
+
+ip link del vrf-red 
+ip addr del 120.0.0.4/24 dev eth1p18
+ip addr del 120.0.0.3/24 dev eth1p15
+
+---------------------------------------------------------------------------------------------------------
+
+ip link set eth1p15 up
+ip link set eth1p18 up
+ip addr add 192.168.122.1/24 dev  eth1p15
+ip link set dev eth1p15 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p15 master vrf-blue
+
+
+ip addr add 192.168.122.2/24 dev eth1p18
+ip vrf exec vrf-blue ping 192.168.122.2
+
+---------------------------------------------------------------------------------------------------------
+TO TEST
+ip link set eth1p15 up
+ip addr add 192.168.122.1/24 dev  eth1p18
+ip link set dev eth1p18 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p18 master vrf-blue
+
+
+ip addr add 192.168.122.2/24 dev eth1p15 
+ip vrf exec vrf-blue ping 192.168.0.1
+
+ip addr flush eth1p15
+ip addr flush eth1p18
+ip link del vrf-blue
+ip link del vrf-red
+---------------------------------------------------------------------------------------------------------
+
+ip link set eth1p15 up
+ip link set eth1p18 up
+ip addr add 192.168.122.1/24 dev  eth1p15
+ip link set dev eth1p15 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p15 master vrf-blue
+
+ip addr add 192.168.122.2/24 dev eth1p18 
+
+ip link add name vrf-red type vrf table 11
+ip link set dev vrf-red up
+ip link set dev eth1p18 master vrf-red
+
+ip vrf exec vrf-blue ping 192.168.122.2
+
+---------------------------------------------------------------------------------------------------------
+ip link set eth1p1 up
+ip link set eth1p14 up
+ip addr add 192.168.122.1/24 dev  eth1p1
+ip link set dev eth1p1 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p1 master vrf-blue
+
+
+ip addr add 192.168.122.2/24 dev eth1p14 
+
+
+ip link add name vrf-red type vrf table 11
+ip link set dev vrf-red up
+ip link set dev eth1p14 master vrf-red
+
+ip vrf exec vrf-blue ping 192.168.122.2
+
+
+
+
+
+
+
+ip link set eth1p14 up
+ip addr add 192.168.122.2/24 dev eth1p14 
+ip link add name vrf-red type vrf table 11
+ip link set dev vrf-red up
+ip link set dev eth1p14 master vrf-red
+
+
+
+ip link set eth1p1 up
+ip addr add 192.168.122.2/24 dev eth1p1 
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p1 master vrf-red
+
+---------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------
+ip link set eth1p18 up
+ip link set eth1p15 up
+ip addr add 192.168.122.1/24 dev  eth1p18
+ip link set dev eth1p18 up
+
+ip link add name vrf-blue type vrf table 10
+ip link set dev vrf-blue up
+ip link set dev eth1p18 master vrf-blue
+
+ip addr add 192.168.122.2/24 dev eth1p15 
+
+
+ip link add name vrf-red type vrf table 11
+ip link set dev vrf-red up
+ip link set dev eth1p15 master vrf-red
+
+ip vrf exec vrf-blue ip addr del 192.168.122.1/24 dev  eth1p18
+
+ip vrf exec vrf-blue ping 192.168.122.2
+https://github.com/wptad/linux-management/blob/master/iproute.md
+
+---------------------------------------------------------------------------------------------------------
+
+ip link set eth1p19 up
+ip addr add 192.168.122.3/24 dev  eth1p19
+ip link set dev eth1p19 up
+
+ip link add name vrf-green type vrf table 12
+ip link set dev vrf-green up
+ip link set dev eth1p19 master vrf-green
+
+
+
+ip addr del 192.168.122.1/24 dev  eth1p18
+ip addr del 192.168.122.2/24 dev  eth1p15
+
+
+
+
+ip link set eth1p20 up
+ip addr add 192.168.122.20/24 dev  eth1p20
+ip link set eth1p21 up
+ip addr add 192.168.122.21/24 dev  eth1p21
+
+
+ip vrf exec vrf-blue ip addr del 192.168.122.1/24 dev  eth1p18
+ip vrf exec vrf-blue ip addr del 192.168.122.2/24 dev  eth1p15
+ip addr del 192.168.122.20/24 dev  eth1p20
+ip addr del 192.168.122.21/24 dev  eth1p21
+
+---------------------------------------------------------------------------------------------------------

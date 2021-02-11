@@ -1,0 +1,1866 @@
+                SONIC. Software for Open Networking in the Cloud
+=======================================================================================================
+SONiC is an open source network operating system based on Linux that runs on switches and ASICs.
+SONiC is a collection of networking software components required to have a fully functional L3 device.
+
+Reasons to use SONIC:
+1. Decouples Hardware & Software
+   SONiC is built on Switch Abstraction Interface (SAI) which defines a standardized API.
+   Network hardware vendors can use it to develop innovative hardware platforms that can achieve great
+   speeds while keeping the programming interface to ASIC (application-specific integrated circuit)
+   consistent. Microsoft open sourced SAI in 2015.
+2. Accelerates Software Evolution
+   The first solution to break monolithic switch software into multiple containerized components.
+   This design accelerates development and allows for selecting the very best building blocks when
+   designing and deploying a cloud-scale networking infrastructure. You can plug in new components,
+   third-party, proprietary, or open sourced software, with minimum effort, and tailor SONiC to
+   specific scenarios.
+3. Rapidly growing ecosystem
+   SONiC and SAI have gained wide industry support over the last year. Most major network chip vendors
+   are supporting SAI on their flagship ASICs. The community are actively adding new extensions and
+   advanced capabilities to SAI releases.
+
+Note, you can`t load it into any switch, a list of supported devices can be found on git repo.
+Contribution process is described by the following link:
+https://github.com/Azure/SONiC/wiki/Becoming-a-contributor
+
+https://github.com/Azure/SONiC/wiki/FAQ
+https://azure.microsoft.com/en-in/blog/sonic-the-networking-switch-software-that-powers-the-microsoft-global-cloud/
+=========================================================================================================
+                               Image compilation
+=========================================================================================================
+Example of steps used to buils a SONIC image:
+sudo modprobe overlay
+cd sonic-buildimage                         # Enter the source directory
+git checkout [branch_name]                  # (Optional) checkout specific branch
+make init                                   # performs submodule update
+make configure PLATFORM=[ASIC_VENDOR]       # configure your environment
+make configure PLATFORM=vs
+make all                                    # build SONIC image
+
+Note:
+1. It is recommended to have at least 50G of free space on docker partition during the build,
+   otherwise you may encounter an error like the following
+   /usr/bin/tar: /path/to/sonic-buildimage/<some_file>: Cannot write: No space left on device
+2. Using proxy during build process
+   $ http_proxy=[your_proxy] https_proxy=[your_proxy] make
+3. root/sudo accounts are not supported for compilation, add your user to the docker group with
+   $ sudo groupadd docker                   # create docker group, otherwise, docker will use socket as root
+   $ sudo usermod -aG docker $USER          # add yourself to docker group
+   Reloging into Linux account to re-evaluated your group membership or issue `newgrp docker`
+   Verify that you can run docker without sudo:
+   $ docker ps
+   $ docker images
+
+https://docs.docker.com/install/linux/linux-postinstall/
+https://github.com/Azure/sonic-buildimage/blob/master/README.buildsystem.md
+=======================================================================================================
+                           Compilation targets
+=======================================================================================================
+Each package generates a list of `makefile targets` that can be used individually without building an
+entire project. To list these targets issue `make list` from `sonic-buildimage`.
+  $ make list
+    target/files/stretch/configdb-load.sh
+    target/files/stretch/arp_update
+    target/files/stretch/buffers_config.j2
+    target/files/stretch/ixgbe.ko
+                ......
+    target/files/stretch/sonic_version.yml
+    target/debs/stretch/libnl-3-200_3.2.27-2_amd64.deb
+    target/debs/stretch/libsensors4-dbgsym_3.4.0-4_amd64.deb
+    target/debs/stretch/sensord_3.4.0-4_amd64.deb
+    target/debs/stretch/sensord-dbgsym_3.4.0-4_amd64.deb
+    target/debs/stretch/libswsscommon-dev_1.0.0_amd64.deb
+    target/debs/stretch/python-swsscommon_1.0.0_amd64.deb
+    target/debs/stretch/libswsscommon-dbg_1.0.0_amd64.deb
+                ......
+    target/debs/stretch/libteam-utils_1.28-1_amd64.deb
+    target/debs/stretch/libteam-utils-dbgsym_1.28-1_amd64.deb
+    target/debs/stretch/syncd-vs_1.0.0_amd64.deb
+    target/debs/stretch/syncd-vs-dbg_1.0.0_amd64.deb
+    target/python-debs/python-sonic-syseepromd_1.0-1_all.deb
+                ......
+    target/python-debs/python-sonic-ledd_1.1-1_all.deb
+    target/python-wheels/sonic_platform_common-1.0-py2-none-any.whl
+                ......
+    target/python-wheels/swsssdk-2.0.1-py3-none-any.whl
+    target/docker-sonic-mgmt.gz
+    target/docker-orchagent.gz
+                ......
+    target/docker-lldp-sv2-dbg.gz
+    target/docker-syncd-vs-dbg.gz
+    target/sonic-vs.bin
+    target/sonic-vs.img.gz
+As you can see, targets can be divided into the following groups:
+1. Assistant files, like scripts/configs/templates, that are copied to SONIC and used later
+2. `debs` debian packages that are installed to docker images, installed with `dpkg -i`
+3. `python-debs` debian packages but implemented in python, installed with `dpkg -i`
+4. `python-wheels` python packages, installed with `pip -i`
+5. `docker-*` docker images that are run from SONIC
+6. SONIC images
+   target/sonic-vs.bin is a SONIC ONIE installer image (platform/vs/one-image.mk)
+   target/sonic-vs.img.gz is a SONIC KVM image (platform/vs/kvm-image.mk)
+
+NOTE: `make list` displays packages targets without subtarget. Usually, executing such target
+means compiling a package if it is outdated or not compiled at all. However, some subtargets
+may be useful in some cases. They have a special suffix that can be found with
+  $  grep -oE "addsuffix .\w*" slave.mk | sort -u
+     addsuffix -clean
+     addsuffix -install
+     addsuffix -load
+     addsuffix .service
+     addsuffix .sh
+You can look through makefile to have a better understanding of which of them are targets or not.
+This call to `addsuffix` creates a new `makefile target` that can be mannualy issued to:
+clean/load/install. For instance, you have changed some source file in <package> and want to recompile:
+  $ make target/<package>.deb 
+  # Make haven`t noticed the change, so we need to clean the package
+  # Add -clean suffix to package name
+  $ make target/<package>.deb-clean
+  # Now make has no choice but compile it again
+  $ make target/<package>.deb 
+
+---------------------------------------------------------------------------------------------------------
+                             Docker container upgrade
+---------------------------------------------------------------------------------------------------------
+You may have a situation when you want to upgrade the entire container. For instance:
+- When you want to be confident that all changed packages got properly updated/installed
+- When you have change docker build script responsible for the image
+
+To get the list of all the docker-container targets, execute the following:
+  $  make list | grep docker
+     target/docker-platform-monitor.gz
+             ......
+     target/docker-syncd-vs-dbg.gz
+
+`orchagent` image will be used and the following changes will be made for the example: 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++++ b/lib/src/sai_redis_switch.cpp
+@@ -246,6 +246,11 @@ sai_status_t redis_set_switch_attribute(
+     std::lock_guard<std::mutex> lock(g_apimutex);
+ 
+     SWSS_LOG_ENTER();
++    SWSS_LOG_ERROR("qqq qqq redis_set_switch_attribute ERROR_Level");
++    SWSS_LOG_WARN("qqq qqq redis_set_switch_attribute WARN_Level");
++    SWSS_LOG_NOTICE("qqq qqq redis_set_switch_attribute NOTICE_Level");
++    SWSS_LOG_INFO("qqq qqq redis_set_switch_attribute INFO_Level");
++    SWSS_LOG_DEBUG("qqq qqq redis_set_switch_attribute DEBUG_Level");
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You need to perform the following steps, in order to upgrade the image:
+1. Find the needed target responsible for the image and recompile it.
+   $  make list | grep orchagent
+      target/docker-orchagent.gz
+   $ make target/docker-orchagent.gz-clean
+   $ make target/docker-orchagent.gz
+     [ 01 ] [ target/debs/stretch/libhiredis0.14_0.14.0-3~bpo9+1_amd64.deb ]
+                   ......
+     [ 01 ] [ target/docker-base-stretch.gz ]
+     [ 01 ] [ target/docker-base-stretch.gz-load ]
+     [ 01 ] [ target/docker-config-engine-stretch.gz ]
+     [ 01 ] [ target/docker-config-engine-stretch.gz-load ]
+     [ 01 ] [ target/docker-orchagent.gz ]
+   # Verbose logs are enabled as described in FAQ
+
+2. Now you should have a compressed image under `target/docker-orchagent.gz`
+   Upload it to the SONIC
+   $ mkdir -p ~/packages
+   $ cp target/docker-orchagent.gz ~/packages
+   $ scp ~/packages/docker-orchagent.gz SONIC_user@SONIC_host:path
+
+# Following commands are performed from SONIC
+3. Uncompress the image
+   $ gzip -d docker-orchagent.gz
+
+4. Identify the name of the container that will be replaced
+   Most of the names assigned to the container use following scheme:
+   an image called `docker-<name>:latest` is used to create a container `<name>`, however,
+   this not apply to some of them, therefore you need to check this mapping.
+   $ docker ps --format "table {{.Names}} | {{.Image}}" | grep orch 
+     swss | docker-orchagent:latest
+
+   Now you know that container created from `orchagent` is called `swss`
+
+4. Stop and delete the old image and container and load a new one.
+   However, before doing that you can delete old container then rename old image and load
+   new ones for testing purposes, so you have a backup one.
+   Sonic names image and container 
+   NOTE: avoid using `docker` CLI for managing container directly, since it will break
+   the flow of system init scripts. There are two locations where you can find them:
+   `/usr/local/bin/<container>.sh [start/stop/wait]` or `/usr/bin/<container>.sh [start/stop/wait]` 
+   The former one may be not present, it is used when service has some peer/dependant
+   services, e.g. there is one for `swss` since it will clear DB and start  `teamd` and `radv`.
+   In general, you want to use the latter one, since it works only with an already created container,
+   without changing others.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   # OPTIONAL: Creating a backup before removing
+   $ docker tag docker-orchagent docker-orchagent-backup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   $ sudo /usr/local/bin/swss.sh stop
+   $ docker container rm swss
+   $ docker rmi docker-orchagent:latest
+     Untagged: docker-orchagent:latest
+   $ docker load -i docker-orchagent
+     00a55ccdc608: Loading layer [======================>]   79.6MB/79.6MB
+     8fa1bc32f847: Loading layer [======================>]  100.6MB/100.6MB
+     30ab678bcda9: Loading layer [======================>]  44.48MB/44.48MB
+
+5. Start container/restart SONIC and test your changes
+   $ sudo /usr/local/bin/swss.sh start
+     OK
+     OK
+     OK
+     OK
+     (nil)
+     swss
+
+6. Test if the container was created and is running
+   $ docker container ls | grep orch
+     ... | docker-orchagent:latest | "/usr/bin/supervisord" | 5 minutes ago |Up 38 seconds | swss
+
+7. Test your changes
+   $ show logging -f | grep qqq 
+
+---------------------------------------------------------------------------------------------------------
+                             Single target uppgrade
+---------------------------------------------------------------------------------------------------------
+Here is a common flow used to update a single package if you know which package to change but
+don`t know which docker container will use it:
+For this example, let`s suppose that we want to change `libsairedis` that is implemented
+under `src/sonic-sairedis/lib/src` and you don`t know where to upload it.
+Add some logs to a one commonly used function, like in following patch snippet, to test if the
+upgrade was successful.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    lib/src/sai_redis_switch.cpp
+    @@ -246,6 +246,11 @@ sai_status_t redis_set_switch_attribute(
+         std::lock_guard<std::mutex> lock(g_apimutex);
+     
+         SWSS_LOG_ENTER();
+    +    SWSS_LOG_ERROR("QQQ redis_set_switch_attribute ERROR_Level");
+    +    SWSS_LOG_WARN("QQQ redis_set_switch_attribute WARN_Level");
+    +    SWSS_LOG_NOTICE("QQQ redis_set_switch_attribute NOTICE_Level");
+    +    SWSS_LOG_INFO("QQQ redis_set_switch_attribute INFO_Level");
+    +    SWSS_LOG_DEBUG("QQQ redis_set_switch_attribute DEBUG_Level");
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+1. Find target responsible for your package
+   This can be done in multiple ways:
+   - You can look for available targets with a similar name
+   $ make list | grep -i libsairedis
+     target/debs/stretch/libsairedis_1.0.0_amd64.deb
+     target/debs/stretch/libsairedis-dev_1.0.0_amd64.deb
+     target/debs/stretch/libsairedis-dbg_1.0.0_amd64.deb
+
+   - You can look for recipes depending on the path of your package
+     In this case path to sources is `src/sonic-sairedis/lib/src` and we need to look
+     for package name `sonic-sairedis`
+   $ grep -rniH _SRC_PATH.*sonic-sairedis rules/
+     rules/sairedis.mk:4:$(LIBSAIREDIS)_SRC_PATH = $(SRC_PATH)/sonic-sairedis
+     The first variable of the file defines a package name
+     LIBSAIREDIS = libsairedis_1.0.0_$(CONFIGURED_ARCH).deb
+   This approach can be used for other Makefile variables, like _DEB, _DEPENDS, _DBG, _ARCHIVE...
+
+2. Recompile
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Optional: if changes are not noticed by make, you can force recompilation in following ways:
+   # Clean target by addting `-clean` suffix 
+   $ make target/debs/stretch/libsairedis_1.0.0_amd64.deb-clean
+   # Delete compilation target
+   $ rm target/debs/stretch/libsairedis*.deb
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   $ make target/debs/stretch/libsairedis_1.0.0_amd64.deb
+   Note, last step compiles `dev` and `dbg` as well.
+
+3. Save the package to a directory from which you will upload it to SONIC
+   $ mkdir ~/packages
+   $ cp target/debs/stretch/libsairedis_1.0.0_amd64.deb ~/packages
+
+4. Now we need to find the name of docker container that is using this package
+   There are different ways how you can do this. One of the approaches is described below and other
+   at the end of the article.
+   You can find the recipe (makefiles under `rules/`) that defines the package
+   $ grep -rnHi libsairedis
+     rules/sairedis.mk:3:LIBSAIREDIS = libsairedis_1.0.0_$(CONFIGURED_ARCH).deb
+     rules/sairedis.mk:4:$(LIBSAIREDIS)_SRC_PATH = $(SRC_PATH)/sonic-sairedis
+     rules/sairedis.mk:5:$(LIBSAIREDIS)_DEPENDS += $(LIBSWSSCOMMON_DEV)
+                                        ......
+     rules/docker-orchagent.mk:12:       $(LIBSAIREDIS_DBG)
+     rules/swss.mk:5:$(SWSS)_DEPENDS += $(LIBSAIREDIS_DEV) $(LIBSAIMETADATA_DEV) ...
+     rules/swss.mk:7:$(SWSS)_RDEPENDS += $(LIBSAIREDIS) $(LIBSAIMETADATA)        ...
+
+   Here `rules/sairedis.mk` defines the metadata for package `libsairedis_1.0.0_amd64.deb`.
+   The first defined variable is `LIBSAIREDIS = libsairedis_1.0.0_$(CONFIGURED_ARCH).deb` which
+   names the package that others may use as a dependecy.
+
+   Now we need to find a docker container using it, to know where to upload it.
+   You can `grep` for `LIBSAIREDIS` and look which packages are using it.
+   Note we did it already since `grep -rnHi libsairedis` matches `LIBSAIREDIS`.
+   From the output above, the relation between `docker-orchagent` and libsairedis is not clear,
+   therefore we need to look at the context. Let`s look at rules/docker-orchagent.mk,
+   since it may depend on libsairedis as well.  Here we can see the following:
+      $(DOCKER_ORCHAGENT)_DBG_DEPENDS +=        ......      \
+                                          $(LIBSAIREDIS_DBG)
+   meaning that if we compile debug version of orchagent, it will trigger compilation of debug symbols
+   for `LIBSAIREDIS`, however, from the file, we can`t see that orchagent directly depends on
+   `LIBSAIREDIS`.
+   NOTE: If the package depends on some part of another package like orchagent depends on debugging
+   symbols of libsairedis, then likely (always?) it depends the on entire package but not directly.
+  
+   Now let`s look at swss. We can see from grep result that `swss` has the `LIBSAIREDIS` as a runtime
+   dependency.
+     rules/swss.mk:7:$(SWSS)_RDEPENDS += $(LIBSAIREDIS) $(LIBSAIMETADATA)        ...
+
+   So, we have identified that `swss.mk` depends directly on `LIBSAIREDIS`, however, it is a usual
+   package that gets installed into the image, therefore we need to repeat this algorithm in order to
+   find who is using `swss`.
+   $ grep -rnHF '$(SWSS) '
+     rules/docker-teamd.mk:9:$(DOCKER_TEAMD)_DEPENDS += $(SWSS)             ...
+     rules/docker-orchagent.mk:7:$(DOCKER_ORCHAGENT)_DEPENDS += $(SWSS)     ...
+     rules/docker-fpm-frr.mk:9:$(DOCKER_FPM_FRR)_DEPENDS += $(SWSS)         ...
+     rules/docker-sflow.mk:9:$(DOCKER_SFLOW)_DEPENDS += $(SWSS)             ...
+
+   Now we need to look through them and find which one is a docker image or will be used
+   within one. An image can be identified by the file name pattern `docker-*.mk` or by inspecting the
+   files for variable DOCKER_*_STEM`. From the output above we can identify by makefile name that
+   all of them are docker images that depend on `swss`. Now let`s confirm this by inspecting the file
+   $ _files=$(grep -rl '$(SWSS) ')
+   $ find $_files -exec grep -inHE 'DOCKER_.*_STEM =' {} \;
+     rules/docker-teamd.mk:3:DOCKER_TEAMD_STEM = docker-teamd
+     rules/docker-orchagent.mk:3:DOCKER_ORCHAGENT_STEM = docker-orchagent
+     rules/docker-fpm-frr.mk:3:DOCKER_FPM_FRR_STEM = docker-fpm-frr
+     rules/docker-sflow.mk:3:DOCKER_SFLOW_STEM = docker-sflow
+
+   Now you should check which images are present/used on/by your instance of SONIC (example can be
+   found in the following step) and which you want to update.
+
+   NOTE: It is valid to update only one of them but then be prepared to having multiple containers
+   using a library with the same name and version but different behavior.
+
+   `docker-orchagent.mk` will be used for this example.
+   Now we know where to install the package.
+
+   NOTE: as previously said, `orchagent` indirectly depends on `libsairedis`, through `swss`
+     rules/swss.mk:7:$(SWSS)_RDEPENDS += $(LIBSAIREDIS)
+     rules/docker-orchagent.mk:7:$(DOCKER_ORCHAGENT)_DEPENDS += $(SWSS)
+     $(DOCKER_ORCHAGENT)_DBG_DEPENDS +=  $(LIBSAIREDIS_DBG)
+
+5. We have already identified the docker image to be `docker-orchagent`.
+   Now let`s check if container with such name is present and running.
+   # From SONIC
+   $ docker ps  | grep docker-orchagent
+   854d31fbacfb | docker-orchagent:latest | "/usr/bin/supervisord" | 3 days ago | Up 27 hours | swss
+   It is running, as expected, so we can update the package.
+
+6. Upload package to the device via scp/tftp/serial/...
+   Find the container where the package should be updated, as described in the 
+   `Docker container upgrade` section
+   Copy the package to docker container and use an appropriate utility (pip/dbg -i) to install it.
+   Restart the service using your package so it can source the last changes
+
+   # From your build host
+   $ find ~/packages/*
+   /home/<user>/packages/libsairedis_1.0.0_amd64.deb
+
+   # NOTE: All following commands are performed from SONIC
+   $ scp <user>@<ip>:/home/<user>/packages/libsairedis_1.0.0_amd64.deb .
+
+   # Look for the container name
+   $ docker ps --format "table {{.Names}} | {{.Image}}" | grep orch 
+     swss | docker-orchagent:latest
+
+   $ docker cp libsairedis_1.0.0_amd64.deb swss:/
+   $ docker exec swss ls
+     ...
+     libsairedis_1.0.0_amd64.deb
+     ...
+   # start an interactive shell on container
+   $ docker exec -it swss bash
+   swss: $ dpkg -i libsairedis_1.0.0_amd64.deb
+   swss: $ supervisorctl restart orchagent
+
+   # NOTE: This may not work for some services, in such case you can try to reload the docker
+   # container or reboot the SONIC entirely.
+   swss: $ exit
+   $ docker restart swss
+
+7. Check if changes were applied.
+   $ show logging -f | grep -i qqq
+   ... ERR swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute ERROR_Level
+   ... WARNING swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute WARN_Level
+   ... NOTICE swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute NOTICE_Level
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Optional step, saving your changes:
+You may want to save your image state after some changes so no one removes them by an accident.
+For instance: ssw
+1. Check if there are any changes in your image of choice
+   $ docker diff swss
+             ......
+     A /etc/swss/config.d/ipinip.json
+     A /etc/swss/config.d/ports.json
+     A /etc/swss/config.d/switch.json
+             ......
+2. Save changes
+   $ docker commit swss docker-orchagent_backup:latest
+     sha256:eabdae44043b16d7df6b0556da4f0a4087735af7b8743c77f1487f7c99836f65
+   $ docker images | grep docker-orchagent
+     docker-orchagent_backup | latest | eabdae44043b | 27 seconds ago | 320MB
+
+Now if something happens to your main orchagent image, you remove it and retag backup one,
+as described in `Single target upgrade` section
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------------------------------------------------------------
+=======================================================================================================
+                                      CLI
+=======================================================================================================
+                                    Logging
+-------------------------------------------------------------------------------------------------------
+SONIC logging system contains two parts: general logging API used by docker services and SAI part.
+Implementation details of general logging can be found under `src/sonic-swss-common/common/logger.h`
+Here is some commonly used API provided by logger:
+1. Macros for logging messages
+   SWSS_LOG_ERROR(MSG, ...)
+   SWSS_LOG_WARN(MSG, ...)
+   SWSS_LOG_NOTICE(MSG, ...)
+   SWSS_LOG_INFO(MSG, ...)
+   SWSS_LOG_DEBUG(MSG, ...)
+2. Macros for other purposes
+   SWSS_LOG_ENTER()                 # log entrance in scope and exit
+   SWSS_LOG_TIMER(msg, ...)         # log time spent in a scope
+   SWSS_LOG_THROW(MSG, ...)         # log error and throw
+   ABORT_IF_NOT(x, fmt, args...)
+
+Each docker container run by SONIC has its instance of rsyslogd as can be seen from `pstree.x11`
+All logs are saved to `/var/log/syslog*`. You can extract logs manually from saved files, or use
+convenient CLI utility called `show`.
+show logging [container/processname]      # list all accessible logs or only from [processname]
+             -f                           # follow logs as new are added
+             -l <num>                     # number of lines to be displayed
+There are following log levels: EMERG, ALERT, CRIT, ERROR, WARN, NOTICE, INFO, DEBUG.
+The logl evel of packages is saved in LOGLEVEL_DB. There is a utility, called `swssloglevel`, that
+simplifies a communicating with the database. `swssloglevel` can be used to get/set the log level
+of the components.
+swssloglevel -p                           # list components registered in DB for which
+                                          # loglevel can be changed
+             -a                           # apply loglevel for all packages, used with -l
+             -l <log_level>               # log level to be set
+             -c <package>                 # package to which level will be applied
+                                          # no need specify [package] with -a
+             -s                           # apply loglevel for SAI api component
+                                          # (equivalent to adding prefix "SAI_API_" to component)
+
+Now let`s apply the patch for 'Single target upgrade' section and try to change log levels in order
+to observe how it affects logging and how all previously defined utilities can be used.
+1. List log level of packages and choose level that is more verbose
+   $ swssloglevel -p
+     SAI_API_[...]                 SAI_LOG_LEVEL_[...]
+     ...
+     buffermgrd                    NOTICE
+     fpmsyncd                      NOTICE
+     ...
+     vrfmgrd                       NOTICE
+     vxlanmgrd                     NOTICE
+
+2. List logs and check if there are any logs with level lower then NOTICE
+   $ show logging -f
+   ... sonic WARNING pmon#syseepromd: Failed to load platform-specific eeprom from sonic_platform \
+       package due to ImportError('No module named sonic_platform',)
+   ... ERR swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute ERROR_Level
+   ... WARNING swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute WARN_Level
+   ... NOTICE swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute NOTICE_Level
+   ... sonic ERR pmon#syseepromd: Failed to load platform-specific eeprom implementation:\
+       IOError("Failed to load platform module 'eeprom': [Errno 2] No such file or directory",)
+
+3. Set log level of all packages to DEBUG and check if a DEBUG logs become visible
+   $ swssloglevel -a -l DEBUG
+   $ swssloglevel -p
+     SAI_API_[...]                 SAI_LOG_LEVEL_[...]
+     buffermgrd                    DEBUG
+     fpmsyncd                      DEBUG
+     ...
+     vrfmgrd                       DEBUG
+     vxlanmgrd                     DEBUG
+   $ show logging -f
+   ... sonic WARNING pmon#syseepromd: Failed to load platform-specific eeprom from sonic_platform \
+       package due to ImportError('No module named sonic_platform',)
+   ... ERR swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute ERROR_Level
+   ... WARNING swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute WARN_Level
+   ... NOTICE swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute NOTICE_Level
+   ... INFO swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute INFO_Level
+   ... DEBUG swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute DEBUG_Level
+   ... sonic ERR pmon#syseepromd: Failed to load platform-specific eeprom implementation:\
+       IOError("Failed to load platform module 'eeprom': [Errno 2] No such file or directory",)
+
+   Now we can see both INFO and DEBUG logs
+
+4. Filter logs by container/process, filter for `swss` container, then for `orchagent` process, 
+   then for `pmon` container
+   $ show logging -f swss
+                                   ......
+   ... ERR swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute ERROR_Level
+   ... WARNING swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute WARN_Level
+   ... NOTICE swss#orchagent: :- redis_set_switch_attribute: QQQ redis_set_switch_attribute NOTICE_Level
+                                   ......
+   $ show logging -f orchagent
+   # The same type of output
+
+   $ show logging -f pmon
+   ... sonic WARNING pmon#syseepromd: Failed to load platform-specific eeprom from sonic_platform \
+       package due to ImportError('No module named sonic_platform',)
+   ... sonic ERR pmon#syseepromd: Failed to load platform-specific eeprom implementation:\
+       IOError("Failed to load platform module 'eeprom': [Errno 2] No such file or directory",)
+   ... sonic INFO pmon#supervisord 2019-10-31 13:54:32,411 INFO success: syseepromd entered RUNNING \
+       state, process has stayed up for > than 0 seconds (startsecs)
+   ... sonic INFO pmon#supervisord 2019-10-31 13:54:32,411 INFO exited: syseepromd \
+       (exit status 5; not expected)
+   ... sonic INFO pmon#supervisord 2019-10-31 13:54:33,413 INFO spawned: 'syseepromd' with pid 28681
+
+--------------------------------------------------------------------------------------------------------
+                            Configuration managment
+--------------------------------------------------------------------------------------------------------
+There are two main utilities used to set/get device configuration from Database, called `show` and `conf`
+Here is a list of some commonly used parameters:
+show   --help
+       startupconfiguration [module/all]   # display the startup configuration for the module
+       runningconfiguration [module/all]   # display the active configuration 
+                                           # There are follwing modules:
+                                           # bgp, interfaces, ntp, snmp, all, acl, ports, syslog.
+       interfaces
+                  description [name]
+                  status [name]
+                  counters
+       ip
+       services
+       reboot-cause
+       uptime
+       route
+       protocol                            # which routing protocol is used
+       processes                           # wrapper over `top`
+                 cpu                       # sort by cpu utilization
+                 memory                    # sort by memory-utilization
+                 summary                   #
+       system-memory                       # wrapper around `free`
+       techsupport                         # collects information about the device
+                                           # copy is saved to /var/dump/*.tar.gz
+                                           # archive is sent to SONIC dev team?
+
+config --help
+       interface
+                 ip <add/remove> <name> <value>
+                 shutdown <name>
+                 startup <name>            # applied for interface after shutdown
+       save [file]                         # saves active config to config_db.json or to optinal [file]
+          -y                               # don`t ask for confirmation
+       reload                              # flush active config + load config_db.json, same as reboot
+                                           # all services are reloaded as well (will kill SSH)
+       load [file]                         # overwrite active configuration with config_db.json or
+                                           # optional [file]
+          -y                               # don`t ask for confirmation when applying
+       load_minigraph                      # reloads xml config
+       syslog <add/del> <ip>               # configure remote syslog server
+
+Full list parameters can be found in commands help output or on official SONIC github repo.
+https://github.com/Azure/sonic-utilities/blob/master/doc/Command-Reference.md
+-------------------------------------------------------------------------------------------------------
+                                    Examples
+-------------------------------------------------------------------------------------------------------
+show runningconfiguration all                           # lists MGMT_INTERFACE
+redis-cli -n 4 keys "MGMT_INTERFACE*"
+redis-cli -n 4 DEL "MGMT_INTERFACE|eth0|<ip>/<mask>"    # unset config
+config load <name>                                      # load config. only local? what about tftp?
+systemctl restart interfaces-config                     # apply loaded previously config
+
+=========================================================================================================
+                                     Redis
+=========================================================================================================
+Redis is an in-memory key-value store that can be used as a database, cache, and message broker.
+It supports basic data structures such as strings, lists, sets, sorted sets with range queries, and
+hashes. More advanced data structures like bitmaps, hyperloglogs, and geospatial indexes with radius
+queries are also supported.
+
+By default, Redis creates 16 databases, each identified by a number (not a name) starting from 0.
+To list the databases for which some keys are define issue
+ $ redis-cli INFO keyspace
+   db0:keys=100,expires=0,avg_ttl=0
+   db1:keys=1614,expires=0,avg_ttl=0
+   db2:keys=3635,expires=0,avg_ttl=0
+   db3:keys=54,expires=0,avg_ttl=0
+   db4:keys=552,expires=0,avg_ttl=0
+   db5:keys=1580,expires=0,avg_ttl=0
+   db6:keys=138,expires=0,avg_ttl=0
+
+Names in SONIC context:
+db0   |  APP_DB
+db1   |  ASIC_DB
+db2   |  COUNTERS_DB
+db3   |  LOGLEVEL_DB
+db4   |  CONFIG_DB
+db5   |  PFC_WD_DB/FLEX_COUNTER_DB
+db6   |  STATE_DB
+db7   |  SNMP_OVERLAY_DB
+Mappings were taken from `dockers/docker-database/database_config.json`
+
+redis-cli is the Redis command line interface  that allows to send commands to Redis, and read the
+replies sent by the server, directly from the terminal. 
+New connection always use the database 0, another one can be used with option `-n <db_num>`
+redis-cli                   # start an interactive mode, Read–Eval–Print Loop (REPL) 
+          ping              # check if redisDB is alive, should respose with `PONG`
+          --scan            # list all keys in all DBs
+          -n <num>          # number of DB to connect, 0 by default
+
+redis-dump                  # an auxiliary utility used to inspect DBs.
+          -d <num>          # number of DB to inspect, 0 by default
+          -y                # pretty print
+          -k <key_pattern>  # pattern to match keys against
+
+https://redis.io/topics/faq
+https://auth0.com/blog/introduction-to-redis-install-cli-commands-and-data-types/#Using-Redis-as-a-Session-Store
+https://stackoverflow.com/questions/12802726/list-all-redis-databases
+---------------------------------------------------------------------------------------------------------
+                               Common Operations
+---------------------------------------------------------------------------------------------------------
+Redis has a variety of data structures, each structure has a set of operations associated with it.
+The most commonly used ones are strings and hashes. Operations can be performed from redis-cli
+interactive mode or passed as arguments.
+If you know a key but not sure about it`s type, you can issue `TYPE` on it
+TYPE  <key>              # detect type of provided key
+
+Here are some examples:
+NOTE: you can perform them within interactive CLI with tab-complition and other usefull feature by
+starting `redis-cli` without arguments and executing all following commands without  `redis-cli -n 0`
+NOTE: as described in `Configuration` section, user is not expected to write anywhere else except
+CONFIG_DB (4), all following commands are performed as example and should not be used on real setup.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+String. Used for keys, names of fields and it`s values.
+GET <key>                                   # Get a single key
+SET <key> <value>                           # Set a signle key
+MSET <key> <value> [key value ...]          # Set multiple keys
+
+$ redis-cli -n 4 GET "CONFIG_DB_INITIALIZED"
+  "1"
+$ redis-cli -n 4 SET "CONFIG_DB_INITIALIZED" 123
+  OK
+$ redis-cli -n 4 GET "CONFIG_DB_INITIALIZED"
+  "123"
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Hash. Data structure that maps a string key with field-value pairs, useful to represent objects.
+HGET <key> <field>                              # Get a single field and its value
+HMGET <key> <filed> [field ...]                 # Get multiple fields
+HGETALL <key>                                   # Get all fields and their value
+HSET <key> <field> <value>                      # Set a single fields
+HMSET <key> <field> <value> [field value ...]   # Set multiple fields
+
+$ redis-cli -n 0 HGETALL "ROUTE_TABLE:20c0:c6c8:0:80::/64"
+   1) "nexthop"
+   2) "fc00::72,fc00::76,fc00::7a,fc00::7e"
+   3) "ifname"
+   4) "PortChannel0001,PortChannel0002,PortChannel0003,PortChannel0004"
+
+$ redis-cli -n 0 HGET "ROUTE_TABLE:20c0:c6c8:0:80::/64" ifname
+  "PortChannel0001,PortChannel0002,PortChannel0003,PortChannel0004"
+
+$ redis-cli -n 0 HSET "ROUTE_TABLE:20c0:c6c8:0:80::/64" nexthop "fc00::72,fc00::76,fc00::7a"
+  (integer) 0
+
+$ redis-cli -n 0 HGET "ROUTE_TABLE:20c0:c6c8:0:80::/64" nexthop
+  "fc00::72,fc00::76,fc00::7a"    
+
+$ redis-cli -n 0 HMSET "ROUTE_TABLE:20c0:c6c8:0:80::/64"                        \
+                     nexthop "fc00::72"                                         \
+                     ifname "PortChannel0001,PortChannel0002,PortChannel0003"
+
+$ redis-cli -n 0 HGETALL "ROUTE_TABLE:20c0:c6c8:0:80::/64"
+  1) "nexthop"
+  2) "fc00::72"
+  3) "ifname"
+  4) "PortChannel0001,PortChannel0002,PortChannel0003"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you try to set <value> of a <key> with a wrong command, redis will return following error
+WRONGTYPE Operation against a key holding the wrong kind of value
+
+https://stackoverflow.com/questions/47879894/redis-error-wrongtype-operation-against-a-key-holding-the-wrong-kind-of-value
+---------------------------------------------------------------------------------------------------------
+                                Common commands
+---------------------------------------------------------------------------------------------------------
+SETNX <key> <value>      # set <key> to <value> only if <key> was not defined previously
+DEL   <key>              # returns numver of keys that were removed
+TYPE  <key>              # detect type of provided key
+SCAN  <db_num>           # list all keys in a DB #<db_num>
+SELECT <db_num>          # checkout DB#<db_num>
+KEYS <pattern>           # list all keys matching a pattern
+
+https://redis.io/commands
+---------------------------------------------------------------------------------------------------------
+                                Pub/Sub model
+---------------------------------------------------------------------------------------------------------
+A common problem of in big systems like SONIC is creating communication network among it`s services.
+In case of SONIC it is done using redis Pub/Sub functionality. This is done by creating a channel that
+may be used by publiser and subscribers to send/receive messages. Most of internal services of SONIC are
+using this approach, but it is not a case for user side (CLI) which uses special utilities like
+`swssconfig` to write in CONFIG_DB.
+
+NOTE: Pub/Sub model implementation is lightwaight but has a couple of drawbacks that should be considered:
+- No persistence or value caching
+- No delivery guarantees
+- No cluster optimization
+
+You can mannualy subscribe for some channels with `redis-cli` and monitor changes, which may be usefull
+for debugging.
+
+Common commands:
+PUBSUB channels                                 # list available channels
+SUBSCRIBE <channel_name> [<channel_name> ...]   # listen for messages on <channel_name>
+PUBLISH <channel_name> <message>                # send a <message>
+
+A comprehensive description of this mechanism can be found by following links:
+https://www.redisgreen.net/blog/pubsub-intro/
+https://www.redisgreen.net/blog/pubsub-howto/
+---------------------------------------------------------------------------------------------------------
+                                    Examples
+---------------------------------------------------------------------------------------------------------
+Dumping DBs:
+redis-dump -d 4 -k  "PORT|Ethernet4" -y                                       # dumps ConfigDB for port
+   "PORT|Ethernet4": {
+    "type": "hash",
+    "value": {
+      "admin_status": "up",
+      ....
+      "speed": "50000"
+    }
+  }
+redis-dump -d 0 -k *PORT_TABLE:Ethernet62* -y                                 # dumps APP_DB
+{
+  "PORT_TABLE:Ethernet62": {
+    "type": "hash",
+    "value": {
+      "admin_status": "down",
+      ...
+      "speed": "50000"
+    }
+  }
+redis-dump -d 1 -k  "ASIC_STATE:SAI_OBJECT_TYPE_PORT:oid:0x1000000000014"  -y # dumps ASIC_DB
+redis-dump -d 4 -k "DEVICE_METADATA|localhost" -y                             # dump DEVICE_METADATA
+{
+  "DEVICE_METADATA|localhost": {
+    "type": "hash", 
+    "value": {
+      "bgp_asn": "65100", 
+      "default_bgp_status": "up", 
+      "default_pfcwd_status": "disable", 
+      "deployment_id": "1", 
+      "docker_routing_config_mode": "separated", 
+      "hostname": "vlab-01", 
+      "hwsku": "Force10-S6000", 
+      "mac": "52:54:00:77:22:f5", 
+      "platform": "x86_64-kvm_x86_64-r0", 
+      "type": "ToRRouter"
+    }
+  }
+}
+https://github.com/Azure/SONiC/blob/master/doc/SONiC-User-Manual.md
+=======================================================================================================
+                                    Configuration
+=======================================================================================================
+SONIC is managing configuration in a single source of truth - a redisDB instance that we refer as
+ConfigDB. Applications subscribe to ConfigDB and generate their running configuration correspondingly.
+When system boots, configurations will be loaded from /etc/sonic/config_db.json file into redis.
+Note that ConfigDB content won't be written back into /etc/sonic/config_db.json file automatically.
+In order to do that, a `config save` command need to be manually executed from CLI. 
+CONFIG_DB can be managed using `config` utility. You can issue:
+config
+       save [file]        # saves active config from CONFIG_DB to config_db.json or to optinal [file]
+          -y              # don`t ask for confirmation
+       reload             # flush active config from CONFIG_DB + load config_db.json, same as reboot
+                          # NOTE: all services are stoped and reloaded (may kill SSH)
+       load [file]        # overwrite active configuration with config_db.json or optional [file]
+          -y              # don`t ask for confirmation when applying
+
+Redis-engine is handled by Database container. Databases held within this engine are accessible to SONiC
+applications through a UNIX socket exposed for this purpose by the redis-daemon. These are the main
+databases hosted by the redis engine:
+1. APPL_DB: Stores the state generated by all application containers -- routes, next-hops, neighbors,etc.
+   This is the south-bound entry point for applications wishing to interact with other SONiC subsystems.
+2. CONFIG_DB: Stores the configuration state created by SONiC applications -- port configurations,
+   interfaces, vlans, etc.
+   When system boots, configurations will be loaded from /etc/sonic/config_db.json file into CONFIG_DB.
+   Similarly, config load will trigger a force load of json file into DB. Generally, content in
+   /etc/sonic/config_db.json can be considered as starting config, and content in redisDB running config.
+3. STATE_DB: Stores "key" operational state for entities configured in the system. This state is used to
+   resolve dependencies between different SONiC subsystems. For example, the definition of a VLAN
+   (through vlanmgrd component), which may reference port-members whose presence is undetermined in the
+   system.
+4. ASIC_DB: Stores the necessary state to drive asic's configuration and operation -- state here is kept
+   in an asic-friendly format to ease the interaction between syncd and asic SDKs.
+5. COUNTERS_DB: Stores counters/statistics associated to each port in the system. This state can be
+   utilized to satisfy a CLI local request, or to feed a telemetry channel for remote consumption.
+More advanced explanation of container interaction with DBs can found here:
+https://github.com/Azure/SONiC/wiki/Architecture
+
+Difference between APPL_DB and CONFIG_DB:
+1. Purpose
+   APPL_DB is used by docker services and their applications, user should not edit it directly.
+   CONFIG_DB is used to load initial configuration, to forward user query.
+2. Scheme
+   They use a similar scheme but it is not the same 
+3. Presence of some keys
+   APPL_DB may have some keys that CONFIG_DG is not aware of
+
+
+---------------------------------------------------------------------------------------------------------
+                                  Random Notes 
+---------------------------------------------------------------------------------------------------------
+User of DBs should be aware of following moments:
+1. There is no rollback mechanism for DB, meaning that if user configures something wrong,
+   service should explicitly fail. ConfigDB is considered to be always correct.
+2. User is not expected to write to any other DB except CONFIG_DB (and myabe STATE_DB)
+   Applications won`t receive a notification about such change.
+3. DBs don`t share used scheme, but they are similiar.
+
+Scheme used in SONIC documentation group keys in tablews, however Redis is NoSQL database that holds
+objects as key-value pair and has no concept of table. This concept is simulated by prefixing keys
+with table name and some separator, like ':' or '|'.
+
+APP_DB has key inside it-self to indicate it`s state.
+  "PORT_TABLE:PortConfigDone": {
+      "count": "32"
+  }, 
+  "PORT_TABLE:PortInitDone": {
+      "lanes": "0"
+  }
+
+
+Table reference:
+https://github.com/Azure/sonic-swss/blob/4c56d23b9ff4940bdf576cf7c9e5aa77adcbbdcc/doc/swss-schema.md
+---------------------------------------------------------------------------------------------------------
+                        Troubleshooting interaction between DBs
+---------------------------------------------------------------------------------------------------------
+set some argument
+follow logs
+provide example when something fails (with code)
+---------------------------------------------------------------------------------------------------------
+                              Commonly used DB API
+---------------------------------------------------------------------------------------------------------
+how to subscribe
+where db api and managers are implemented
+different mechanism to subscribe, reasoning behind them
+---------------------------------------------------------------------------------------------------------
+
+TODO: What tables are present on each DBs, how to list/use them
+      Which services interact with which DBs and why
+
+There are 3 approaches which may be used to interact with Sonic configuration:
+1. Config may be set/retrieved directly using CLI utilties "config/show" or "redis-cli/redis-dump".
+   For more detailed description of "config/show" please refere to "CLI/Configuration mgmt" section.
+   Redis description may be found here.
+2. Configuration file can be applied with "config load [<file>]" command.
+   Example might be found here.
+3. Jinja2 Application templates.
+   Please refere to `Jinja2 Application template generation` for more detailed description
+
+---------------------------------------------------------------------------------------------------------
+                                     Redis
+---------------------------------------------------------------------------------------------------------
+/etc/sonic/config_db.json (successor of minigraph.xml)
+scheme - https://github.com/Azure/SONiC/wiki/Configuration.md
+example1: https://github.com/Azure/SONiC/blob/gh-pages/doc/config_db_t0.json
+example2: https://github.com/Azure/SONiC/blob/gh-pages/doc/config_db.json
+example3: From SONIC CLI `cat /etc/sonic/config_db.json`
+
+
+---------------------------------------------------------------------------------------------------------
+                    Configuration with a json file
+---------------------------------------------------------------------------------------------------------
+Example for configuration file:
+For the purpose of this example I will modify a ethernet port from PORT_TABLE, CONFIG_DB (4).
+
+1. First, we need to find scheme for our key/value pair. Officialy, scheme follows ABNF syntax
+   defined in RFC5234 and can be found here
+   https://github.com/Azure/sonic-swss/blob/4c56d23b9ff4940bdf576cf7c9e5aa77adcbbdcc/doc/swss-schema.md
+   NOTE: If you are using `redis-dump`, it concatenates table name to a key with '|' character,
+
+   The simplest way to find correct scheme is to copy definition of your element from `config_db.json`
+   and just modify it accordingly to your needs. For instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+new_port.json:
+{
+    "PORT": {
+        "Ethernet777": {
+            "admin_status": "up", 
+                "alias": "fortyGigE0/777", 
+                "description": "ARISTA04T1:Ethernet1", 
+                "index": "31", 
+                "lanes": "97,98,99,100", 
+                "mtu": "9100", 
+                "pfc_asym": "off", 
+                "speed": "40000"
+        }
+    }
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2. Apply configuration
+   $ sudo config load new_port.json -y
+3. Check if configuration was applied
+   $ redis-dump -d 4 -k PORT* -y
+     {
+       ...
+       "PORT|Ethernet777": {
+       "type": "hash", 
+       "value": {
+         "admin_status": "up", 
+         "alias": "fortyGigE0/777", 
+         "description": "ARISTA04T1:Ethernet1", 
+         "index": "31", 
+         "lanes": "97,98,99,100", 
+         "mtu": "9100", 
+         "pfc_asym": "off", 
+         "speed": "40000", 
+         "type": "hash", 
+       },
+       ...
+     } 
+
+   # Or using redis-cli
+   $ redis-cli -n 4 keys PORT*
+     ...
+     16) "PORT|Ethernet777"
+     ...
+   $ redis-cli -n 4 hgetall "PORT|Ethernet777"
+      1) "index"
+      2) "31"
+      ......
+     11) "alias"
+     12) "fortyGigE0/777"
+     13) "pfc_asym"
+     14) "off"
+     15) "speed"
+     16) "40000"
+
+NOTE: all operations are performed on CONFIG_DB
+TODO: Will applications notice chage made from CLI? How to check?
+      How to check if application is monitoring changes to DB?
+---------------------------------------------------------------------------------------------------------
+                                   swssconfig
+---------------------------------------------------------------------------------------------------------
+As you have already understood, CONFIG_DB is used by user and it`s values are then synced into APP_DB.
+This is done by using manager, that subscribes for sertain fields/tables. When user changes such field,
+manager will notice the change and sync it into APP_DB.
+However, there are some fields that are not managed and it is not planned to develop manager for them.
+Another problem is that scheme of DBs may differ. There is utility used as a work around for such
+issues, called `swssconfig`. All it does is just forwards configuration query to APP_DB but in group
+with Jinja templates it becomes quite usefull.
+It is used in following fashion:
+On boot you generate configuration file using Jinja template and parameters from CONFIG_DB
+Template gives you flexibility to change scheme of configuration file or to define new keys,
+not present in CONFIG_DB, with an values from the CONFIG_DB. Then, config file is passed as argument
+to `swssconfig` which will forward the requests.
+
+NOTE: This configuration is requested after CONFIG_DB was initialized from `/etc/sonic/config_db.json`
+by database container.  All services are waiting for database container being started before initializing
+itself as can be seen from `/etc/systemd/system/*.service`, and when database container is started,
+it writes config_db.json.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/etc/systemd/system/swss.service:
+    Requires=database.service ...
+    After=database.service ...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/bin/database.sh:
+function postStartAction()
+{
+    # Wait until redis starts
+    /usr/bin/docker exec database ping_pong_db_insts
+                ......
+        # If there is a config db dump file, load it
+        if [ -r /etc/sonic/config_db.json ]; then
+            sonic-cfggen -j /etc/sonic/config_db.json --write-to-db
+        fi
+        redis-cli -n 4 SET "CONFIG_DB_INITIALIZED" "1"
+                ......
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The config used by swssconfig has form similiar to json files used by `config` utility, however it has
+an additional parameter identifying operation to be performed. Example is described in `Jinja templates`
+section
+
+---------------------------------------------------------------------------------------------------------
+
+https://www.npmjs.com/package/redis-dump
+https://github.com/Azure/sonic-swss/blob/master/doc/Configuration.md
+https://github.com/Azure/sonic-utilities/blob/master/doc/Command-Reference.md#loading-reloading-and-saving-configuration
+https://github.com/Azure/SONiC/blob/gh-pages/doc/Sonic_ConfigDB_0926_community_talk.pdf
+=======================================================================================================
+                     Jinja2 Application template generation
+=======================================================================================================
+Jinja2 is a modern templating language for Python, modelled after Django’s templates.
+A Jinja template is simply a text file that doesn’t need to have a specific extension. It contains
+variables and/or expressions, which get replaced with values when a template is rendered; and tags,
+which control the logic of the template. 
+
+SONIC uses Jinja for many cases, some of them are:
+1. Generating service configuration
+   $ find ./files/ -name *.j2
+     ./files/build_templates/...service.j2
+     ./files/image_config/rsyslog/rsyslog.conf.j2
+     ./files/image_config/hostcfgd/tacplus_nss.conf.j2
+     ./files/image_config/hostcfgd/common-auth-sonic.j2
+     ./files/image_config/interfaces/interfaces.j2
+     ./files/image_config/ntp/ntp.conf.j2
+    
+2. Generating docker image build scripts (dockers/*/Dockerfile.j2)
+   $ find ./dockers/ -name Dockerfile.j2 -o -name dockerfile-macros.j2
+     ./dockers/dockerfile-macros.j2
+                    ........
+     ./dockers/docker-sonic-mgmt/Dockerfile.j2
+     ./dockers/docker-fpm-quagga/Dockerfile.j2
+                    ........
+     ./dockers/docker-config-engine/Dockerfile.j2
+     ./dockers/docker-platform-monitor/Dockerfile.j2
+
+3. Generating docker environment build scripts
+   ./sonic-slave/Dockerfile.j2 
+   ./sonic-slave-stretch/Dockerfile.j2
+
+4. Generating application configurations 
+   $ find ./dockers/ ! -name Dockerfile.j2 -name *.j2 
+     ./dockers/docker-fpm-quagga/unisolate.j2
+     ./dockers/docker-fpm-quagga/isolate.j2
+     ./dockers/docker-fpm-quagga/bgpd.conf.j2
+     ./dockers/docker-fpm-quagga/zebra.conf.j2
+     ./dockers/docker-fpm-gobgp/unisolate.j2
+     ./dockers/docker-fpm-gobgp/gobgpd.conf.j2
+     ./dockers/docker-fpm-gobgp/isolate.j2
+     ./dockers/docker-fpm-gobgp/zebra.conf.j2
+     ./dockers/docker-fpm-frr/unisolate.j2
+     ./dockers/docker-fpm-frr/frr.conf.j2
+     ./dockers/docker-fpm-frr/bgpd.conf.spine_chassis_frontend_router.j2
+     ./dockers/docker-fpm-frr/bgpd.conf.default.j2
+     ./dockers/docker-fpm-frr/isolate.j2
+     ./dockers/docker-fpm-frr/staticd.conf.j2
+     ./dockers/docker-fpm-frr/bgpd.conf.j2
+     ./dockers/docker-fpm-frr/zebra.conf.j2
+     ./dockers/docker-database/supervisord.conf.j2
+     ./dockers/docker-lldp-sv2/lldpd.conf.j2
+     ./dockers/docker-orchagent/switch.json.j2
+     ./dockers/docker-orchagent/ports.json.j2
+     ./dockers/docker-orchagent/ipinip.json.j2
+     ./dockers/docker-snmp-sv2/sysDescription.j2
+     ./dockers/docker-snmp-sv2/snmpd.conf.j2
+     ./dockers/docker-dhcp-relay/docker-dhcp-relay.supervisord.conf.j2
+     ./dockers/docker-dhcp-relay/wait_for_intf.sh.j2
+     ./dockers/docker-router-advertiser/radvd.conf.j2
+     ./dockers/docker-router-advertiser/wait_for_intf.sh.j2
+     ./dockers/docker-platform-monitor/start.sh.j2
+     ./dockers/docker-platform-monitor/docker-pmon.supervisord.conf.j2
+
+5. Generating shell scripts
+   $ find ./dockers/ -name *.sh.j2
+     dockers/docker-dhcp-relay/wait_for_intf.sh.j2
+     dockers/docker-router-advertiser/wait_for_intf.sh.j2
+     dockers/docker-platform-monitor/start.sh.j2
+
+6. Generating some hardware configuration
+   $ find ./device/ -name *.j2
+     <device_path>/qos.json.j2
+         ...      /buffers.json.j2 
+         ...      /buffers_defaults_t0.j2 
+         ...      /buffers_defaults_t1.j2 
+         ...      /buffers_defaults_def.j2
+         ...      /sai.profile.j2 
+
+---------------------------------------------------------------------------------------------------------
+                   Rendering of application configuration
+---------------------------------------------------------------------------------------------------------
+Most of images has a couple of *.j2 files, stored in `/usr/share/sonic/templates`, with some
+configuration. They are rendered by `/usr/bin/start.sh` on image initialization.
+Rendering algo:
+1. SONIC starts docker container with `/usr/bin/python /usr/bin/supervisord` as `init` process.
+   # From SONIC
+   $ docker ps --no-trunc --format "table {{.Names}}\t{{.Command}}"
+     NAMES               COMMAND
+     database            "/usr/local/bin/docker-database-init.sh"
+     dhcp_relay          "/usr/bin/docker_init.sh"
+     pmon                "/usr/bin/docker_init.sh"
+     syncd               "/usr/bin/supervisord"
+     teamd               "/usr/bin/supervisord"
+     snmp                "/usr/bin/supervisord"
+     sflow               "/usr/bin/supervisord"
+     radv                "/usr/bin/supervisord"
+     swss                "/usr/bin/supervisord"
+     lldp                "/usr/bin/supervisord"
+     bgp                 "/usr/bin/supervisord"
+     telemetry           "/usr/bin/supervisord"
+
+   $ docker exec -it bgp bash
+   bgp: $ ps -1
+          PID TTY      STAT   TIME COMMAND
+          1 pts/0    Ss+    0:10 /usr/bin/python /usr/bin/supervisord
+
+2. `supervisord` looks at `/etc/supervisor/conf.d` and starts all defined services
+3. `start.sh` is executed, script will call `sonic-cfggen` to render template
+   $ sonic-cfggen -d -t /usr/share/sonic/templates/<template>.j2 > /<config_dir>/<template>
+4. Service that will use that config gets started
+   $ supervisorctl start <service>
+
+There are a couple common ways how applications apply generated config. 
+1. Generated file is read by daemon/service on initialization.
+2. Daemon/Service is executed non interactively to read/save generated file and then exits.
+   For instance `vtysh_b` service on bgp image
+3. Generated file is used to configure DB. File is passed to `redis-cli` or it`s wrapper like `swssconfig`
+   In this case we need to define what operation we want to perform using a separate key called `OP`
+   with value `SET/DEL` (defined in `src/sonic-swss-common/common` [SET/DEL]_COMMAND )
+   Examples of such files:
+   $ find -name *.j2 -exec grep -wH OP {} \;
+     ./dockers/docker-orchagent/switch.json.j2:       "OP": "SET"
+     ./dockers/docker-orchagent/ports.json.j2:        "OP": "SET"
+     ./dockers/docker-orchagent/ipinip.json.j2:       "OP": "SET"
+     ./dockers/docker-orchagent/ipinip.json.j2:       "OP": "SET"
+   Rendered template will be passed as argument to `swssconfig` within `/usr/bin/swssconfig.sh`
+
+
+---------------------------------------------------------------------------------------------------------
+                                Using templates
+---------------------------------------------------------------------------------------------------------
+Let`s try to change some template used by `bgp` container.
+1. Find a template that you want to modify
+   $ ls /usr/share/sonic/templates/
+
+# frr.conf.j2 will be used For the purpose of this example
+2. Configuration file may be present on image but not used therefore you need to check this first.
+   Check if it is used by your image, bgp in this case
+   $ vi /usr/bin/start.sh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   /usr/bin/start.sh:
+
+   CONFIG_TYPE=`sonic-cfggen -d -v 'DEVICE_METADATA["localhost"]["docker_routing_config_mode"]'`
+   if [ -z "$CONFIG_TYPE" ] || [ "$CONFIG_TYPE" == "separated" ]; then
+       ...
+       rm -f /etc/frr/frr.conf
+   elif [ "$CONFIG_TYPE" == "unified" ]; then
+       sonic-cfggen -d -y /etc/sonic/deployment_id_asn_map.yml -t \
+       /usr/share/sonic/templates/frr.conf.j2 >/etc/frr/frr.conf
+   fi
+   ...
+   if [ "$CONFIG_TYPE" == "unified" ]; then
+       supervisorctl start vtysh_b
+   fi
+   ...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   From the file above, we can see that `frr.conf.j2` is used only when `docker_routing_config_mode`
+   is set to `unified`. The easyest way to check this is just to repeat command used above
+   $ sonic-cfggen -d -v 'DEVICE_METADATA["localhost"]["docker_routing_config_mode"]
+     separated
+
+   In this case, image won`t use frr.conf and you need to enable it.
+
+3. Exit into SONIC and enable usage of frr.conf by changing value of `docker_routing_config_mode`,
+   using `redis-cli` or `config load`
+   $ exit
+   $ cat /etc/sonic/config_db.json | grep -A 13 DEVICE_METADATA > new_metadata.json
+   $ cat new_metadata.json 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       "DEVICE_METADATA": {
+           "localhost": {
+               "bgp_asn": "65100", 
+               "default_bgp_status": "up", 
+               "default_pfcwd_status": "disable", 
+               "deployment_id": "1", 
+               "docker_routing_config_mode": "separated", 
+               "hostname": "vlab-01", 
+               "hwsku": "Force10-S6000", 
+               "mac": "52:54:00:77:22:f5", 
+               "platform": "x86_64-kvm_x86_64-r0", 
+               "type": "ToRRouter"
+           }
+       }, 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   - Change values (separated => unified), add one more level of braces, remove unneded comas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        new_metadata.json:
+        {
+            "DEVICE_METADATA": {
+                "localhost": {
+                    "bgp_asn": "65100", 
+                    "default_bgp_status": "up", 
+                    "default_pfcwd_status": "disable", 
+                    "deployment_id": "1", 
+                    "docker_routing_config_mode": "unified", 
+                    "hostname": "vlab-01", 
+                    "hwsku": "Force10-S6000", 
+                    "mac": "52:54:00:77:22:f5", 
+                    "platform": "x86_64-kvm_x86_64-r0", 
+                    "type": "ToRRouter"
+                }
+            }
+        }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   - Apply new configuration
+     $ sudo config load new_metadata.json -y
+       Running command: /usr/local/bin/sonic-cfggen -j new_metadata.json --write-to-db
+   - Check if new configuration was successfully applied
+     $ redis-dump -d 4 -k "*host*"
+       {"DEVICE_METADATA|localhost":{"type":"hash","value":{ ...
+           "docker_routing_config_mode":"unified"
+           ...
+       }}}
+     $ sonic-cfggen -d -v 'DEVICE_METADATA["localhost"]["docker_routing_config_mode"]'
+       unified
+
+   Note: Changes won`t be present in `/etc/sonic/config_db.json` without `config save`
+4. Change template of configuration file as you wish 
+   For the purpose of this example, let`s change `bgp neighbor description` naming scheme
+   From: neighbor {{ neighbor_addr }} description {{ bgp_session['name'] }}
+   To:   neighbor {{ neighbor_addr }} description {{ bgp_session['name'] }}_test_123
+
+5. Test if changes are lexically valid
+    $ sonic-cfggen -d -y /etc/sonic/deployment_id_asn_map.yml -t \
+        /usr/share/sonic/templates/frr.conf.j2 >/etc/frr/frr.conf
+    $ cat /etc/frr/frr.conf | grep _test_123
+      neighbor 10.0.0.57 description ARISTA01T1_test_123
+      neighbor 10.0.0.63 description ARISTA04T1_test_123
+                          ......
+      neighbor fc00::7a description ARISTA03T1_test_123
+      neighbor fc00::76 description ARISTA02T1_test_123
+
+    Seems to be ok, otherwise `sonic-cfggen` would display an exception callstack.
+
+6. Restart container using the new configuration
+   $ docker restart bgp
+   Note, you can follow `start.sh` and perform needed steps mannually
+   e.g. regenarate config files with `sonic-cfggen` and restart services.
+
+7. Check that configuration was successfully aplied
+   In this case, we need to open separate shell used for working with routing stack called `vtysh`,
+   and check applied configuration for change.
+   $ vtysh
+   vtysh:$ show bgp neighbors
+                                       ......
+           BGP neighbor is 10.0.0.63, remote AS 64600, local AS 65100, external link
+            Description: ARISTA04T1_test_123 
+                                       ......
+           BGP neighbor is fc00::72, remote AS 64600, local AS 65100, external link
+            Description: ARISTA01T1_test_123
+                                       ......
+
+NOTE: You can find advanced description for `vtysh` CLI by following links
+https://www.quagga.net/docs/quagga.pdf
+https://buildmedia.readthedocs.org/media/pdf/frrouting/latest/frrouting.pdf
+---------------------------------------------------------------------------------------------------------
+
+Use following link for futher information about Jinja and it`s syntax: 
+https://jinja.palletsprojects.com/en/2.10.x/
+=======================================================================================================
+                               Advanced debugging
+=======================================================================================================
+                        Installing additional utilities
+-------------------------------------------------------------------------------------------------------
+In case you need some common tools used for troubleshooting/debugging/investigation there is a option to
+enable a few. Common utilities used debugging include: gdb, gdbserver, vim, strace, openssh-client, sshpass.
+These are not install by default and require being enable in one of the following ways:
+1. Defined as global variable before compilation
+   INSTALL_DEBUG_TOOLS=y make target/sonic-broadcom.bin
+2. Enabled in config `rules/config` and compiled
+   # INSTALL_DEBUG_TOOLS - installs debugging tools in baseline docker
+   # Uncomment next line to enable:
+   INSTALL_DEBUG_TOOLS = y
+
+This variable get`s translated into following command, during image building
+   $ apt-get install -f -y gdb gdbserver vim openssh-client sshpass strace
+You can save yourself some time by performing this command directly from SONIC CLI, note it requires
+interent connection on a device.
+
+---------------------------------------------------------------------------------------------------------
+                             Installing dbg packages
+---------------------------------------------------------------------------------------------------------
+Now, when you have a `gdb`, you can attach to some process and trace what it is dooing, however, most
+likely, there will be no debugging symbols making it almost impossible to do something usefull with such
+process. You have two ways of compiling debug symbols: you can compile docker debug image or a single
+package with debug symbols and upload them. In the case of image compilation, it will compile all debug
+packages used by it`s applications and debug utilities like gdb. Each container built with debug enabled
+gets it copy of common debug tools. If you want to save some time, then you can `apt install` only
+debug packages that you need.
+
+General backgroud, what debug symbols are used for:
+Debug symbols holds mappings between instruction address, source file lines and function names that can
+be used by debugger. For instance, if you have no mapping between instruction address and function name,
+gdb will display following for stack frame.
+  #frame_number 0x<addr> in      ?? ()        from <file>
+                              instead of
+  #frame_number 0x<addr> in <functio_name> () from <file>
+However, some applications are not fully stripped from debug symbols and you can  still see function names.
+You can upload sorce files to SONIC and see source lines that you are executing.
+Debug symbols are hold in `/usr/lib/debug/.build-id/`. Both apt and gdb knows about this place and will
+use it by default to install/read new symbols.
+
+NOTE: if you have source files but without debug symbols (no dbg package installed), gdb won`t have enough
+information to display source lines.
+
+NOTE: you can avoid building separate package with debug symbols by preventing striping of debug symbols
+from the original one. You can export `DEB_BUILD_OPTIONS=nostrip` somewhere inside build environment.
+For instance makefile building your package, like `src/lldpd/Makefile`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ | export DEB_BUILD_OPTIONS=nostrip 
+~ | env "with_netlink_receive_bufsize=1024*1024" DEB_BUILD_OPTIONS=nostrip dpkg-buildpackage -rfakeroot ...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------------------------------------------------------------
+                            Single package debugging
+---------------------------------------------------------------------------------------------------------
+Let`s try install debug symbols for some package and debug it with gdb.
+# Application `lldpd` will to be used for the purpose of this example
+
+1. Find target responsible for `lldpd` debug symbols.
+   This can be done in two ways: you can look though target names that have `lldp` within it and suffix
+   like `dbg[sym]` or you can find makefile of the application and look through *_DBG variables
+   $ make list | grep lldp.*dbg
+     target/debs/stretch/lldpd-dbgsym_0.9.6-1_amd64.deb
+     target/docker-lldp-sv2-dbg.gz
+   As you can see, there is a deb package and a docker image. Docker image may include some additional
+   applications and debug symbols for them. In general, you can save some time by installing only needed
+   package. In this case, it seems to be the first one 
+     target/debs/stretch/lldpd-dbgsym_0.9.6-1_amd64.deb
+   Now let`s confirm this by inspectig makefile `rules/lldpd.mk`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   lldpd.mk:
+   ...
+   LLDPD_DBG = lldpd-dbgsym_$(LLDPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+   ...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   As you can see, `lldpd-dbgsym_0.9.6-1_amd64.deb` matches the name convention of `LLDPD_DBG`.
+
+2. Compile and upload it to the SONIC
+   $ make target/debs/stretch/lldpd-dbgsym_0.9.6-1_amd64.deb-clean
+   $ make target/debs/stretch/lldpd-dbgsym_0.9.6-1_amd64.deb
+     [ 01 ] [ target/debs/stretch/libnl-3-200_3.2.27-2_amd64.deb-install ]
+     [ 01 ] [ target/debs/stretch/libnl-3-dev_3.2.27-2_amd64.deb-install ]
+     [ 01 ] [ target/debs/stretch/libsnmp-base_5.7.3+dfsg-1.5_all.deb-install ]
+     [ 01 ] [ target/debs/stretch/libsnmp30_5.7.3+dfsg-1.5_amd64.deb-install ]
+     [ 01 ] [ target/debs/stretch/libsnmp-dev_5.7.3+dfsg-1.5_amd64.deb-install ]
+     [ 01 ] [ target/debs/stretch/lldpd_0.9.6-1_amd64.deb ]
+     [ 01 ] [ target/debs/stretch/lldpd_0.9.6-1_amd64.deb-install ]
+     [ 01 ] [ target/debs/stretch/lldpd-dbgsym_0.9.6-1_amd64.deb ]
+   $ cp target/debs/stretch/lldpd-dbgsym_0.9.6-1_amd64.deb ~/packages/
+   $ scp ~/packages/lldpd-dbgsym_0.9.6-1_amd64.deb  <SONIC_user>@<SONIC_host>:/
+
+# Following commands are performed from SONIC
+# NOTE: you need to install debug symbols to docker image from which you will use the gdb 
+# i.e.  If you want to debug from SONIC, then you need to install symbols to SONIC and not to docker image
+3. Copy package to container and install it. Let`s suppose that we will debug application docker image
+   $ docker cp lldpd-dbgsym_0.9.6-1_amd64.deb lldp:/
+   $ docker exec -it lldp  bash
+   lldp:$ ls
+   ...  lldpd-dbgsym_0.9.6-1_amd64.deb  ...
+
+   # Check if package is not installed
+   lldp:$ apt list | grep lldp
+          liblldpctl-dev/oldstable 0.9.6-1 amd64
+          lldpad/oldstable 0.9.46-3.1 amd64
+          lldpad-dev/oldstable 0.9.46-3.1 amd64
+          lldpd/oldstable 0.9.6-1 amd64 [upgradable from: 0.9.6-1]
+
+   # package is not present, install it
+   lldp:$ dpkg -i lldpd-dbgsym_0.9.6-1_amd64.deb 
+          Selecting previously unselected package lldpd-dbgsym.
+          (Reading database ... 10264 files and directories currently installed.)
+          Preparing to unpack lldpd-dbgsym_0.9.6-1_amd64.deb ...
+          Unpacking lldpd-dbgsym (0.9.6-1) ...
+          Setting up lldpd-dbgsym (0.9.6-1) ...
+
+   # Check if package was successfully installed
+   lldp:$ apt list | grep lldp
+                          ......
+          lldpd-dbgsym/now 0.9.6-1 amd64 [installed,local]
+
+   # Perform debugging of the application
+               ......
+
+The difference between application and image upgrade process is that you need to find needed image
+and use it instead of application package. Note that resulting image will have *-dbg.gz suffix and you
+will need to rename it after loading on SONIC.
+
+TODO: any easy way to list dbg packages compiled for docker image?
+---------------------------------------------------------------------------------------------------------
+                                   Using gdb
+---------------------------------------------------------------------------------------------------------
+Now let`s look at the ways to use gdb. The first of all, you need to decide if you want to attach
+to already running process or start a new one under `gdb`. Already running process called `lldpd` will be
+used for the purpose of this example.
+1. Find a process to debug
+   $ ps aux | grep lldpd
+     admin     6068  0.0  0.0  11108   932 pts/0    S+   17:06   0:00 grep lldp
+     root     30708  0.0  0.2  60748  4684 pts/0    S    12:35   0:00 lldpd: monitor. 
+     systemd+ 30710  0.0  0.1  60748  3016 pts/0    S    12:35   0:01 lldpd: no neighbor.
+
+# Let`s use process  30710
+2. Attach to it
+   $ sudo gdb -p 30710
+     Reading symbols from target:/usr/lib/x86_64-linux-gnu/libevent-2.0.so.5...(no debugging symbols foun
+     Reading symbols from target:/usr/lib/x86_64-linux-gnu/libnetsnmpmibs.so.30...(no debugging symbols f
+     ......
+     Reading symbols from target:/lib/x86_64-linux-gnu/libpthread.so.0...
+     Reading symbols from /usr/lib/debug/.build-id/16/d609487bcc4acbac29a4eaa2dda0d2f56211ec.debug...done.
+     warning: Target and debugger are in different PID namespaces; thread lists and other data are likely
+         unreliable.  Connect to gdbserver inside the container.
+     0x00007fbef23762e3 in __epoll_wait_nocancel () at ../sysdeps/unix/syscall-template.S:84
+     84	../sysdeps/unix/syscall-template.S: No such file or directory.
+
+# Things to notice
+- During initialization part, gdb looks through system debug symbols for ones matching current application
+  As it can be seen, there is preatty much no debugging symbols for linux core libraries like <libpthread>
+  that may be used by application
+- Warning:
+  Target and debugger are in different PID namespaces; thread lists and other data are likely unreliable.
+  Connect to gdbserver inside the container.
+  This means that you have attached to process outside of it`s docker container and there may be some
+  differences between descriptions of resources used on container and SONIC.
+- Sources:
+  84	../sysdeps/unix/syscall-template.S: No such file or directory.
+  Process is currenly waiting inside __epoll_ but we can`t see exact source file line since we don`t
+  have directory with sources.
+
+3. Get stack trace, try to go through frames and list source, dump registers.
+   (gdb) backtrace 
+   #0  0x00007fbef23762e3 in __epoll_wait_nocancel () at ../sysdeps/unix/syscall-template.S:84
+   #1  0x00007fbef442cd98 in ?? () from target:/usr/lib/x86_64-linux-gnu/libevent-2.0.so.5
+   #2  0x00007fbef441707a in event_base_loop () from target:/usr/lib/x86_64-linux-gnu/libevent-2.0.so.5
+   #3  0x000056498441b9bb in levent_loop (cfg=cfg@entry=0x56498502ab20) at event.c:590
+   #4  0x0000564984405ea2 in lldpd_main (argc=<optimized out>, argv=<optimized out>, envp=<optimized out>)
+       at lldpd.c:1857
+   #5  0x00007fbef22ad2e1 in __libc_start_main (main=0x5649844028d0 <main>, argc=6, argv=0x7ffcf9e73ad8,
+       init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, stack_end=0x7ffcf9e73ac8)
+       at ../csu/libc-start.c:291
+   #6  0x000056498440290a in _start ()
+   (gdb) f 3
+   590	event.c: No such file or directory.
+   (gdb) list
+   585	in event.c
+   (gdb) info registers
+   rax            0xfffffffffffffffc	-4
+   rbx            0x56498502ab20	94873764145952
+               ......
+   rbp            0x7ffcf9e736e0	0x7ffcf9e736e0
+   rsp            0x7ffcf9e736d0	0x7ffcf9e736d0
+   r8             0xaa	170
+               ......
+   r15            0x15	21
+   rip            0x56498441b9bb	0x56498441b9bb <levent_loop+651>
+   eflags         0x246	[ PF ZF IF ]
+   cs             0x33	51
+               ......
+   gs             0x0	0
+
+# As you can see, there is no source lines but we can see name of the frame.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To have sources displayed by debugger, we need to download them or somehow mount into filesystem space
+from which call the `gdb`. For instance I want to have sources displayed for `lldpd`.
+The most simple ways to do this is download sources via scp and execute gdb from that directory.
+From build host:
+  $ cp -r src/lldpd/lldpd-0.9.6 ~/packages
+  $ scp -r ~/packages/lldpd-0.9.6 <SONIC_user>:<SONIC_host>:<path>
+From SONIC:
+  $ cd /lldpd-0.9.6
+  $ sudp gdb -p $(pidof lldp)
+  (gdb) f 4
+  #4  0x00... in lldpd_main (argc=<optimized out>, argv=<optimized out>, envp=<optimized out>) at lldpd.c:1857
+  (gdb) list
+  1852    TAILQ_INSERT_TAIL(&cfg->g_chassis, lchassis, c_entries);
+  1853    lchassis->c_refcount++; /* We should always keep a reference to local chassis */
+  1854  
+  1855    /* Main loop */
+  1856    log_debug("main", "start main loop");
+  1857    levent_loop(cfg);
+  1858    lchassis->c_refcount--;
+  1859    lldpd_exit(cfg);
+  1860    free(cfg);
+  1861
+
+You can execute gdb outside of source directory but then you shoud add it`s path explicitly wich `directory`
+command or durin initialization. Note, `directory` is not recursive and requires you to specify each
+directory where sorces are saved. Another solution is to define source directory with -d option, like
+  $ sudo gdb `find lldpd-0.9.6/ -type d -printf '-d %p '` -p $(pidof lldpd)
+
+TODO: use gdb-server from device with sources
+      mount remote fs with nfs/sshfs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------------------------------------------------------------
+                                  Random notes
+---------------------------------------------------------------------------------------------------------
+You can see what new packages where installed by comparing `apt list` of backup image and the new one.
+  $ vimdiff <(docker exec <container_backup> apt list) <(docker exec <container> apt list)
+For instance, I have found following packages are installed on debug swss container
+    libsairedis-dbg/now 1.0.0 amd64 [installed,local]
+    libswsscommon-dbg/now 1.0.0 amd64 [installed,local]
+    swss-dbg/now 1.0.0 amd64 [installed,local]
+
+To see who is using them, you can look through process mappings 
+  $ grep -iE 'swss|sai|hiredis' /proc/*/maps
+    /proc/151/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/151/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/159/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/159/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/169/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/169/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/189/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/189/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/196/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/196/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/199/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/199/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/221/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/221/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/224/maps: .. - .. rw-p 0000f000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/224/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/45/maps: .. - .. r-xp 00000000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/45/maps: .. - .. r-xp 00000000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+    /proc/79/maps: .. - .. r-xp 00000000 fe:03 139283   /usr/lib/x86_64-linux-gnu/libhiredis.so.0.14
+    /proc/79/maps: .. - .. rw-p 0006a000 fe:03 139335   /usr/lib/x86_64-linux-gnu/libswsscommon.so.0.0.0
+
+https://iomem.com/archives/18-Avoiding-tests-when-building-Debian-packages.html
+https://github.com/Azure/sonic-buildimage/blob/master/README.buildsystem.md
+https://github.com/Azure/SONiC/wiki/Troubleshooting-Guide
+=========================================================================================================
+                                Build structure
+=========================================================================================================
+SONIC buildimage is a GNU make based environment for build process automation that consists of two main
+parts: frontend and backend.
+
+Backend -  collection of makefiles and other helpers that define generic target groups, used by recipes
+Makefile            # wrapper that bootstrups main makefile called `Makefile.work`
+                    ? It is used to controll if build is `jessie/stretch`, not sure about it`s purpose
+                    ? Seems that SONIC is based on 2 debian distributives - jessie and stretch
+                    # parameters passed here are delegated to Make process that will be performed
+                    # in docker build environment, making process of running container transparent
+                    # TODO: look through logic protected under $(NOJESSIE)
+slave.mk            # defines SONIC image build step
+                    # is passed as argument to `make -f` from Makefile.work, after docker env compilation
+                      @$(DOCKER_RUN) $(SLAVE_IMAGE):$(SLAVE_TAG) $(SONIC_BUILD_INSTRUCTION) $@
+                     | Docker environment                       |  slave.mk + other configurations |
+
+Every part of SONIC image build is performed in a docker container called sonic-slave, specially
+crafter for this envritonment. If build is started for the first time on a particular host, a new
+sonic-slave image will be built form sonic-slave/Dockerfile. After that all subsequent make commands
+will be executed inside this container.
+sonic-slave[...]                    # docker environment build scripts
+                 /Dockerfile        # base layer of build environment,
+                                    # configures `apt` and install all needed packages
+                 /Dockerfile.user   # layer with user specific configurations
+                                    # configuration of user permitions/groups/ssh/git/sudo ...
+
+Frontend - collection of recipes, that define metadata for each build target. Recipe is a small makefile
+that defines a target and set of variables for building it. This usually include package/.deb name,
+debug symbol locations, path where it`s sources are saved, compile/run time dependencies, execution
+options, SONIC instalation path, etc. If you want to add a new target to buildimage (.deb package or
+docker image), you have to create a recipe for this target.
+rules/              # configuration for platform independent targets
+                    # this can be .mk that configures routing stack package or some SONIC service
+      config        # some generic run/build time configuration like enable/disable debugging, profiling
+                    # configure default password/user/permissions, enable/disable package
+dockers/            # docker build configurations for some generic? packages
+                    # ?is it is used by main build or just for mannual build purpose?
+src/                # source code for generic packages like `sonic-swss` or `redis`
+                    # can be submodule that is install using `dpkg` 
+                    # may containt compilation steps for more complicated packages
+platform/[VENDOR]/  # vendor-specific stuff
+                    # defines SONIC_ALL which is a list of packages + ONIE image?
+                      that will be compiled for specific vendor ?
+                      contains .mk files that configure/install services
+                      https://github.com/Azure/SONiC/wiki/Porting-Guide
+
+Build output:
+target/             # build output
+                    # contains NOS installer image and docker images
+                      gets compiled with make all?
+
+TODO:
+files/
+fsroot/             # filesystem of previously compiled image?
+device/             # firmware?
+installer/          # ONIE, busybox and other embded linux related stuff?
+scripts/
+
+https://github.com/Azure/SONiC/blob/master/sourcecode.md
+---------------------------------------------------------------------------------------------------------
+                                 Target groups
+---------------------------------------------------------------------------------------------------------
+Target group is a set of targets that are built according to the same rules. Every recipe sets
+a target group to which this target belongs. (From README.buildsystem.md)
+In another words, there are groups of files that have common meaning/usage, e.g. group of source files,
+configuration files, test files, dependecie files, where each group will be used in the same maner. During
+your work with SONIC, this groups will be your targets used to build project, therefore they are called
+target group. The main idea behind them, is that there may be many files, saved under different modules but
+all of them will be grouped and used in the same maner. For instance, each module may have: some additional
+files that you want to copy into image; files that should be downloaded from online location before using;
+source files should be compiled into object files... This is done using special naming conventions for
+configuration variables under `platform` and flexible makefile targets.
+There are following Target groups:
+SONIC_DPKG_DEBS             # target group for building .deb packages using `dpkg-buildpackage`
+SONIC_PYTHON_STDEB_DEBS     # target group for building .deb packages but using
+                            # `python setup.py --command-packages=stdeb.command bdist_deb`
+                            # instead of `dpkg-buildpackage`
+SONIC_MAKE_DEBS             # it is said on official repo to be more flexible variant of previous two
+                            # for instance, you may want to apply patches before compiling
+                            # TODO: investigate usage
+SONIC_COPY_DEBS             # those packages will be just copied from specified location on your machine
+SONIC_COPY_FILES            # same as above but applicable for regular files
+SONIC_ONLINE_DEBS           # group for debian packages that should be fetched from an online source
+SONIC_ONLINE_FILES          # group for regular files that should be fetched from an online source
+SONIC_SIMPLE_DOCKER_IMAGES  # intended to build a docker image from a regular Dockerfile
+SONIC_DOCKER_IMAGES         # you can define debian packages from buildimage that will be installed to it,
+                            # and corresponding Dockerfile will be dinamically generated from a template
+SONIC_MAKE_FILES            #                               TODO
+SONIC_DERIVED_DEBS          #
+SONIC_EXTRA_DEBS            #
+SONIC_PYTHON_WHEELS         #
+SONIC_INSTALLERS            # image gets built here?
+All these groups are just a make variables that usually lists paths to target files. Note, each group
+has a set of variables associated with it, you need to define them properly in order for target to be
+executable. All associated variable can be found in git repo (README.buildsystem.md) or you can take
+a look at slave.mk, each target group usage comes with a comment describing all needed variables.
+
+https://github.com/Azure/SONiC/blob/master/sourcecode.md
+=========================================================================================================
+                          Detailed compilation steps:
+=========================================================================================================
+First of all, we perform a environment configuration step by `make configure PLATFORM=[ASIC_VENDOR]`.
+This will trigger `%::` targer under `Makefile.work` which performs following steps:
+---------------------------------------------------------------------------------------------------------
+Makefile.work
+---------------------------------------------------------------------------------------------------------
+1. Check if services/kernel modules needed for build are present
+
+   @$(OVERLAY_MODULE_CHECK)
+   @$(DOCKER_SERVICE_DOCKERFS_CHECK)
+   @$(DOCKER_MULTIARCH_CHECK)
+
+2. Check if docker environment was compiled previously
+
+   @docker inspect --type image  <img> || { echo Image <img> not found. Building...; \
+   $(DOCKER_BASE_BUILD); }
+   @docker inspect --type image <img> || { echo Image <img> not found. Building... ; \
+   $(DOCKER_BUILD) ; }
+
+3. Forward make arguments to container that will build SONIC.
+   In this case, arguments are `configure PLATFORM=[ASIC_VENDOR]`
+
+   @$(DOCKER_RUN) $(SLAVE_IMAGE):$(SLAVE_TAG) $(SONIC_BUILD_INSTRUCTION) $@ <= user arguments
+
+---------------------------------------------------------------------------------------------------------
+slave.mk
+---------------------------------------------------------------------------------------------------------
+4. `configure` target creates `.platform` file that holds previously define `PLATFORM`
+   This will be used by following `make all` to choose appropriate directory `platform/[VENDOR]/PLATFORM`
+
+   CONFIGURED_PLATFORM := $(shell [ -f .platform ] && cat .platform || echo generic)
+   PLATFORM_PATH = platform/$(CONFIGURED_PLATFORM)
+   ifneq ($(CONFIGURED_PLATFORM), undefined)
+   include $(PLATFORM_PATH)/rules.mk
+   endif
+
+5. Slave.mk includes `platform/[VENDOR]/rules.mk`, which will define global compilation targets
+   NOTE: `platform/[VENDOR]/rules.mk` at the begginging of the file includes makefile for vendor specific
+   targets that are saved under the same directory.
+   .mk files starting with docker-* are used to include generic packages like SWSS, PTF...
+
+6. Target groups are defined, e.g. SONIC_COPY_FILES, SONIC_COPY_DEBS. Now, after platform specific
+   makefiles are sourced, we define makefile targets for them. Let`s take a look at one of them:
+
+   .SECONDEXPANSION:
+   $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS)) : $(DEBS_PATH)/% : .platform \
+       $$(addsuffix -install,$$(addprefix $(DEBS_PATH)/,$$($$*_DEPENDS)))
+   	$(HEADER)
+    ... Definition ...
+   	$(FOOTER)
+
+   SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS))
+
+   There are two momets to notice here:
+   The first thing is that target and dependecies lists are not simple, it has form of
+   targets ...: target-pattern: prereq-patterns ...
+        recipe...
+   This is called a Static Pattern (https://www.gnu.org/software/make/manual/make.html#Static-Pattern)
+   and it will be used to generate a `stem`.
+   The second is usage of .SECONDEXPANSION and $$ to delay expansion of $*_DEPENDS. 
+   
+   This rule is expanded in the following steps:
+   1. All function and variables prefixed with one $ gets expanded, this include:
+      $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS)) get expanded
+      % is assgined to a file names in $(SONIC_DPKG_DEBS)
+      $$ gets escaped to $
+    DEBS_PATH + SONIC_DPKG_DEBS[]: SONIC_DPKG_DEBS[]: .platform\
+    	$(addsuffix -install,$(addprefix <debs_path>/$($*_DEPENDS)))
+   2. $* gets expanded to value of %
+    DEBS_PATH + SONIC_DPKG_DEBS[]: SONIC_DPKG_DEBS[]: .platform\
+        <debs_path>/$(SONIC_DPKG_DEBS[]_DEPENDS)-install
+   NOTE, here SONIC_DPKG_DEBS[] is a space separated list of strings, where operations are applied
+   to each string
+
+   You can explain previous rule as following: Each file in $(SONIC_DPKG_DEBS) depedns on
+   .platform and $(DEBS_PATH_$(SONIC_DPKG_DEBS)_DEPENDS)-install
+
+   SONIC_TARGET_LIST is used for debugging, you can issue `make list` to list target files
+   Functions like $(HEADER) $(FOOTER), $(add_derived_package) are defined in `rules/functions`
+7. All needed target are already defined from `platform/*` and build has started
+8. Linux compilation and image unification under SONIC_INSTALLERS
+   There you can see usage of scripts like `build_image.sh`
+
+NOTE: all parameters that may be passed to Makefile.work are listed in the begging of the file
+in a form of comment
+
+TODO.
+1. Some modules are enabled thorugh .mk files included from `platform/*` and other using `SONIC_ALL`
+    which is a dependecie for target `all`. What is a difference between them?
+
+---------------------------------------------------------------------------------------------------------
+                         How docker image gets executed
+---------------------------------------------------------------------------------------------------------
+1. At some compilation moment *.service.j2 files are rendered and saved to
+   SONIC file system (/etc/systemd/system/).
+2. On SONIC initialization, service file is used to start docker containers using following section
+   [Service]
+   ExecStartPre=/usr/local/bin/<container>.sh start
+   ExecStart=/usr/local/bin/<container>.sh wait
+   ExecStop=/usr/local/bin/<container>.sh stop
+3. The `/usr/local/bin/<container>.sh` is a wrapper around `/usr/bin/<container>.sh` that
+   manages dependecies between containers and performs some initialization tasks like cleaning
+   databases. It will triger `/usr/bin/<container>.sh`.
+4. `/usr/bin/<container>.sh` will execute function `start`, create and start the container
+   Note: there are pre/postStartAction function that can modified for debugging purposes
+   $ docker create ...
+   $ preStartAction
+   $ docker  start ...
+   $ postStartAction
+
+=========================================================================================================
+                                      FAQ:
+=========================================================================================================
+Compilation prints are not shown on terminal. How to enable verbose compilation?
+---------------------------------------------------------------------------------------------------------
+By default, most of compilation commands are followed by $(LOG) which performs some redirection.
+$(LOG) is defined within `rules/function` and all compilation steps performed for each module are
+saved to *.log file in module directory
+NOTE, leaving $(LOG) without a value may break shell syntax in some cases and break the compilation
+
+If you don`t want to see every step performed, and only which packages are compiled and installed
+before your target, then you can modify a `update_screen.sh`.
+    function scroll_up {
+    # Check if TERM is available
+    [[ "${TERM}" == "dumb" ]] && return
+    
+    for i in $(cat ${target_list_file}); do
+        # tput cuu1
+        # tput el
+        :
+    done
+    }
+
+Now, instead of having last compilation subtarget overwriting previous one, they will be listed one by one.
+  $ rm target/debs/stretch/libsairedis_1.0.0_amd64.deb
+  $ make target/debs/stretch/libsairedis_1.0.0_amd64.deb
+    [ 01 ] [ target/debs/stretch/libhiredis0.14_0.14.0-3~bpo9+1_amd64.deb-install ]
+    [ 01 ] [ target/debs/stretch/libhiredis-dev_0.14.0-3~bpo9+1_amd64.deb-install ]
+                ......
+    [ 01 ] [ target/debs/stretch/libswsscommon-dev_1.0.0_amd64.deb-install ]
+    [ 01 ] [ target/debs/stretch/libsairedis_1.0.0_amd64.deb ]
+
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                              General Definitions
+=========================================================================================================
+SAI. Switch Abstraction Interface. Standartized interface that is provided by the silicon vendor. This
+let`s a developer to know standart APIs which are vendor neutral making it possible to write vendor
+independant firmware. Previously, every vendor would have it`s own custom set of APIs, SDK, OS making
+this development approach: time-consuming, non-scalable, vendor lock-in, costly. SAI provides following
+advantages: faster time to mark, scalable, no vendor lock-in, cost-effective, modularity and liberty in
+selecting NOS and switching siliconet.
+
+Testbed. The test execution environment configured for testing. Usually consists of: specific hardware
+(or it`s simulation), software, OS, network configuration, the product under test, the device under test
+(or DUT), other syste, software and application software.
+
+https://www.tutorialspoint.com/software_testing_dictionary/test_bed.htm
+https://www.design-reuse.com/articles/44519/switch-abstraction-interface-sai.html
+=========================================================================================================
+                                   Reboot/Restart types
+=======================================================================================================
+SONIC has a feature that allows to upgrade/restart SONIC without disrupting a dataplate, called a warm
+reboot. If warm reboot was enabled for system then DBs are not flushed on reboot and dataplane is active.
+If warm reboot is not enabled, `/usr/local/bin/swss.sh` will flush 0,1,2,5 DBs and reset following tables
+from 6: "'PORT_TABLE*', 'MGMT_PORT_TABLE*', 'VLAN_TABLE*', 'VLAN_MEMBER_TABLE*', 'LAG_TABLE*',
+'LAG_MEMBER_TABLE*', 'INTERFACE_TABLE*', 'MIRROR_SESSION*', 'VRF_TABLE*', 'FDB_TABLE*'"
+Afterwards, new configuration will be rendered and applied with `swssconfig` utility
+Syncd cares about it to perform some hardware configuration, like if we have done warm reboot, then there
+is no need to reconfigure leds ...
+Warm Reboot. Is initiated with `warm-reboot` script.
+
+Another similiar feature but for services is called `warm restart` and it`s status can be found in
+STATE_DB (6)
+  $ redis-dump -d 6 -k '*RESTART*'
+  $ redis-cli -n 6 KEYS '*RESTART*'
+NOTE: this feature seems to not work on VS
+You can list configuration with `show warm_restart config/state`
+config warm_restart enable/disable          # enable or disable the warm_restart for a particular service
+                                            # that supports warm reboot
+
+There are some additional types of reboot except warm: cold, fast, fast fast. These may be considered when
+restarting some services, for instance: during `fast` reboot, `/usr/bin/swss.sh` will copy some additional
+configuration to container.
+
+TODO: Doesn`t work on VS
+      This feature can be enabled on per service basis, however DB won`t get persistent since scripts
+      checking this care only about system wide status
+TODO: When we need to test this? How can we affect this?
+TODO: How timer, configured for warm restart, are used
+=======================================================================================================
+                                   Image upgrade
+-------------------------------------------------------------------------------------------------------
+SONIC can be instaled with `ONIE installer` or using `sonic_installer` tool. The later is used from
+already running SONIC to upgrade(/downgrade?) version of already running image. This tool is available
+as part of the SONIC software package.
+sonic_installer install <path/url>        # to install image
+sonic_installer list                      # list currently installed images
+                                          # there can be multiple images?
+                                          # we don`t overwrite one with another?
+                                          # maybe cases with multiple partitions?
+sonic_installer set_default <name>        # image that will be used by default after reboot
+sonic_installer set_next_boot <name>      # image for one reboot
+sonic_installer remove <name>             # remove images, except one already running
+
+show version        # SONIC image version + Docker image version + Linux kernel
+
+Additional information can be found here:
+https://github.com/Azure/SONiC/wiki/Quick-Start
+https://github.com/Azure/SONiC/wiki/SONiC-to-SONiC-update
+https://github.com/Azure/sonic-utilities/blob/master/doc/Command-Reference.md#sonic-installer
+-------------------------------------------------------------------------------------------------------
+ONIE. Open Network Install Environment. Network switch ecosystem where users have a choice among different
+network operating systems (to install?), utilizing facilities in a Linux/BusyBox environment.
+-------------------------------------------------------------------------------------------------------
+                                  Credentials
+-------------------------------------------------------------------------------------------------------
+Default credentials for image is "admin/YourPaSsWoRd", it can be modified at build time or after
+login with `useradd` and `passwd`.
+
+To reset the password, boot into grub menu and edit init script (remove quite and add init=/bin/bash).
+This will boot you into shell, where you need to remount / and /proc
+mount -o remount,rw / 
+mount -o remount,rw /proc
+Now you can change password with
+passwd admin
+sync
+sudo reboot -f
+-------------------------------------------------------------------------------------------------------
+
+
+
+sudo brctl addbr br1
+sudo ifconfig br1 10.250.0.1/24
+sudo ifconfig br1 up
+cd ~/veos-vm/images
+docker run -v $PWD:/data -it docker-sonic-mgmt bash
+
+cd /data/sonic-mgmt/ansible/
+./testbed-cli.sh -m veos.vtb start-vms server_1 password.txt
+./testbed-cli.sh -t vtestbed.csv -m veos.vtb add-topo vms-kvm-t0 password.txt
+./testbed-cli.sh -t vtestbed.csv -m veos.vtb deploy-mg vms-kvm-t0 lab password.txt
+ssh admin@10.250.0.101

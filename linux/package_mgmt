@@ -1,3 +1,25 @@
+apt-mark showmanual                                     # list of packages explicitly installed
+dpkg --get-selections | sed -n 's/\t\+install$//p'      # alternative way for old systems
+# list  of automatically installed packages
+</var/lib/apt/extended_states awk -v RS= '/\nAuto-Installed: *1/{print$2}'
+
+dpkg-deb -c <package.deb>       # list files withing .deb file
+apt-file list <package>         # no need to download .deb to see files
+dpkg -L <package>               # list files of install package
+dpkg -s <package>               # list installed
+apt-cache showpkg  <package>    # list available for installation
+apt-cache policy <pkg>          # list versions and remote locations
+apt-cache madison <pkg>
+rmadison <pkg>                  # from devscripts package
+
+sudo lsof /var/lib/dpkg/lock-frontend
+sudo lsof /var/lib/dpkg/lock
+kill 
+sudo rm /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend
+sudo dpkg --configure -a
+
+https://serverfault.com/questions/175504/how-do-i-get-the-history-of-apt-get-install-on-ubuntu
+=========================================================================================================
                            APT. Advanced Package Tool
 =========================================================================================================
 Apt is a frontend for package installation by the enduser of the system. All it does, is asking user what
@@ -80,11 +102,6 @@ https://www.debian.org/doc/manuals/distribute-deb/distribute-deb.html#non-native
 To list currently used repos
 egrep -v '^#|^ *$' /etc/apt/sources.list /etc/apt/sources.list.d/*
 
-dpkg-deb -c <package.deb>       # list files withing .deb file
-apt-file list <package>         # no need to download .deb to see files
-dpkg -L <package>               # list files of install package
-dpkg -s <package>               # list installed
-apt-cache showpkg  <package>    # list available for installation
 
 dpkg -x <package.deb> <dst_dir> # unpack .deb
 ar -xv <package.deb>            # another way to unpack
@@ -99,9 +116,6 @@ Install package dependencies
 apt-get install `apt-cache depends pkgname | awk '/Depends:/{print$2}'
 apt-get build-dep <package name>
 
-apt-cache policy <pkg>                       # list versions and remote locations
-apt-cache madison <pkg>
-rmadison <pkg>                               # from devscripts package
 
 apt purge <pkg>                         # remove everything related to the package + configs
 apt remove <pkg>                        # remove the binaries of a package
@@ -145,6 +159,7 @@ Environment=https_proxy=http://ip:port/
 sudo systemctl daemon-reload
 sudo systemctl restart snapd.service
 
+=========================================================================================================
 =========================================================================================================
 Apt details https://www.debian.org/doc/manuals/debian-reference/ch02.en.html
 Installing dbg package https://michael.stapelberg.ch/posts/2019-02-15-debian-debugging-devex/

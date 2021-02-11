@@ -682,6 +682,9 @@ determine which version is supposed to be used. It is determined using following
    user data types to fundamental data types so it can use matching built-in operator.
    Otherwise, compilation error is returned.
 
+Common practive dictates that overloaded operators should work the same way that built-in operator
+implementation do.
+
 ---------------------------------------------------------------------------------------------------------
                                   Limitations
 ---------------------------------------------------------------------------------------------------------

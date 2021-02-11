@@ -1,0 +1,179 @@
+=========================================================================================================
+                              Computer achitecture
+=========================================================================================================
+Computer architecture refer to hardware, it describes set of different electronic components, which
+manipulate electricity to perform computations, the arrangment and connection of these components, so
+that the signals propagate in the desired mannered for a given set of conditions it order to carry out
+a well defined operation, is computer architecture.
+Another definition, computer architecture is a set of rules and methods that describe the functionality,
+organization, and implementation of computer systems.
+
+=========================================================================================================
+                               Control Registers
+=========================================================================================================
+A control register is a processor register which changes or controls the general behaviour of a CPU or
+other digital device. Common tasks performed by control registers include interrupt control, switching
+the addressing mode, paging control, and coprocessor control.
+x86 has 7 following control registers =>
+1. CR0 has various control flags that modify the basic operation of the processor. For instance
+0  | PE | Protected Mode Enabled
+16 | WP | Write protect
+30 | CD | Cache disable
+31 | PG | Paging
+2. CR1. Reserved to CPU, it will thow exception when trying to access it
+3. CR2. Contains Page Fault Linear Address (PFLA), address attempted to access when page fault occurs.
+4. CR3. Upper 20bit page table address for current task
+        Lower 12bit used for PCID (process-context identifier) ?
+5. CR4. Used in protected mode to control operations
+6. CR5-7. Same as CR1
+
+As well there are some additional register with optional/test fitures names MSR (Model-specific register)
+https://en.wikipedia.org/wiki/Model-specific_register
+https://en.wikipedia.org/wiki/Control_register
+=========================================================================================================
+                             Control and Data path
+=========================================================================================================
+The datapath is the pathway that the data takes thorugh the microprocessor. As the data travels to different
+parts of the datapath, the command signals from the control unit cause the data to be manipulated in specific
+waysm according to the instruction. The datapath consists of the circuity for transforming data and for
+storing temporary data. It contains ALU capavle of trasforming data through operations like addition
+subtraction... 
+=========================================================================================================
+                      Von Neumann vs Harvard architecture
+=========================================================================================================
+In a Von-Neumann architecture =>
+1. The same memory and bus are used to store both data and instructions that run the program.
+   Usually there is a single unified cache, which stores both instructions and data.
+2. It`s not possible to access program memory and data memory simultaneosly.
+3. Simpler control unit design results in cheaper and faster development
+4. Used in PCs,  laptops, and workstations
+Main criticism of this approach is, the security problems can arise when instruction can be manipulated
+as if they were data, and vice-versa.
+
+                       ===================
+                       |=================|
+                       ||    CPU        ||
+                       ||---------------||
+  ==============       |||Control Unit |||        ==================
+  |Input Device| =====>||---------------|| =====> | Output Device  |
+  ==============       |||   ALU       |||        ==================
+                       ||---------------||
+                       |=================|
+                       |    ||    ||     |
+                       | =============== |
+                       | | Memory Unit | |
+                       | =============== |
+                       |                 |
+                       ===================
+
+In a Harvard Architecture =>
+1. Memory is separated into two discrete parts: data and instructions.
+   Has separate caches for each bus.
+2. Processor needs one cycle to complete an instruction ? (Only one or atleast one)
+3. Control unit for two busses is more complicated which adds to the development cost
+4. Data transfet and instruction fetches can be performed at the same time
+5. Used in microcontrollers ands signal processing
+                      ===========
+                      |   ALU   |
+                      ===========
+                           |
+                           |
+ ===============      ===========      ==========
+ | Instruction | ==== | Control | ==== |  Data  |
+ |   Memory    |      |  Unit   |      | Memory |
+ ===============      ===========      ==========
+                           |
+                           |
+                      ===========
+                      |   I/O   |
+                      ===========
+
+In modern computers support paging which allows the physical memory to be segmented into large blocks of
+memory, each page can either be instruction or data, but not both.
+
+https://www.quora.com/What-is-the-difference-between-the-Von-Neumann-architecture-and-the-Harvard-architecture
+https://en.wikibooks.org/wiki/Microprocessor_Design/Computer_Architecture
+=========================================================================================================
+                                 System bootup
+=========================================================================================================
+Values of registers on CPU after boot is predefined. On x86 CPU EIP will contain 0xFFFFFFF0, it is the last
+16 bytes of the 32 bit address space. This memory address is called reset vector. This address in mapped to
+a certain part of the BIOS, not RAM (doest BIOS has it`s own memory ?). Meanwhile, the BIOS copies itself
+to the RAM for faster access, this is called shadowing. The address will contain jump into BIOS.
+BIOS will search for bootable device in the configured boot order (BIOS has configuration boot order?)
+It checks  511 and 512 bytes of the first sector if it contains magic value 0xAA55 then copies its first
+secotr to RAMs physical address 0x7c00 and jumps there. This code is called the bootloader.
+Bootload loads the kernel at the physical address 0x1000000.
+Processor begin in 16bit real mode and bootloader switches to 32bit protected mode by setting the lowest
+bit of CR0 to 1, therefore kernel loads in 32bit protected mode. (Not true for linux, it has linux boot
+protocol according to which grub loads kernel in real mode)
+
+BIOS shadowing => process of loading bios into RAM so interaction is much faster but memory is occupied
+Was relevant on MS-DOS since it used BIOS to write to the screen however now BIOS is used only
+during a startup.
+
+=========================================================================================================
+                        Instruction cache vs Data cache
+=========================================================================================================
+
+https://stackoverflow.com/questions/22394750/what-is-meant-by-data-cache-and-instruction-cache
+=========================================================================================================
+
+
+
+
+
+=========================================================================================================
+Not filtered
+=========================================================================================================
+
+Translation => techic code creation, traslating L1(hight abstract) to L0(low abstract) 
+(L1 is needed to be translated but afterwards is not used)
+
+Interpretation => taking higher level language , looking for responding instructions and
+running it instead
+
+
+Level -1 Device level (each transistor is taken to consideration)
+Level  0 Digital      (gates build of transistors)
+Level  1 Microarchitecture  (registers that form a local memory + ALU circuit
+        Now some basic arithmetic operations can be performed
+        Data path is formed (can be controlled with microprogram or directly with controller)
+        Microprogram = L2 insturction interpreter
+Level  2 Instruction set architecture (ISA)
+Level  3 Operating system machine level
+Level  4 Assembly language level
+Level  5 Problem-oriented language level
+
+The set of data types, operations, and features of each level is called its architecture.
+Is it conceivable for a compiler to generate output for the microarchitecture level instead of for the ISA level?
+In a mobile phone, combination of Chipset and CPU is called a SoC (System on Chip) which integrates all the components on a single chip. 
+Chipset  group of integrated circuits ("chips") that are designed to work together, and are usually marketed as a single product.
+
+conceivable = ?capable mozlivo
+discrepancy?
+bearing
+appliances
+
+
+Structural Hazard => some combination of instructions cannoy be accomodated because of a resource conflict
+  + Some functional unit is not fully pipelined
+  + Some resource has not been duplicated enough
+
+Data Hazards => arise when an instruction depends on the result of a previous instruction in a way that is 
+exposed by the overlapping of instructions in the pipeline.
+
+Control Hazards => They arise from the pipelining of branches and other instructions that change the PC.
+=========================================================================================================
+TODO
+
+Tag RAM
+can we store both instructiona and data in memory page
+NUMA
+processor vs microprocessor
+https://www.brighthubengineering.com/diy-electronics-devices/97571-difference-between-analog-and-digital-computing/
+https://www.quora.com/Why-did-analog-computers-become-obsolete
+https://en.wikibooks.org/wiki/Microprocessor_Design/Virtual_Memory   TLB
+https://en.wikipedia.org/wiki/Computer_architecture reread
+https://en.wikipedia.org/wiki/Register_renaming
+TOP https://computationstructures.org/notes/isas/notes.html

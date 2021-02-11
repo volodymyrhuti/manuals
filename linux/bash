@@ -1,5 +1,5 @@
 =========================================================================================================
-                              Positional argument
+                              Positional arguments
 =========================================================================================================
 ${*} all argumets are passed as 1 argument, separated with the first character of $IFS 
 ${@} all arguments passed quoted and space separated, like "$1" "$2" "$3"
@@ -65,17 +65,17 @@ unset assocarr[key]
 =========================================================================================================
 If you want to define type of variable use declare with options. Isue  `declare` , where '-' enable and
 '+' dissables attribute.  Next type attributes can be used
--a  ## indexed array
--A  ## associative array
--i  ## integer
+-a  | indexed array
+-A  | associative array
+-i  | integer
 
 As well, attributes not related to type
--r  ## read-pnly
--x  ## export
--n  ## dereference value?
--t  ## trace usage
--u  ## convert used to name to upper case
--l  ## convert used to name to lower case
+-r  | read-pnly
+-x  | export
+-n  | dereference value?
+-t  | trace usage
+-u  | convert used to name to upper case
+-l  | convert used to name to lower case
 
 =========================================================================================================
                               Integer arithmetics
@@ -172,21 +172,21 @@ notation was initially introduced to protect a variable name from merging with s
 but was extended to allow string operations on variables.
 
 Works for each element of array id index is not specified
-${P^}   # conver first letter to upercase
-${P,}   #                        lovercase
-${P~}   #                        inverse
-${P^^}  # entire word convertion
-${P,,}  #
-${P~~}
+${P^}   | conver first letter to upercase
+${P,}   |                        lovercase
+${P~}   |                        inverse
+${P^^}  | entire word convertion
+${P,,}  |
+${P~~}  |
 
-${!PREFIX*}     # returns all var starting with prefix
-${!PREFIX@}
+${!PREFIX*}     | returns all var starting with prefix
+${!PREFIX@}     |
 
 Remove patern from name
-${P#PATTERN}    # from beggining shortest match
-${P##PATTERN}   #        longest
-${P%PATTERN}    # from end   shortest
-${P%%PATTERN}   #        longest
+${P#PATTERN}    | from beggining shortest match
+${P##PATTERN}   |        longest
+${P%PATTERN}    | from end   shortest
+${P%%PATTERN}   |        longest
 Note, you will probably use it like follwing, don`t forget to use asterisk
 file_name=${file_path##*/}
 
@@ -194,18 +194,18 @@ The `#` and `%` operators have a convenient mnemonic if you use the US keyboard.
 left side of the `$` key and operates from the left, while `%` is to right of `$` key. 
 
 Search and replace (works for arrays)
-${P/PATTERN/STR}    # replace first occur
-${P//PATTERN/STR}   #         all
-${P/ or //PATTERN}  # remove
+${P/PATTERN/STR}    | replace first occur
+${P//PATTERN/STR}   |         all
+${P/ or //PATTERN}  | remove
 
 Anchoring? (replacement will be started after anchor)
 MYSTRING=xxxxxxxxxx
-${MYSTRING/#x/y}  # RESULT: yxxxxxxxxx
-${MYSTRING/%x/y}  # RESULT: xxxxxxxxxy
+${MYSTRING/#x/y}  | RESULT: yxxxxxxxxx
+${MYSTRING/%x/y}  | RESULT: xxxxxxxxxy
 
 Default value
-${P:-WORD}  # return word if P is not set or null
-${P-WORD}   # returb word only if unset
+${P:-WORD}  | return word if P is not set or null
+${P-WORD}   | returb word only if unset
 
 Arrays
 contains no element or is unset (the :- and - variants mean the same here)
@@ -214,23 +214,23 @@ contains only elements that are the nullstring (the :- variant)
 If not set, set with value
 #not working for arrays
 ${P:=WORD}
-${P=WORD} 
+${P=WORD}
 
 ${P:+WORD}
-${P+WORD} 
+${P+WORD}
 
 Null/Unset  - display error appending word
 ${P:?WORD}
-${P?WORD} 
+${P?WORD}
 =========================================================================================================
-                      Redirection
+                                  Redirection
 =========================================================================================================
 When you redirect some file, bash opens a couple file descriptors, you can think of them as file ports that
 are connected to some another port like user terminal. This connection can be use to read data in and
 return data out. When file is opened it has three associated fds(file descriptors) by default. These are
-0  ====\                    ## standart input 
-1  ====== /dev/tty0         ## standart output
-2  ====/                    ## standart error
+0  ====\                    | standart input 
+1  ====== /dev/tty0         | standart output
+2  ====/                    | standart error
 By default, stdin(0) is user input, probably from some terminal like window; stdout(1) and stderr(2) is
 where data is printed, as well probably your terminal. You can reassing there ports on process start,
 therefore data can be read like as user typed it in or you can save output to file. 
@@ -385,25 +385,25 @@ ps -ef | tee >(awk '$1=="tom"' >toms-procs.txt) \
 ---------------------------------------------------------------------------------------------------------
                           File descriptor redirections
 ---------------------------------------------------------------------------------------------------------
-&>          # redirect both 1 and 2
-M>N         # M by def is 1(fd) N is file name
-M>&N        # N is fd
-2>&1        # redirect stderr to stdout
-1>&2        #      stdout to stderr 
-|&          # abbrv for 2>&1
-n<&-        # close input fd n
-0<&-,<&-    # close stdin
-n>&-        # close output fd n
-1>&-,>&-    # close stdout
+&>          | redirect both 1 and 2
+M>N         | M by def is 1(fd) N is file name
+M>&N        | N is fd
+2>&1        | redirect stderr to stdout
+1>&2        |      stdout to stderr 
+|&          | abbrv for 2>&1
+n<&-        | close input fd n
+0<&-,<&-    | close stdin
+n>&-        | close output fd n
+1>&-,>&-    | close stdout
 
 
 
 [n]<>filename   #open file <filename> for r/w and assign n fd to it used to write at a specified place in a file
-echo 1234567890 > File    # Write string to "File".
-exec 3<> File             # Open "File" and assign fd 3 to it.
-read -n 4 <&3             # Read only 4 characters.
-echo -n . >&3             # Write a decimal point there.
-exec 3>&-                 # Close fd 3.
+echo 1234567890 > File    | Write string to "File".
+exec 3<> File             | Open "File" and assign fd 3 to it.
+read -n 4 <&3             | Read only 4 characters.
+echo -n . >&3             | Write a decimal point there.
+exec 3>&-                 | Close fd 3.
 
 https://catonmat.net/bash-one-liners-explained-part-three
 https://catonmat.net/bash-one-liners-explained-part-one
@@ -492,18 +492,18 @@ $ type -a [[
 Bash has imporoved version of `[` which is called `[[`. It is a keyword, that does pretty much the same
 but in a more intuitive way. For instace spaces in file names, suppose you have a $file, which is a two
 word name with a space between them.
-[ -f $file ]    # will take the first word as arguemtn and ignore the second
-[ -f "$file" ]  # works fine
-[ -f $file ]    # file is empty, therefore there is no argument after expansion and it fails
-[[ -f $file ]]  # handles all three previous casses
+[ -f $file ]    | will take the first word as arguemtn and ignore the second
+[ -f "$file" ]  | works fine
+[ -f $file ]    | file is empty, therefore there is no argument after expansion and it fails
+[[ -f $file ]]  | handles all three previous casses
 
 
 Support regular expressions, globs + avoids expanding astrisk
 if [[ $answer =~ ^y(es)?$ ]]
-[[ $a == z* ]]   # True if $a starts with an "z" (pattern matching).
-[[ $a == "z*" ]] # True if $a is equal to z* (literal matching).
-[ $a == z* ]     # File globbing and word splitting take place.
-[ "$a" == "z*" ] # True if $a is equal to z* (literal matching).
+[[ $a == z* ]]   | True if $a starts with an "z" (pattern matching).
+[[ $a == "z*" ]] | True if $a is equal to z* (literal matching).
+[ $a == z* ]     | File globbing and word splitting take place.
+[ "$a" == "z*" ] | True if $a is equal to z* (literal matching).
 
 No need to escape string comparison opeators and expression grouping \>, \<, \(\), since it is keyword
 and shell understands that there is no file redirection but comparison.
@@ -610,45 +610,45 @@ Completion scripts have a convention, functions collecting reply have one `_` ar
 have two
 
 complete 
-         -p <cmd>              # print all available completions for <cmd>, for all if no <arg> specified
-         -r <cmd>              # -p but remove instead of print
-         -E                    # empty line complition handler (when tab on empty line)
-         -D                    # default handler, usually used as -D -F _complition_loader_
-         -P/-S "<char>"        # prefix/suffix added to completed word
-                               # complete -j -P '"%' -S '"' jobs
-         -C <cmd>              # command is executed and result is used as complition
-                               # command will have COMP_LINE and COMP_POINT env variables filled
-                               # they will be duplicated into $1 and $2 as well ?
-         -F <function>         # function is executed and result is used as complition
-         -G <filter>           # filename expansion pattern 
-         -X <filter>           # applied to completons generated by preceding options, each entry matching
-                               # filter is removed from output, can be used with leading !, then all
-                               # matching filter are displayed
-                               # looks like only one is allowed, and is evaluated as last option
-                               # -X '.[^./]*' to exclude ./ and ../ directories
-         -W "<word_list>"      # completion with word list
-         -A                    # Actions
-            directory          # complete with list of directories in your `pwd`
-            command            # list of command names -c , like for `which` 
-            bindings           # Readline key binding names?
-            disabled/enabled   # bash disabled/enabled bultins ?
-            variable           # shell variables -v ?
-            export             # exported variables -e
-            hostname           # taken from $HOSTFILE
-            setopt             # valid options for set -o
-            shopt              # valid options for shopt
-            signal             # signal names
+         -p <cmd>              | print all available completions for <cmd>, for all if no <arg> specified
+         -r <cmd>              | -p but remove instead of print
+         -E                    | empty line complition handler (when tab on empty line)
+         -D                    | default handler, usually used as -D -F _complition_loader_
+         -P/-S "<char>"        | prefix/suffix added to completed word
+                               | complete -j -P '"%' -S '"' jobs
+         -C <cmd>              | command is executed and result is used as complition
+                               | command will have COMP_LINE and COMP_POINT env variables filled
+                               | they will be duplicated into $1 and $2 as well ?
+         -F <function>         | function is executed and result is used as complition
+         -G <filter>           | filename expansion pattern 
+         -X <filter>           | applied to completons generated by preceding options, each entry matching
+                               | filter is removed from output, can be used with leading !, then all
+                               | matching filter are displayed
+                               | looks like only one is allowed, and is evaluated as last option
+                               | -X '.[^./]*' to exclude ./ and ../ directories
+         -W "<word_list>"      | completion with word list
+         -A                    | Actions
+            directory          | complete with list of directories in your `pwd`
+            command            | list of command names -c , like for `which` 
+            bindings           | Readline key binding names?
+            disabled/enabled   | bash disabled/enabled bultins ?
+            variable           | shell variables -v ?
+            export             | exported variables -e
+            hostname           | taken from $HOSTFILE
+            setopt             | valid options for set -o
+            shopt              | valid options for shopt
+            signal             | signal names
             file (-f) alias (-a) arrayvar bultin (-b) directory (-d) function group (-g)
             helptopic(??) job (-j) keyword (-k) service (-s) user (-u) running/stopped 
-         -o                    # comspec?
-            bashdefault        # perform default bash completion if no complition was generated
-            default            # ?
-            dirnames           # same as -A direcotry?
-            filenames
-            nospace            # don`t apped space to completed words
-            plusdirs           # ?
+         -o                    | comspec?
+            bashdefault        | perform default bash completion if no complition was generated
+            default            | ?
+            dirnames           | same as -A direcotry?
+            filenames          |
+            nospace            | don`t apped space to completed words
+            plusdirs           | ?
 
-export FIGNORE='.tmp:.o'       # list of files to ignore for -f/-d
+export FIGNORE='.tmp:.o'       | list of files to ignore for -f/-d
 
 Note that you can chain completion options, they will be called one after another if previous had no
 result
@@ -675,17 +675,17 @@ complete -F __func_name__ cmd
 Registered function is responsible for filling available completions into array COMPREPLY, this will be
 displayed on tab and will be filled again on completion request. To filter COMPREPLY by things that user
 has already entered we can use
-COMP_WORDS   ## array of all words fylly typed?, zero indexed
-COMP_CWORD   ## index in COMP_WORDS, at the moment of completion request
-COMP_LINE    ## current command line (full)
-COMP_POINT   ## character number on which completion was requested?
-COMP_KEY     ## ?
-COMP_TYPE    ## ?
-COMPREPLY    ## array of result filled with autocomlition, bash will copy this to cli when there is only
-             ## one entry left
-$1           ## program name
-$2           ## word being completed (if you have entered part of word, empty otherwise)
-$3           ## word before $2
+COMP_WORDS   | array of all words fylly typed?, zero indexed
+COMP_CWORD   | index in COMP_WORDS, at the moment of completion request
+COMP_LINE    | current command line (full)
+COMP_POINT   | character number on which completion was requested?
+COMP_KEY     | ?
+COMP_TYPE    | ?
+COMPREPLY    | array of result filled with autocomlition, bash will copy this to cli when there is only
+             | one entry left
+$1           | program name
+$2           | word being completed (if you have entered part of word, empty otherwise)
+$3           | word before $2
 
 To list possible completions as with complete actions, we can use `compgen` with `complete` flags, this
 way we can filter COMPREPLY more easy. Compgen will out possible completiong to stdout, which we can save
@@ -784,11 +784,11 @@ while getopts "filter" <varname> <args>; do
 done
 
 This builtin utility initializes couple of variables
-VARNAME ## shell variable used for option reporting
-OPTARG  ## argument after option
-OPTIND  ## index of next argument to be processed, can be used for shifting but then u are required to
-        ##reset it to 1
-OPTERR  ## whether bash should display errors or should it leave problem for you
+VARNAME | shell variable used for option reporting
+OPTARG  | argument after option
+OPTIND  | index of next argument to be processed, can be used for shifting but then u are required to
+        | reset it to 1
+OPTERR  | whether bash should display errors or should it leave problem for you
 
 Filter is a string of continiour or separated by ':' character .If filter is started with ':', then
 verbose error reporting is disabled and next cases
@@ -811,36 +811,36 @@ https://unix.stackexchange.com/questions/11376/what-does-double-dash-mean-also-k
 =========================================================================================================
                                      Prompt
 =========================================================================================================
-PS0 =>
-PS1 => primary prompt
-PS2 => secondaty promt , dispalyed for multiline commands
-PS3 => prompt for bash select
-PS4 => used to display debug log level?
+PS0 |
+PS1 | primary prompt
+PS2 | secondaty promt , dispalyed for multiline commands
+PS3 | prompt for bash select
+PS4 | used to display debug log level?
 
 =========================================================================================================
                                  Traps Signals
 =========================================================================================================
 when a script is terminated by a signal, exist status will be the result of 128 + the signal number
-trap -l     # display signals with their numbers
-kill -l     # same  
-trap -p     # display list of set traps
+trap -l     | display signals with their numbers
+kill -l     | same
+trap -p     | display list of set traps
 
 Pseudo signals
-EXIT        # executed on shell exit
-DEBUG       # executed before every simple command
-RETURN      # executed when a shell function or a sourced code finishes executing
-ERR         # executed each time a command's failure would cause the shell to exit 
-            # when the ''-e'' option (''errexit'') is enabled 
+EXIT        | executed on shell exit
+DEBUG       | executed before every simple command
+RETURN      | executed when a shell function or a sourced code finishes executing
+ERR         | executed each time a command's failure would cause the shell to exit
+            | when the ''-e'' option (''errexit'') is enabled 
 
 
 =========================================================================================================
                            Run script without parent
 =========================================================================================================
-If u want to leave command active when terminal is closed, you have to make it immune to hangups(SIGHUP), this is done using `nohup` or `disown`. The difference between
-them:
+If u want to leave command active when terminal is closed, you have to make it immune to hangups(SIGHUP),
+this is done using `nohup` or `disown`. The difference between them:
 1. `nohup` is used when command is executed while disown should be used after command has already started
-  nohup <cmd> &  |	 <cmd> &
-		 |	 disown
+    nohup <cmd> &  |  <cmd> &
+                   |  disown
 2. nohup process becomes a child of init process, with closed stdin and stdout/err redirected to `nohup.out` file
 3. nohup doesn`t put process to background, there is no much of use from such process since stdin is closed,
    therefore, usually you would send it to background by hand
@@ -899,8 +899,8 @@ sudo resets most of environment variables, such as PATH, for security reason, th
 execute some script or alias commnad will be unknown. To solve this issue you have next options:
 sudo env "PATH=$PATH" <cmd>
 sudo $(<cmd>)
-sudo -i <cmd>                   # runs login shell, therefore most file like .profile are sourced
-     -E                         # save user environment
+sudo -i <cmd>               | runs login shell, therefore most file like .profile are sourced
+     -E                     | save user environment
 
 To make bash expand aliases under sudo, do next
 alias sudo="sudo " # this will make expand argument after sudo
@@ -955,18 +955,18 @@ https://www.shellscript.sh/tips/shebang/
 =========================================================================================================
                     Special parameters (internal variables)
 =========================================================================================================
-$$              # current shell pid (even if called from subshell)
-$BASHPID        # current [sub]shell pid
-$!              # last backgound process pid
+$$              | current shell pid (even if called from subshell)
+$BASHPID        | current [sub]shell pid
+$!              | last backgound process pid
 
 
 man bash, special parameters for reference
 =========================================================================================================
                         Job managment
 =========================================================================================================
-coproc <name> cmd <redirections>    # starts a cmd as a background job, setting up pipes connected 
-                                    # to both its stdin and stdout so you can interact with it bidirectionally
-jobs -l                             # list background process + its pid
+coproc <name> cmd <redirections>    | starts a cmd as a background job, setting up pipes connected 
+                                    | to both its stdin and stdout so you can interact with it bidirectionally
+jobs -l                             | list background process + its pid
 
 =========================================================================================================
                                 Pattern matching
@@ -975,18 +975,18 @@ Bash has mechanism to specify name patterns, the most famouse/used is wildcard `
 anything or depending on usage context. Wildcards are also often referred to as glob patterns (or when
 using them, as "globbing"). The bash man page refers to glob patterns simply as "Pattern Matching".
 As well, bash adds extended globing that can be enabled with `extglob` feature.
-*             # Match zero or more characters
-?             # Match any single character
-[...]         # Match any of the characters in a set
-?(patterns)   # Match zero or one occurrences of the patterns (extglob)
-*(patterns)   # Match zero or more occurrences of the patterns (extglob)
-+(patterns)   # Match one or more occurrences of the patterns (extglob)
-@(patterns)   # Match one occurrence of the patterns (extglob)
-!(patterns)   # Match anything that doesn't match one of the patterns (extglob)
+*             | Match zero or more characters
+?             | Match any single character
+[...]         | Match any of the characters in a set
+?(patterns)   | Match zero or one occurrences of the patterns (extglob)
+*(patterns)   | Match zero or more occurrences of the patterns (extglob)
++(patterns)   | Match one or more occurrences of the patterns (extglob)
+@(patterns)   | Match one occurrence of the patterns (extglob)
+!(patterns)   | Match anything that doesn't match one of the patterns (extglob)
 
-ls *.pdf      # any pdf file
-ls ?.pdf      # any pdf file with 1 letter name, e.g a.pdf b.pdf but not ab.pdf
-ls [ab]*      # any file starting with a or b, e.g. a.pdf b.pdf ab.pdf ba.pdf
+ls *.pdf      | any pdf file
+ls ?.pdf      | any pdf file with 1 letter name, e.g a.pdf b.pdf but not ab.pdf
+ls [ab]*      | any file starting with a or b, e.g. a.pdf b.pdf ab.pdf ba.pdf
 
 Glob patterns
 Glob        | Regular Expression Equivalent | Description
