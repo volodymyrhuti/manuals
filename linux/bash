@@ -902,6 +902,9 @@ sudo $(<cmd>)
 sudo -i <cmd>               | runs login shell, therefore most file like .profile are sourced
      -E                     | save user environment
 
+To execute shell commands with sudo but without password, add them to sudoers file
+https://askubuntu.com/questions/159007/how-do-i-run-specific-sudo-commands-without-a-password
+
 To make bash expand aliases under sudo, do next
 alias sudo="sudo " # this will make expand argument after sudo
 https://unix.stackexchange.com/questions/139231/keep-aliases-when-i-use-sudo-bash

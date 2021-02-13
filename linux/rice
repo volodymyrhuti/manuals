@@ -1,82 +1,82 @@
 =========================================================================================================
-                            FONTS
+                                     Fonts
 =========================================================================================================
-fc-list                #list of fonts and path
-fc-cache -fv           #rebuild font cashe
-sudo fc-cache -fv      #
-fc-list -v             #font fullname
-fc-match #font         #check if aliased font
-gucharmap  # to see what keys u have , look at :Private Use Area 
+fc-list                # list of fonts and path
+fc-cache -fv           # rebuild font cashe
 
+fc-list -v             # font fullname
+fc-match <font>        # check if aliased font
+
+gucharmap              # to see what keys you have , look at :Private Use Area 
 xfd -fa <fontname>     # lookup font glyphs and hex value for them from terminal
 
-# Font formats
-TrueType => vector format with rendering hints therefore can be rendered of different size
-Post1 => standart (format of PostScript fonts) replaced by PDF
-X11 => fonts used by X11 server, can be configured with "xset fp"
-OTF (OpenType) => newer than ttf
-TTF (TrueType) =>
-WOFF (Web Open Font Type) =>
-=========================================================================================================
-                            LINKS
-=========================================================================================================
-Themes
----------------------------------------------------------------------------------------------------------
-https://github.com/Kthulu120/i3wm-themes
-https://github.com/flumm/Themes
-https://github.com/unix121/i3wm-themer      
-https://github.com/lcpz/awesome-copycats    rdy styles for awesome-vm
+To add fonts you can link them into `~/.fonts/*` or into $XDG_DATAHOME to avoid $HOME clattering
+Afterwards you need to rebuild cache and verify that font was found
+    fc-cache -fv
+    fc-list | grep <font_name>
 
 ---------------------------------------------------------------------------------------------------------
-Channels
----------------------------------------------------------------------------------------------------------
-https://www.youtube.com/channel/UCDWZo5C8MtGA_ZoTCu4UJ7A Llewe's Reviews
-https://www.youtube.com/watch?v=i0jtvTIOMWs  neofetch
-https://boddy.im/i3-workspace-names.html    dynamic glyph instead of names
-https://www.reddit.com/r/unixporn/comments/804cw8/i3_succulent/ Succulent
-https://www.reddit.com/comments/3dyvhw
-/desktop/gnome/interface/cursor_blink)  desktop-wide one that disables cursor blinking for all Gnome applications
-https://github.com/chriskempson/base16
-cmd cheatshit
-https://www.reddit.com/r/i3wm/comments/a00s8p/made_myself_a_pretty_popup_cheat_sheet/ 
----------------------------------------------------------------------------------------------------------
-Guides
----------------------------------------------------------------------------------------------------------
-https://github.com/addy-dclxvi/i3-starterpack   # decent starter pack
+Font formats:
+TrueType. Vector format with rendering hints therefore can be rendered of different size
+Post1. Standart, format of PostScript fonts, replaced by PDF
+
+X11. Fonts used by X11 server, can be configured with "xset fp"
+- OTF. OpenType. Newer than ttf
+- TTF. TrueType.
+- WOFF. Web Open Font Type
+
+The collest fonts are hosted by following projects:
+https://github.com/ryanoasis/nerd-fonts
+https://github.com/powerline/fonts
+https://fontawesome.com/
+
+You may want to use them in order to have a easy readable fonts or ones that don`t fatigue you eyes.
+Another common use case is TUI pluging/applications that display picture to make it more clear what data
+near it means. If you use sych symbols without having them in your used font, then such symbol will be
+display not properly or not displayed at all. In such case you can patch your font to include need symbols,
+for instance patching arrows and other symbols for powerline:
+https://github.com/powerline/fontpatcher
+https://www.hanselman.com/blog/PatchingTheNewCascadiaCodeToIncludePowerlineGlyphsAndOtherNerdFontsForTheWindowsTerminal.aspx
+
 =========================================================================================================
                                      Ranger 
 =========================================================================================================
 Ranger is a terminal file manager that is highly extesible (with python) and supports many vim like
 commands. By default configuration is saved to ~/.config/ranger/*.
-rc.conf     # most of settings and key mapings
-            # to generate default one, issue `ranger --copy-config`
-rifle.conf  # application launcher, mapings between file type and application that will open it
+rc.conf     | most of settings and key mapings
+            | to generate default one, issue `ranger --copy-config`
+rifle.conf  | application launcher, mapings between file type and application that will open it
 
 ---------------------------------------------------------------------------------------------------------
                                       W3M
 ---------------------------------------------------------------------------------------------------------
-Ranger uses w3mimgdisplay to display pictures. This doesn`t work well with most of the terminals and
-you may see some flickering and other types of artefacts. To test if your terminal is capable of displaying
-images issue
-/usr/lib/w3m/w3mimgdisplay <<<$'0;1;100;100;100;100;;;;;/<path>/<img>.jpg\n4;\n3;'
-w3m -o imgdisplay=/usr/lib/w3m/w3mimgdisplay <img>
+Ranger uses `w3mimgdisplay` to display pictures. This doesn`t work well with most of the terminals and
+you may see some flickering and other types of artefacts.
+
+To test if your terminal is capable of displaying images issue (note argumet <img_path> inside command).
+  /usr/lib/w3m/w3mimgdisplay <<<$'0;1;100;100;100;100;;;;;/<img_path>\n4;\n3;'
+  w3m -o imgdisplay=/usr/lib/w3m/w3mimgdisplay <img_path>
+=========================================================================================================
+                                    Terminal
+=========================================================================================================
+update-alternatives --config <terminal_name>    # change default terminal-emulator 
+
 ---------------------------------------------------------------------------------------------------------
-=========================================================================================================
-                                URXVT
-=========================================================================================================
-/usr/lib/urxvt/perl/    | plugin files
-urxvt --help            # list all variables
-
-#parse man for default values
-man -Pcat urxvt | sed -n '/th: b/,/^B/p'|sed '$d'|sed '/^ \{7\}[a-z]/s/^ */^/g' |
-sed -e :a -e 'N;s/\n/@@/g;ta;P;D' | sed 's,\^\([^@]\+\)@*[\t ]*\([^\^]\+\),! \2\n!
-URxvt*\1\n\n,g' | sed 's,@@\(  \+\),\n\1,g' | sed 's,@*$,,g' | sed '/^[^!]/d' |
-tr -d "'\`"
-
-URXVT_PERL_VERBOSITY=11 urxvt   # to see actions
-
+                                     Urxvt
+---------------------------------------------------------------------------------------------------------
+/usr/lib/urxvt/perl/        | plugin files
+urxvt --help                # list all variables
 xrdb -query                 # list defined X variables
 xrdb -merge ~/.Xresources   # merge X resources
+
+#parse man for default values
+  man -Pcat urxvt | sed -n '/th: b/,/^B/p'|sed '$d'|sed '/^ \{7\}[a-z]/s/^ */^/g' |     \
+  sed -e :a -e 'N;s/\n/@@/g;ta;P;D' | sed 's,\^\([^@]\+\)@*[\t ]*\([^\^]\+\),! \2\n!    \
+  URxvt*\1\n\n,g' | sed 's,@@\(  \+\),\n\1,g' | sed 's,@*$,,g' | sed '/^[^!]/d' |       \
+  tr -d "'\`"
+
+Note, you can export `URXVT_PERL_VERBOSITY=11` variable to get verbose output of terminal actions.
+E.g. can be used to see how long it takes to source the fonts...
 
 Some links
 http://www.netswarm.net/misc/urxvt-xtermcompat.txt
@@ -86,116 +86,75 @@ http://thedarnedestthing.com/urxvt
 https://funloop.org/post/2015-06-25-urxvt-plugins.html
 https://github.com/muennich/urxvt-perls#keyboard-select
 https://wiki.gentoo.org/wiki/Rxvt-unicode
-=========================================================================================================
-                            Colors
-=========================================================================================================
-gpick                                       # get hex of pixel
-https://www.nordtheme.com/ports             # colod colorscheme
-https://thomashunter.name/i3-configurator/  #colors
-http://blog.z3bra.org/2015/06/vomiting-colors.html  #blog about colors
-=========================================================================================================
-                            Self install package
-=========================================================================================================
-sudo apt remove #package
-https://pkgs.org/       #download package
-sudo dpkg -i #package
-sudo apt-mark hold #package
-=========================================================================================================
-                            Window Flags
-=========================================================================================================
-vim can use --role flag with can be lookeduo wtith i3
-for_window [class="^Gvim$" role="^floatingVim$"] floating enable
 
-urxvt -name floating
-for_window [class="URxvt" instance"floating"] floating enable
+---------------------------------------------------------------------------------------------------------
+                                     Gnome
+---------------------------------------------------------------------------------------------------------
+Dissable cursor blinking it Gnome terminal
+  gconftool-2 --set /desktop/gnome/interface/cursor_blink --type bool false
+  /apps/gnome-terminal/profiles/Default/cursor_blink_mode
+=========================================================================================================
+                                     Colors
+=========================================================================================================
+LS/DIR_COLORS:
+https://askubuntu.com/questions/466198/how-do-i-change-the-color-for-directories-with-ls-in-the-console
+http://www.bigsoft.co.uk/blog/2008/04/11/configuring-ls_colors
+http://epsi-rns.github.io/desktop/2018/08/07/terminal-ricing.html
 
-indsym $sup+3 exec urxvt
-bindsym $sup+4 exec urxvt -name floating
-for_window [class="URxvt" instance="floating"] floating enable border pixel 3
+gpick                                               # get hex of pixel
+https://www.nordtheme.com/ports                     # colod colorscheme
+https://thomashunter.name/i3-configurator/          # colors
+http://blog.z3bra.org/2015/06/vomiting-colors.html  # blog about colors
+=========================================================================================================
+                                  Window Flags
+=========================================================================================================
+Every window managed by window manager has a set attributes associated with it. This can be usefull to
+assign some defaul characteristics to a subset of windows or to group them by a criteria.
 
-bindsym $mod+Shift+Mod4 exec xterm --class FXTerm
-for_window [class="FXTerm"] floating enable
-
+`vim` can use `--role` flag which can be looked up within i3
+  urxvt -name floating
+  bindsym $sup+3 exec urxvt
+  bindsym $sup+4 exec urxvt -name floating
+  bindsym $mod+Shift+Mod4 exec xterm --class FXTerm
+  for_window [class="^Gvim$" role="^floatingVim$"] floating enable
+  for_window [class="URxvt" instance"floating"] floating enable
+  for_window [class="URxvt" instance="floating"] floating enable border pixel 3
+  for_window [class="FXTerm"] floating enable
 
 =========================================================================================================
-                            Keyboard
+                                    Keyboard
 =========================================================================================================
-bind -p             # list of function and escape symbols
-                    # there are saved in ~/.inputec or /etc/inputrc
+bind -p             # list of function and escape symbols, these are saved to ~/.inputec or /etc/inputrc
      -l             # list bindable functions
      -P             # functions and their bindings
 
-Ctrl+v  + key to see code
+Ctrl+v+<key>        # key to see code
 
+Media buttons:
+gsettings list-recursively org.gnome.settings-daemon.plugins.media-keys      # list assigned media keys
+dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-mute "''"   # unset key
+dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-down "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-up "''"
+
+xprop                # list properties of window
+xmodmap -pke         # list current mappings
+xev                  # see what keysym your key is configered to
 =========================================================================================================
-byzanz  | gif maker
-
-Get current window/screen stats 
-xwininfo -id $(xdotool getactivewindow) | grep Width | awk '{$1="";print}'
-/apps/gnome-terminal/profiles/Default/cursor_blink_mode specific to a Gnome Terminal profile
-  gconftool-2 --set /desktop/gnome/interface/cursor_blink --type bool false
-
-#change default terminal-emulator 
-sudo update-alternatives --config x-terminal-emulator
-
-#use cmds without sudo (with sudo but without password)
-https://askubuntu.com/questions/159007/how-do-i-run-specific-sudo-commands-without-a-password
-
+                                      X11
 =========================================================================================================
-                                  QuteBrowser
+Get current window/screen stats:
+  xwininfo -id $(xdotool getactivewindow) | grep Width | awk '{$1="";print}'
+
+gsettings set org.gnome.desktop.background show-desktop-icons false    # don`t start desktop when calling nautilus
 =========================================================================================================
-Qutebrowser is a vi like browser.
-Config files are saved under `~/.config/qutebrowser/*`
-
-
-.venv/bin/python3 -m qutebrowser -
-
+                                      Tmux
 =========================================================================================================
-To enable inspector 
-No more windows opened
-qutebrowser --enable-webengine-inspector 
-
-With opened windows
-qutebrowser --temp-basedir --enable-webengine-inspector
-
-=========================================================================================================
-o 		  | Promts you to enter new url + shows history
-wo		  | 
-go		  |
-wO (window open)  | opens current-window url
-wi        # open dev tools
-
-set-cmd-text :open {url:pretty}
-
-=========================================================================================================
-                        Ranger
-=========================================================================================================
-
-V 	| Visual selection by one
-v	| select all (unselect selected)
-cw	| Rename file
-m	| Move file
-uv	| Undo visual selection
-uy	| Undo yank?
-SPACE	| By file visual selection/unselection
-dD	| Deletion
-dd	| cat?
-yy	| Copy files
-pp	| Paste files
-g	| Goto 
-
-
-=========================================================================================================
-                        Tmux
-=========================================================================================================
-
 tmux attach -t #num/#name           # attach to session by number
 tmux rename-session -t #num #name   # rename session
 tmux ls                             # list sessions
 tmux kill-session -t #num3
 tmux new -s #name                   # start new session with name
 tmux list-keys
-
 
 prefix c                            # create window
 prefix q    :display-panes          # show number and window size 
@@ -211,79 +170,28 @@ prefix Alt + arrows                 # resize pane
 
 swap-window -s 2 -t 1               # swan windows
         -s = source ?
-        -t = target 
+        -t = target
 break-pane |  prefix !              # break pane to window
-kill-pane                           # 
+kill-pane                           #
 kill-window | prefix &              # kill window
 last-pane
 last-w
 
-ctrl + l  clears but not delete screen?
-bind -n C-k clear-history
-tmux -V to get version
-Up, Down, Left, Right, BSpace, BTab, DC (Delete), End, Enter, Escape, F1 to F20, Home, IC (Insert), NPage/PageDown/PgDn, PPage/PageUp/PgUp, Space, and Tab.
-
-
 =========================================================================================================
-i3wm        Window Manager (tiling window manager)
+                                 Window Manager
 =========================================================================================================
-~/.config/i3/config
-
-Mod + Shift + e      # log out
-Mod + Shift + r      # restart
-Mod + Shift + c      # reload config
-
-Mod + Shift + Space  # floating mode
-
-Mod + Enter      # open terminal(to right)
-Mod + V          # next window opened verticaly
-Mod + shift + Q      # kill window
-Mod + D          # open dmenu
-Mod + F          # full screen
-Mod + H          # horizontal split
-
-Mod + <arrow>        # to chage window
-    + #vim
-Mod + S          # stack windows and go up/down
-Mod + E          # tiling mod
-Mod + W          # tab mod
-Mod + R          # resize box (use arrows to change size)
-
-Mod + Shift + <arrow>    # swap reminals
-
-Work Spaces (group windows)
-Mod + Shift + #num       # create workspace (move current widnow to workspace #num)
-Mod + #num               # swap focus to window #num
-
-i3-save-tree         # dump current workspace
-i3-msg           # runtime communication utility
-i3lock           # lock screen
-alsamixer        # utility to control sound
-gnome-control-center     # to open system configs
-
-Mouse Commnads
-button1          # left
-      2          # middle
-      3          # right
-      4          # wheel up
-      5 
-
-Criterias
-class
-instance
-window_role
-window_type     
+                                       I3
+---------------------------------------------------------------------------------------------------------
+Errors from bindsym execution are saved to .xsession-errors
 
 dm-tool switch-to-greeter                   # switch user
 i3-msg 'exit'                               # logout user
+=========================================================================================================
+                                      EFI
+=========================================================================================================
 
-i3-msg 'rename workspace 1 to one'
-=========================================================================================================
-                                EFI
-=========================================================================================================
 https://www.reddit.com/r/unixporn/comments/c21ky8/refind_circles/
 https://github.com/josephsurin/refind-theme-circle
-
 =========================================================================================================
                                   Key binding
 =========================================================================================================
@@ -311,8 +219,6 @@ super + Return
 super + {greater, less}
         music_player {next,prev}
 ---------------------------------------------------------------------------------------------------------
-
----------------------------------------------------------------------------------------------------------
                             Simulating key pressing
 ---------------------------------------------------------------------------------------------------------
 xte 'key keyName'
@@ -332,44 +238,7 @@ Fixing windows scalling issues on external monitor
 https://gist.github.com/nma/8125f585f4111e1e55caee83c03b94a6
 https://wiki.archlinux.org/index.php/HiDPI
 https://askubuntu.com/questions/891649/xrandr-dual-monitor-scaling-issue
-
 https://askubuntu.com/questions/13433/is-there-a-way-to-turn-off-individual-screens
-=========================================================================================================
-                                Trouble Shooting
-=========================================================================================================
-gsettings list-recursively org.gnome.settings-daemon.plugins.media-keys => list assigned keys for media
-
-#Unset buttons
-dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-mute "''"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-down "''"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-up "''"
-
-Getting rid off nautilus desktop 
-gsettings set org.gnome.desktop.background show-desktop-icons false
-
-xprop                # list properties of window
-xmodmap -pke         # list current mappings
-xev                  # see what keysym your key is configered to
-import file.png      # start screnshot taking
-Errors from bindsym execution are saved to .xsession-errors
-
-
-=========================================================================================================
-                                     Fonts
-=========================================================================================================
-The collest fonts are hosted by following projects:
-https://github.com/ryanoasis/nerd-fonts
-https://github.com/powerline/fonts
-https://fontawesome.com/
-
-You may want to use them in order to have a easy readable fonts or ones that don`t fatigue you eyes. Another
-common use case is TUI pluging/applications that display picture to make it more clear what data near it
-means. If you use sych symbols without having them in your used font, then such symbol will be display not
-properly or not displayed at all. In such case you can patch your font to include need symbols, for
-instance patching arrows and other symbols for powerline:
-
-https://github.com/powerline/fontpatcher
-https://www.hanselman.com/blog/PatchingTheNewCascadiaCodeToIncludePowerlineGlyphsAndOtherNerdFontsForTheWindowsTerminal.aspx
 =========================================================================================================
                                    Dictionary
 =========================================================================================================
@@ -388,14 +257,46 @@ https://askubuntu.com/questions/191125/is-there-an-offline-command-line-dictiona
 =========================================================================================================
                                       LID
 =========================================================================================================
-/etc/systemd/logind.conf        HandleLidSwitch=ignore
-
+To turn off display on closed lid without hibernating the entire laptop, try following:
+/etc/systemd/logind.conf          =>
+    HandleLidSwitch=ignore
 sudo apt-get install acpi-support
-sudo vi /etc/default/acpi-support # and then set SUSPEND_METHODS="none"
+sudo vi /etc/default/acpi-support =>
+    set SUSPEND_METHODS="none"
 sudo /etc/init.d/acpid restart
-https://askubuntu.com/questions/141866/keep-ubuntu-server-running-on-a-laptop-with-the-lid-closed
-
 dconf-editor
+
+https://askubuntu.com/questions/141866/keep-ubuntu-server-running-on-a-laptop-with-the-lid-closed
 https://askubuntu.com/questions/972169/ubuntu-17-10-and-later-dont-suspend-when-lid-is-closed-just-lock-screen
+=========================================================================================================
+                                     Links
+=========================================================================================================
+Themes
+---------------------------------------------------------------------------------------------------------
+https://github.com/Kthulu120/i3wm-themes
+https://github.com/flumm/Themes
+https://github.com/unix121/i3wm-themer      
+https://github.com/lcpz/awesome-copycats    rdy styles for awesome-vm
+
+---------------------------------------------------------------------------------------------------------
+Channels
+---------------------------------------------------------------------------------------------------------
+https://www.youtube.com/channel/UCDWZo5C8MtGA_ZoTCu4UJ7A Llewe's Reviews
+https://www.youtube.com/watch?v=i0jtvTIOMWs  neofetch
+https://boddy.im/i3-workspace-names.html    dynamic glyph instead of names
+https://www.reddit.com/r/unixporn/comments/804cw8/i3_succulent/ Succulent
+https://www.reddit.com/comments/3dyvhw
+/desktop/gnome/interface/cursor_blink)  desktop-wide one that disables cursor blinking for all Gnome applications
+https://github.com/chriskempson/base16
+cmd cheatshit
+https://www.reddit.com/r/i3wm/comments/a00s8p/made_myself_a_pretty_popup_cheat_sheet/ 
+---------------------------------------------------------------------------------------------------------
+Guides
+---------------------------------------------------------------------------------------------------------
+https://github.com/addy-dclxvi/i3-starterpack   # decent starter pack
+=========================================================================================================
+                                    To Test
+=========================================================================================================
+byzanz  | gif maker
 
 =========================================================================================================

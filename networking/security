@@ -434,7 +434,6 @@ generated data, and this random data is used to create new keys for encryption, 
 6. The server responds with a `finished` message wich is encryped with the secret key
 7. Handshake is complete
 
----------------------------------------------------------------------------------------------------------
 =========================================================================================================
                                     Hashing
 =========================================================================================================
@@ -493,4 +492,35 @@ https://www.youtube.com/watch?v=vw7BhqsjYFk&list=PLmL13yqb6OxdEgSoua2WuqHKBuIqvl
 Also converts binary to alphanumeric text. Is similar to base64 without 0/O, I/l, + and / because they
 look the same in some fonts. Ordering is following [1-9A-Z]
 
+=========================================================================================================
+                          2FA. 2 Factor Authentication
+=========================================================================================================
+2FA requires you to type in a password and also provide one other piece of proof that you are who you say
+you are before you can log in to a service. One of the more common 2FA methods in use today employs
+six-digit passcodes that are sent to your phone via text message. When a unique scramble of numbers shows
+up on your phone, you type them into the browser along with your password at the login screen.
+
+But no matter how strong a password is, or what level of code-based authentication a website is using, any
+system that sends codes in a text message can be compromised from afar by a skilled attacker. The best way
+to set up two-factor authentication is to use a secure app on your phone to generate those six-digit codes
+or to carry a piece of hardware that can verify your identity.
+
+---------------------------------------------------------------------------------------------------------
+                                    YubiKey
+---------------------------------------------------------------------------------------------------------
+Battery-free devices provide an easy way to securely verify that it's really you who's trying to access
+your online accounts. Little key-shaped fobs plug into your computer and, along with your password,
+complete the second half of a 2FA web login. A hacker might find a way to snoop on your passwords or
+intercept a six-digit 2FA code while it’s being sent to your phone, but they’d be hard pressed to snatch
+an actual key off your keychain.
+
+If you lose your YubiKey or forget it at home, you can use the secure code generator on your phone to
+complete your 2FA logins.
+
+Several manufacturers make these types keys, and they all basically work the same way. They adhere to an
+industry standard called Universal 2nd Factor, or U2F. The standard weds hardware-based authentication 
+with public key cryptography—a set of tools that’s extremely difficult to compromise
+
+https://www.wired.com/story/how-to-use-a-yubikey/
+https://www.yubico.com/products/hardware-security-module/
 =========================================================================================================

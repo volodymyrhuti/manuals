@@ -14,6 +14,8 @@ Note, you can shorten the commands as far as it is unambiguos, by default :h sho
 :helpgrep         | grep through help files
                   | :helpgrep search.\{,12}file
                   | you can use qfix hotkeys to iterate through grep results
+:h help-summary   | exmaples of main help queries
+:h helphelp       | help of help files
 
 ---------------------------------------------------------------------------------------------------------
                               Version/Feature info
