@@ -1,0 +1,522 @@
+                                      Help
+=========================================================================================================
+       WHAT                | PREPEND    | EXAMPLE             |
+Normal mode command        |            | :help x             |
+Visual mode command        |     v_     | :help v_u           | :h v_CTRL-V
+Insert mode command        |     i_     | :help i_<Esc>       | :h i_CTRL-W
+Command-line command       |     :      | :help :quit         |
+Command-line editing       |     c_     | :help c_<Del>       | :h c_CTRL-R
+Vim command argument       |     -      | :help -r            |
+Option                     |     '      | :help 'textwidth'   | :h 'ro'
+Regular expression         |     /      | :help /[            | :h /\r
+
+Note, you can shorten the commands as far as it is unambiguos, by default :h should work as well.
+:helpgrep         | grep through help files
+                  | :helpgrep search.\{,12}file
+                  | you can use qfix hotkeys to iterate through grep results
+:h help-summary   | exmaples of main help queries
+:h helphelp       | help of help files
+:helpgrep         | grep all help pages, saved to quick fix buffer
+                  | :helpgrep \csearch.\{,12}file
+                  | where c - case sensitive, .\{,12} - up to 12 symbols afterwards
+
+To effectively use help, you need to be aware of the following things
+C-]     # follow link
+C-T     # go back to the previous topic
+C-I/O   # for jumping
+
+---------------------------------------------------------------------------------------------------------
+                              Version/Feature info
+---------------------------------------------------------------------------------------------------------
+:version          | version informatio, including list of compiled features
+:has(             | see whether one feature was included
+                  | :echo has('feature/patch')
+:h feature-list   | list features 
+
+---------------------------------------------------------------------------------------------------------
+                                Troubleshooting
+---------------------------------------------------------------------------------------------------------
+vim -V20 2>&1 | tee logfile     | save logs for a new session
+                                | usefull when you want to see what commands are executed
+verb map                        | verbose listing of active mappings
+messages                        | TODO
+
+---------------------------------------------------------------------------------------------------------
+                                   Navigation
+---------------------------------------------------------------------------------------------------------
+You can simplfy the key navigation by taking the mapping from `https://vim.fandom.com/wiki/Learn_to_use_help`
+Enter     | jump to the subject(topic) under the cursor
+Backspace | return from the last jump
+s/S       | find next/prev subject
+o/O       | find next/prev option
+
+Ctrl-]    | follow the link/tag
+Ctrl-t    | jump back
+Ctrl-o    | iterate backwards through jump history
+Ctrl-i    |   -     forwards    -
+
+https://vim.fandom.com/wiki/Learn_to_use_help
+=========================================================================================================
+                               Text manipulations
+=========================================================================================================
+e               | word end 
+s               | strike, delete char under cursor and start insertion 
+S     | cc      | delete line and start insertion from line start 
+C               | change, delete line from current cursor till end
+r/R             | replace, one/string of character
+i               | insert, start inset mode at the curstor position
+a               | append, after cursor
+A               | append, to the line nd
+x               | delete character without exiting read mode
+                | `xp` swap two character
+d[n]<direction> | delete character in the direction
+dd              | delete line, is saved to " register
+D               | delete to end of the line
+o/O             | open, start a new line below/above cursor
+~               | change case of character
+g~              | togle case of motion
+                | `g~w`    change case for word
+                | `g~iw`   change case for word if cursor is inside the word
+.               | repeat last delete/change
+[n]J            | join following lines to the current
+yy/Y            | yank entire line, saves into " and 0 register
+vy              | select text in visual mode and yank
+p/P             | paste after/before cursor
+v/V             | visual mode char/line, can be changed within another visual
+u               | undo
+C+r or U        | redo
+
+=========================================================================================================
+                                    Movement
+=========================================================================================================
+                                     Cursor
+---------------------------------------------------------------------------------------------------------
+$ / ^           | line end
+END             |     -
+shift + |             -
+0 / Home        | beggining of the line 
++               |         -        following line
+
+
+   gg           | jump to buffer beginning
+   G            |       -        ending
+[n]gg           |      to line [n]
+[n]G            |           -
+
+C+U             | scroll window up, cursor stays in the middle
+C+B             |                -               on the bottom
+C+Y             |                -               in the
+C+f             | scroll window down, cursor stays on the first line
+C+D             |
+C+E             |
+
+H               | High, moves cursor to top of current window without changing view
+M               | Mid,           -      mid       -
+L               | Low,           -     bottom     -
+                | got remmaped to remove highlight?
+
+---------------------------------------------------------------------------------------------------------
+                                Screen movement
+---------------------------------------------------------------------------------------------------------
+Z - zoon, t - top, b - bottom, z - center
+z<Enter>        | shift screen down to current line, moves cursor to line beggining
+zt              |                                  , without moving cursor
+zz              | center the screen, without moving cursor
+                | NOTE: be carefull ZZ will save file and exit
+z-              |                  , moves cursor to line beggining
+zb              | shift scrren up to current line, without moving cursor
+
+Ctrl-d/u        | jump half page up/down
+Ctrl-f/b        |      full page
+Ctrl-y/e        | moves screen up/down one line
+
+https://stackoverflow.com/questions/3458689/how-to-move-screen-without-moving-cursor-in-vim
+---------------------------------------------------------------------------------------------------------
+                                  Declarations
+---------------------------------------------------------------------------------------------------------
+gd       | jump to local declaration withing file scope (with includes?)
+gD       |    -    global   -
+gf       | open file named as word beneath cursor, can be used with find/grep
+
+---------------------------------------------------------------------------------------------------------
+                                    Jumping
+---------------------------------------------------------------------------------------------------------
+Ctrl + ^ | special buffer? TODO
+
+=========================================================================================================
+                             Motions. Text objects
+=========================================================================================================
+                                 word/Word
+---------------------------------------------------------------------------------------------------------
+word - [\alphanum] - any sequence of characters from a-z
+        this,is,word
+Word - *[^ ]       - any sequence of characters but no space
+        this,is,    WORD
+Most motions are available for both word/Word, like bB,wW,eE
+
+---------------------------------------------------------------------------------------------------------
+()  | line      | operation is performed till '.'
+{}  | paragraph |           -                 next empty line
+%   | bracket   | go to matching bracket
+
+i   | inside
+    | qwe[12*3] -> ci[ -> qwe[|]
+a   | around
+    | qwe[12*3] -> ca[ -> qwe
+e   | end of word
+E   |        Word
+
+set showmatch  | Show matching brackets.
+
+ge  | goto previous end of word
+gE  |                     Word
+w/W | step Wword right
+b/B |       -    left
+de  | delete to the end of word
+
+ysiw"   | add "" to the word -> word => "word"
+ds"     | delete surround quotes
+cs[(    | change surround [] by ()
+cs])    | 
+cst<h1> | change surrounding tag to <h1>
+viw     | visual select of word
+
+TODO
+;   | repeat last motion forward
+,   | repear last motion backward
+
+]]  | next section
+[[  | prev section
+
+
+---------------------------------------------------------------------------------------------------------
+Repeat last motion
+---------------------------------------------------------------------------------------------------------
+There is ; and , to repeat last fFtT... but this doesnt work for moves like jkl;
+There are three workarounds:
+1. Use norm, and then repeat it
+   :norm 100j  => and then => @:
+2. Macros: qa, 5j, q, @a
+3. Plugins like repmo.vim
+
+=========================================================================================================
+                                    Buffers
+=========================================================================================================
+q/                  | open search history buffer, no need to retype queries
+:bn                 | next buffer
+:b <filename>       | go to buffer with <filename>
+:bd                 | close buffer
+---------------------------------------------------------------------------------------------------------
+                               File manipulations
+---------------------------------------------------------------------------------------------------------
+:w <filename>               | write current file to <filename>
+:save <filename>            | write buffer to file and open it
+:saveas <name>              | save under new name and remove old file
+:'<,'>w <filename>          | can be use with 'v' to save range of buffer to file
+:r <filename>               | read contant of file to buffer, inserts at a cursor position 
+ZZ                          | writes buffer to the file and exits
+
+:next/:prev/:Next           | open next file that was passed as argument
+:n [<filename>]             | next file, or goto file <filename> TODO: doesn`t work
+:rewind/:last               | first/last file from args
+
+=========================================================================================================
+                                Alternative keys
+=========================================================================================================
+
+:help CTRL-key
+Ctrl+M   | alternative way to press Enter
+Ctrl+[   |          -               Esc
+
+=========================================================================================================
+                          Windows/split manipulations
+=========================================================================================================
+Ctrl+alt+t        | start terminal from keyboard
+Ctrl+w Ctrl+r     | swap splits in vim
+
+:split            | (horizontal) split of window, cursor stays at the top one
+                  | both windows show the same (buffer?)file
+        <file>    | open specified file, note must be the last argument
+        +<cmd>    | executes specified command on opened file
+:new              | split without openning same file
+:sview            | split into read only mod, purpose? TODO
+
+Ctrl-w <arrow>    | goto split in arrow direction
+Ctrl-ww           | goto next split
+Ctrl-w Ctrl-w     |  -||-
+Ctrl-w r          | swap splits top/bottom left/right
+Ctrl-w t          | break out current split into new tab
+
+Cw + N            | enter cmd mode within terminal  TODO doesn`t work
+---------------------------------------------------------------------------------------------------------
+                                    Resizing
+---------------------------------------------------------------------------------------------------------
+If count is not specified, window will take all space
+[n]Ctrl - w[+-]   | resize up/down split
+[n]Ctrl - w[<>]   |        left/right
+Ctrl - w_         | max heigh for split
+        |         |  -  width  -
+        =         | equalize split sizes
+
+Ctrl-w o          | close all windows in tab except active
+:hide             | hide current split window
+:Vex/Sex          | open explorer (file manager) in a new vert/horz split
+
+=========================================================================================================
+                                        Tabs
+=========================================================================================================
+:tabnew [file]    | new tab
+gt/gT             | next/prev tab
+Ctrl-w o          | close all windows in tab except active
+:tabm[ove]        | ?
+:tabc[lose]       |
+:tabo             | close all tabs except current 
+
+:tabdo <cmd>      | run command withing each tab (each tab buffer?)
+                  | :tabdo %s/foo/bar/g  
+
+
+=========================================================================================================
+                        Regex. Search. Patterns. Ranges
+=========================================================================================================
+NOTE: use Ctrl-r Ctrl-w to insert word under cursor to your query
+/?                | search by pattern forward/backward
+*  (bounded)      | search for word under cursor
+g* (unbounded)    |
+#  (bounded)      | reverse *
+g# (unbounded)    |
+
+[n],[n]s/old/new/ | find and replace in range
+:s/w1/w2/c        | single occurence replace with request for confirmation
+         g        | replace of each occurence
+         gc       | same as g + c
+
+:1,$ center       | range matching all lines
+:%                | entire file - same
+
+/patter\c          | case insensitivity for 1 command
+set [no]ignorecase | case [no]insensitivity for all queries
+    ic/noic        |
+set hls/hlsearch   | highlight search
+set is/incsearch   | show partial matches
+
+&                 | expands to already matched expression
+                  | :%s/prefix/&sufix  - will append sufix to all prefixes
+n/N               | go to next/prev search result
+Shift#            |            prev
+Shifft*           |            next
+
+
+gd/gD             | search variable definition localy/globally
+F/f + <char>      | find, move to prev/next occut of character, single line
+T/t + <char>      | till, stop before next char
+T/F + Esc         | abort search
+
+set wildignore+=.pyc,.swp   | ignore files during wildcard expansion
+
+https://stackoverflow.com/questions/1343979/to-append-a-match-efficiently-in-vim-g-s-x
+=========================================================================================================
+                                 Autocompletion
+=========================================================================================================
+Ctrl-p/n          | next word in the autocompletion list
+
+=========================================================================================================
+                                  Visual mode
+=========================================================================================================
+v        | visual char mode
+Shift-v  |        line
+Ctrl-v   |        block
+vg_      | select to endline without linefeed
+
+A<string>   |
+I<string>   | Insert string to beginning of each selected line
+
+g-Ctrl-a    | add 1? todo
+g-Ctrl-x    | divide by 2
+
+=========================================================================================================
+                                   Registers
+=========================================================================================================
+To use registers, execute following
+    "<register_key>operation
+
+Special registers:
+":  | last command
+"/  | last search
+".  | last edit
+"%  | file name
+"*  | mouse clipboard
+"+  | system clipboard
+_   | is the /dev/null of registers.
+
+Small keys to overwrite, capital to append
+"ayy                        | save line to register `a`
+"Ayy                        | append line to content of register `a`
+"app                        | paste content from register `a`
+:let @a=<value>             | to mannyaly assign value
+"=1+1<Enter>p               | execute calculation, save to register, paste
+
+:registers                  | display the values in all registers
+            a,b,c,d         |                    in registers a,b,c,d
+
+=========================================================================================================
+                                    Marking
+=========================================================================================================
+m<char>        | marks line with <char>
+`<mark>        | (motion) goto marked line, saves cursor position
+'<mark>        |       -||-               , beggining of marked line
+d`<mark>       | delete block upto mark
+:marks         | show list of marks
+:jumps         | holds jump history for marks
+
+``             | goto last used mark/jump
+[`/]`          | iterate through marks
+
+Special marks:
+`.    | moves the cursor to the line and column where the last edit was made
+'.    |                         line where the last edit was made
+'"    |                         last position of the cursor when you exited the previous session.
+
+Note, lower case marks are considered local to file and uppercase are global to vim. Therefore it is
+conviniet to mark `V  to vimrc `N  to notes ...
+
+=========================================================================================================
+                                     Macros
+=========================================================================================================
+q<register>                 | start recording to register, press q to stop
+[n]@<register>              | execute macro
+@@                          | repeat last macro/register?
+
+=========================================================================================================
+                             Operation modificators
+=========================================================================================================
+:g/pattern/operation        | global operation
+
+Save lines matching patern
+:let @a=""                  | clear register 'a'
+:g/patern/yank A            | save to register 'a'
+"ap                         | print register 'a'
+
+=========================================================================================================
+                              Indentation/Folding
+=========================================================================================================
+Indentation uses 'shiftwidth'
+[n]>>       | right indent
+[n]<<       | left indent
+[n]=        | reindent lines
+
+[><=]%      | braced indent
+=[iao]{     | block indent with motions
+=%          | bracket block indent
+
+:retab      | convert tabs to spaces
+cinwords    | ?variable that saves words that require indentation
+
+---------------------------------------------------------------------------------------------------------
+File dependent indentation:
+:filetype on                            | lets vim detect file type
+:autocmd FileType c,cpp :set cindent    | executes :set by detected filetype
+
+---------------------------------------------------------------------------------------------------------
+et   [noet    ]    | extend tab
+ts   [tabstop ]    | number of space displayed for tab (tab is stil \t)
+sts  [softts  ]    | number os space for tab, when inserting or backspacing
+                   | sts <> ts && noet  vim uses combination of tabs and spaces
+                   | sts = ts && noet   vim uses tab always
+                   | 0                  feature is disabled
+                   | et                 vim uses space
+sw   [shiftwidth]  | how many spaces to use per indent level (>> ,tab)
+
+ci   [copyindent ] |
+pi   [pasteindent] |
+ai   [autoindent]  | indentation for new lines is taken from prev line
+
+---------------------------------------------------------------------------------------------------------
+zf[motion]    | fold
+zo            | unfold
+z<arrow>      | TODO: move
+zd            | delete fold
+zE            | delete all folds
+zM/R          | close/open all folds
+
+---------------------------------------------------------------------------------------------------------
+                               Fixing Indentation
+---------------------------------------------------------------------------------------------------------
+gg=G                | reindent entire file, good for markup files
+                    | gg   step to begginning
+                    | =    perform reindent
+                    | G    to the end of the file
+!xmllint --format - | to preatty print xml back to the buffer
+
+---------------------------------------------------------------------------------------------------------
+                                    Sorting
+---------------------------------------------------------------------------------------------------------
+
+=========================================================================================================
+                                      Misc
+=========================================================================================================
+z=                  | check spelling
+:diagraphs          | list of symbols
+K                   | jumps into man for current symbol
+
+Ctrl+G          | query current position withing the file, is displayed on the bottom
+Ctrl+g          | query name of current file
+:=              | query count of line in file
+
+Saving read-only file (file that requires root permissions):
+  cnoremap w!! w !sudo tee %
+
+---------------------------------------------------------------------------------------------------------
+                                     Redir
+---------------------------------------------------------------------------------------------------------
+Sometimes you want to capture the output of an ex command into a buffer for east viewing.
+:redir @a
+:set all
+:redir END
+"ap
+---------------------------------------------------------------------------------------------------------
+                                    Session
+---------------------------------------------------------------------------------------------------------
+:mksession  <name>.vim          | save session
+:mksession!  <name>.vim         | override session
+:source <name>.vim              | load session
+
+
+---------------------------------------------------------------------------------------------------------
+                                Shell & Terminal
+---------------------------------------------------------------------------------------------------------
+:shell        | runs subshell from parent one
+!!ls          | TODO
+
+=========================================================================================================
+                                 Random Options
+=========================================================================================================
+set tenc=utf8               | vim encoding
+set number relativenumber   | show line numbering
+set showcmd
+set cursorline cursorcolumn | highligh some specific line
+set nonu nolist foldcolumn
+set autowrite               | save automatically before commands like :next and :make
+=========================================================================================================
+                                   Resources
+=========================================================================================================
+http://vimcasts.org/
+https://vim.fandom.com/wiki/Vim_Tips_Wiki
+https://vim.fandom.com/wiki/Learn_to_use_help
+https://vimhelp.org/vim_faq.txt.html
+=========================================================================================================
+                                   TODO
+=========================================================================================================
+help object-motions  := brackets moving
+     text-object
+     undo
+" underline the word under the cursor
+let HlUnderCursor=1
+autocmd CursorMoved * exe exists("HlUnderCursor")?HlUnderCursor?printf('match IncSearch /\V\<%s\>/', escape(expand('<cword>'), '/')):'match none':""
+
+Leave tutorials to plugins in vim folder
+Easy motion
+leader-w    => mark words in indow
+leader-s    => search letter entire window
+leader-t    => search letter till window end
+

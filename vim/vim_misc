@@ -1,0 +1,72 @@
+                              Color Managment
+=========================================================================================================
+Highlight current line
+highlight CursorLine   cterm=NONE ctermbg=DarkGrey ctermfg=NONE guibg=NONE guifg=NONE
+
+Highlight current column
+highlight CursorColumn cterm=NONE ctermbg=DarkGrey ctermfg=NONE guibg=NONE guifg=NONE
+
+=========================================================================================================
+                                      Git
+=========================================================================================================
+                                      Diff
+---------------------------------------------------------------------------------------------------------
+You can look though file history with `:Glog` which will automatically load history to qfix buffer.
+You can iterate through commits, which will update current buffer to state it was durring commit.
+If you want to get history of all files/commits, issue `:Glog --`
+
+There is an option to compare current buffer (for isntance, from Glog) with working copy, this is done
+with `:Gdiff` without arguments. Or you can specify revision to compare against with `Gdiff <rev>` like
+`Gdiff HEAD`. Don`t forget, there are couple variants of diff, depenging on window orientation
+`Gvdiff` splits  vertically, and `Gdiff` splits horizontally.
+
+To avoid iterating though qfix buffer, you can specify how many commits before to compare against
+`:Gdiff ~3`
+
+Random examples:
+Gdiff branch_name:path/to/dir/filename.txt
+
+https://stackoverflow.com/questions/15369499/how-can-i-view-git-diff-for-any-commit-using-vim-fugitive
+---------------------------------------------------------------------------------------------------------
+                              Using vimmerge tool
+---------------------------------------------------------------------------------------------------------
+You can start vimmerge with git mergetool -t vimdiff. By default it has next layout
++--------------------------------+
+| LOCAL  |     BASE     | REMOTE |
++--------------------------------+
+|             MERGED             |
++--------------------------------+
+Where =>
+LOCAL  => a temporary file containing the contents of the file on the current branch.
+BASE   => a temporary file containing the common base for the merge.
+REMOTE => a temporary file containing the contents of the file to be merged.
+MERGED =>
+The file containing the conflict markers. Git has performed as much automatic conflict resolution as
+possible and the state of this file is a combination of both LOCAL and REMOTE with conflict markers
+surrounding anything that Git could not resolve itself. The mergetool should write the result of the
+resolution to this file.
+
+A script for somewhat better layout can be found here
+https://vim.fandom.com/wiki/A_better_Vimdiff_Git_mergetool
+
+---------------------------------------------------------------------------------------------------------
+                               Working with diffs
+---------------------------------------------------------------------------------------------------------
+Vimdiff control:
+:diffupdate     | re-scan the files for differences
+]c              | next difference
+[c              | perv difference
+do              | diff obtain
+dp              | diff put
+zX              | refold diff
+
+Turn vimdiff for opened buffers
+:windo diffthis
+:EnhancedDiff patience
+:windo diffoff
+
+git difftool --no-index dir1 dir2
+
+https://devhints.io/vim-diff
+https://gist.github.com/mattratleph/4026987
+=========================================================================================================

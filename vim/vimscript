@@ -1,0 +1,111 @@
+=========================================================================================================
+                                   Variables
+=========================================================================================================
+                                    Booleans
+---------------------------------------------------------------------------------------------------------
+set <bool_var>      | switch on
+set no<bool_var>    | off
+set <bool_var>!     | invert
+set <var>&          | get current value
+
+=========================================================================================================
+                                 Printing
+=========================================================================================================
+You can print something to user`s output line with
+echo  <str>    |
+echom <str>    | save <str> to special buffer :messages, usefull for debugging
+
+=========================================================================================================
+                               Text manipulations
+=========================================================================================================
+:set textwidth=<n>          | this is used for other commands like :center
+:[n1],[n2]center [n3]       | center text to middle of line from calculating textwidth
+                            | n1,n2 - line range which will be centralized
+                            | n3 - custom text width, different from environment
+          right             | justify right
+          left [n3]         | justift left, n3 = left margin
+:set [no]wrap               | word wrap when line is longer then textwidth
+
+=========================================================================================================
+                                    Mappings
+=========================================================================================================
+cmap    | command-line mappings
+imap    | insert-only mappings
+map     | normal, visual, and operator-pending mode
+map!    | Vim's command and insert modes
+nmap    | normal mode only
+omap    | operator-pending mode only
+vmap    | visual mode only
+
+Ctrl-o during insert mode gives you normal mode for 1 comand
+---------------------------------------------------------------------------------------------------------
+Mapping are recursive, meaning that `map 2 3` + `map 1 2` when pressing `1` it will expand into `2` and
+then into `3` or even worse.  Infinit loop expansion - `map dd <esc>dd`.
+This can be avoided with nonrecursive mappings, like:
+    map     x dd
+    noremap \ x
+In this case, pressing `\` will expand into `x` but not further, and `x` will just delete a character.
+
+:map               | display key-mappings
+:verb map          | verbose listing of active mappings
+
+
+no  <key> <Nop>     | unmap key
+ino <key> <Nop>     | unmap key
+
+---------------------------------------------------------------------------------------------------------
+                             Word under cursor
+---------------------------------------------------------------------------------------------------------
+To use word under cursor within some command, you can use special variable <cword>.
+If you want to expand word (maybe to change it), you can pres <C-R><C-W>
+
+=========================================================================================================
+                             Path Manipulation
+=========================================================================================================
+Register `%` contains name of the current file, and register `#` countains name of the alternate file.
+These registers allow the name of the current or alternate files to be displayed or inserted.
+
+%       # name of current file
+%:p     # full path
+%:p:h   # directory path of opened file
+
+:echo @%    # directory/name of file (relative to the current working directory)
+:echo expand('%:t')      | my.txt           | name of file ('tail')
+:echo expand('%:p')      | /abc/def/my.txt  | full path
+:echo expand('%:p:h')    | /abc/def         | directory containing file ('head')
+:echo expand('%:r')      | def/my           | name of file less one extension ('root')
+:echo expand('%:e')      | txt              | name of file's extension ('extension')
+:echo expand('%:p:h:t')  | def              | First get the full path with :p (/abc/def/my.txt), then get
+                                              the head of that with :h (/abc/def), then get the tail of
+                                              that with :t (def) 
+
+https://vim.fandom.com/wiki/Get_the_name_of_the_current_file
+
+=========================================================================================================
+                                    Commands
+=========================================================================================================
+:command Ctrl-d       := list autocompletion list
+:Ctrl-f               := list used cmds
+!command              := execute external command
+!!command             := insert output of shell <cmd> to file
+
+=========================================================================================================
+                                  Buffers
+=========================================================================================================
+                           QuickFix vs Location List
+---------------------------------------------------------------------------------------------------------
+There is a quite convinient way to hold list of lines failed to comile or just grep result and jump
+between them. This is done using QuickFix list which is filled with results of build in `grep` or errors
+after calling the make. It can be issued with following commands:
+:copen          # open qfix buffer
+:cnext/prev     # jumps to next/prev result
+:cc             # display current error
+:cfile          # loads buffer from a file
+
+Quickfix is fine for compilation results, since usually they are shared by an entire project but what if
+you want to have a separate qfix buffer associated with some window. The problem is that qfix buffer is
+global and shared by all windows. There is a private variant of qfix called location list. It has the same
+apis as qfix (only prefixed with `l` instead if `c`, like `:lopen`), but it is private to each window.
+
+https://medium.com/@lakshmankumar12/quickfix-and-location-list-in-vim-ca0292ac894d
+=========================================================================================================

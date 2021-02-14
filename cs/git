@@ -346,9 +346,35 @@ https://unix.stackexchange.com/questions/44266/how-to-colorize-output-of-git
 =========================================================================================================
                                      Ignore
 =========================================================================================================
-$ git ls-files . --ignored --exclude-standard --others  # list ignored files
-$ git ls-files . --exclude-standard --others            # list untracked files
+These explanations assume your .gitignore file is in the top level directory of your repository, as is the
+convention. If file is somewhere lower within tree, it works only for it subtree.
 
+**/dir          | exclude <dir> anywhere within tree
+**/parent/dir   | consider parent
+*.ext           | any files with extensioj
+!spec_file.ext  | reinclude specific file
+/name           | match only in root
+name            | match in any directory
+                | if <name> == directory name, directory is excluded
+debug[0-9].log  | match a single character from a specified range
+debug[01].log   | match a single character form the specified set
+debug[!01].loga | match any character except one from the specified set
+debug[a-z].log  | ranges can be numeric or alphabetic
+path/**/*.log   | double asterisk matches zero or more directories
+
+You can use # to comment, but you need to escape patterns with \
+# ignore the file literally named foo[01].txt foo\[01\].txt 
+
+You can have global git ignore file
+  $ git config --global core.excludesFile ~/.gitignore 
+
+git ls-files . --ignored --exclude-standard --others  # list ignored files
+             . --exclude-standard --others            # list untracked files
+git stash with the --all              # stash even ignored files
+git check-ignore -v <file>            # shows the rule which hides the file
+
+https://git-scm.com/docs/gitignore
+https://github.com/github/gitignore
 https://stackoverflow.com/questions/3538144/how-do-you-git-show-untracked-files-that-do-not-exist-in-gitignore
 =========================================================================================================
                                       Logs
@@ -585,12 +611,12 @@ git clean           # remove untracked files and directories
             -x      # remove ignored files
 
 https://stackoverflow.com/questions/61212/how-to-remove-local-untracked-files-from-the-current-git-working-tree
----------------------------------------------------------------------------------------------------------
+=========================================================================================================
                                    Commiting
----------------------------------------------------------------------------------------------------------
-git commit --amend --no-edit
-git commit --amend -m "Your new commit message"
-git commit --amend <<< :wq  -- will merge last commit and current changes?
+=========================================================================================================
+git commit --amend --no-edit        # don`t open commit form 
+           -m "message"             # specify new message
+           --athor                  # use custom author tag, usually "initias <email>"
 
 =========================================================================================================
                                      Diffs

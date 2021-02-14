@@ -628,7 +628,12 @@ CONFIG_MAGIC_SYSRQ=y
 CONFIG_PROC_VMCORE=y
 
 cat /proc/kallsyms  # list of loaded symbols and their address.
+---------------------------------------------------------------------------------------------------------
+                                Custom functions
+---------------------------------------------------------------------------------------------------------
 
+https://gist.github.com/mcnewton/14322391d50240ec9ebf
+---------------------------------------------------------------------------------------------------------
 USE_KDUMP ? won`t system journals hold needed info?
 https://sanjeev1sharma.wordpress.com/tag/debug-kernel-panics/
 =========================================================================================================
