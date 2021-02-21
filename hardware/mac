@@ -1,0 +1,25 @@
+=========================================================================================================
+                                Troubleshooting
+=========================================================================================================
+Reseting Mac`s SMC (System Managment Controller);
+https://www.lifewire.com/reset-smc-system-management-controller-on-mac-2260840
+on boot hold left-shift control option for 10 sec and release at the same time
+
+PRAM or NVRAM (holds system settings)
+Non-Volatile RAM
+Parameter RAM
+https://www.lifewire.com/how-to-reset-mac-pram-or-nvram-2260839
+
+PRAM reboot command+opt+P+R (hold till you hear 2 reboot sounds) or
+nvram -c && reboot
+nvram boot-args="-p -r"
+
+---------------------------------------------------------------------------------------------------------
+Rebooting to recovery mod from terminal
+sudo nvram "recovery-boot-mode=unused"
+
+Fix not erasable usb partition
+diskutil list
+diskutil eraseDisk free EMPTY /dev/disk4
+diskutil eraseDisk ExFAT USB64 /dev/disk4
+=========================================================================================================
