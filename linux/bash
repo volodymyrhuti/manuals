@@ -373,8 +373,6 @@ with the filename of the anonymous named pipe. Special file  When bash sees `<(p
 and replaces `<(ps)` with /dev/fd/n so the command effectively becomes:
 $ diff -u /dev/fd/n1 /dev/fd/n2
 
-
-
 There is aswell stdin redirection, so output of your command will be redirected to another command which
 is commonly used for filtering
 ps -ef | tee >(awk '$1=="tom"' >toms-procs.txt) \
@@ -397,13 +395,21 @@ n>&-        | close output fd n
 1>&-,>&-    | close stdout
 
 
-
 [n]<>filename   #open file <filename> for r/w and assign n fd to it used to write at a specified place in a file
 echo 1234567890 > File    | Write string to "File".
 exec 3<> File             | Open "File" and assign fd 3 to it.
 read -n 4 <&3             | Read only 4 characters.
 echo -n . >&3             | Write a decimal point there.
 exec 3>&-                 | Close fd 3.
+
+You can redirect streams within script by using `exec`:
+- Append both stdout and stderr to file
+  exec >> file
+  exec 2>&1
+- Send stdout to a file, then redirect stderr to stdout
+  exec > file
+  exec 2>&1
+
 
 https://catonmat.net/bash-one-liners-explained-part-three
 https://catonmat.net/bash-one-liners-explained-part-one

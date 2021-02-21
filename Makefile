@@ -1,10 +1,22 @@
+# NOTE: mannual files do not have extension, they are always txt files
+
+PRIVATE=private.tar.gz
+PRIVATE_CPT=$(PRIVATE).cpt
+
 merge: clean
 	@echo Merging mannuals
-	@find -type f ! -path '*/\.*'                                 \
-		! -name 'mannual.txt' ! -name 'Makefile' ! -name 'README' \
-		-exec cat {} \; >> mannual.txt
+	@git ls-files | grep -vE 'Makefile|*.cpt|gitignore|README' | \
+		xargs -I{} cat {} > mannual.txt
 
 clean:
-	-@ rm mannual.txt 2>/dev/null
+	-@ rm mannual.txt $(PRIVATE) $(PRIVATE_CPT) 2>/dev/null
+
+encrypt:
+	tar acvf $(PRIVATE) $$(git ls-files -o -x mannuals.txt -x $(PRIVATE))
+	ccencrypt $(PRIVATE)
+	git add $(PRIVATE_CPT)
+
+decrypt:
+	ccdecrypt $(PRIVATE_CPT)
 
 .PHONY: clean merge

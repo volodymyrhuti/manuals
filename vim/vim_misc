@@ -1,3 +1,82 @@
+                                Plugin Managers
+=========================================================================================================
+                                    Vim-plug
+---------------------------------------------------------------------------------------------------------
++ Parallel update procedure for Vim with any of +ruby, +python, or Neovim
+  Sequential otherwise
++ Lazy loading 
++ Install/Update plugins
++ Review/rollback updates
++ Supports OSX, Linux, Windows
++ Post-update hooks, eg recompile some package
+- Changes some vim defaults which you migh find surprising/confusing
+  https://github.com/junegunn/vim-plug/issues/379
+
+To start using it:
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+-------------------------------------------------------------------------------
+Aadd following to vimrc:
+call plug#begin()
+Plug 'git_user/repo'                                     " simple loading
+Plug 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }   " on-demand loading
+call plug#end()
+
+Then issue :PlugInstall to install plugins. These are installed into directory specified within begin call
+call plug#begin('~/.config/vim/bundle')
+
+---------------------------------------------------------------------------------------------------------
+                                    Pathogen
+---------------------------------------------------------------------------------------------------------
++ The simplest `plugin manager` (runtimepath manager), requiring only one function call
++ Autoload plugis from a folder
++ Generate help tags for those plugins
+- Everything else done mannually: installing/updating/removing
+- No lazy loading
+
+mkdir -p ~/.vim/autoload ~/.vim/bundle && \
+curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
+
+-------------------------------------------------------------------------------
+Modify your .vimrc
+call pathogen#infect()   " plugins are loaded from ~/vim/bundle
+call pathogen#helptags() " optional, otherwise issue :Helptags
+
+Note, :Helptags is an upgraded :helptags which doesn`t require being in the plugin directory for generation
+---------------------------------------------------------------------------------------------------------
+                                     Vundle
+---------------------------------------------------------------------------------------------------------
+- Much more complex plugin manager
++ search a plugin index
++ update plugins
++ generate helptags automatically
++ keep, but not use, plugins in the autoload folder
++ clean out such unused plugins
++ Works on Linux, OSX, and MS Windows
+- No lazy loading
+
+git clone https://github.com/gmarik/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+-------------------------------------------------------------------------------
+Modify your .vimrc
+
+set rtp+=~/.vim/bundle/Vundle.vim       " set the runtime path to include Vundle and initialize
+call vundle#begin()
+Plugin 'gmarik/Vundle.vim'              " let Vundle manage Vundle, required
+call vundle#end()                       " required
+filetype plugin indent on               " required
+
+Then issue :PluginInstall from .vim
+---------------------------------------------------------------------------------------------------------
+                                   NeoBundle
+---------------------------------------------------------------------------------------------------------
+- Fork of Vundle with additional features, development has been stopped
+
+- Lazy loading
+---------------------------------------------------------------------------------------------------------
+https://junegunn.kr/2014/07/vim-plugins-and-startup-time/
+https://vi.stackexchange.com/questions/388/what-is-the-difference-between-the-vim-plugin-managers
+=========================================================================================================
                               Color Managment
 =========================================================================================================
 Highlight current line

@@ -184,6 +184,21 @@ Flags
     -T                  # display time spent in system call
     -e trace=<modifier> # filter calls to trace, for instance -e trace=write, by default `all`
     -o log.file         # save output to file
+
+=========================================================================================================
+                                     Scappy
+=========================================================================================================
+p=rdpcap("/capture")
+sendp(p[1],iface="enxd46e0e089703")
+
+>>> def sp():
+...     srp1(p[1],iface="enxd46e0e089703")
+...     sendp(p[3],iface="enxd46e0e089703")
+
+>>> def sp_(pac1,pac2):
+...     srp1(pac1,iface="enxd46e0e089703")
+...     sendp(pac2,iface="enxd46e0e089703")
+
 =========================================================================================================
                                       Gdb
 =========================================================================================================
@@ -211,6 +226,13 @@ GDB holds a list of directories where it will look for the debug symbols, you ca
 However, you may want to see source lines as well, then you need to download them
   apt-get source libc6
   (gdb) directory <source_directory>
+
+gdbserver :2000 <proc> -d &
+set solib-absolute-prefix path/sources/
+handle SIGUSR1 noprint nostop
+target remote 192.168.1.254:2000
+ulimit -c unlimited
+echo "/root/core.%e.%p.%h.%t" > /proc/sys/kernel/core_pattern
 
 https://randomascii.wordpress.com/2013/01/08/symbols-on-linux-part-one-g-library-symbols/
 ---------------------------------------------------------------------------------------------------------
@@ -318,6 +340,15 @@ x/nfu  [addr]           # dispaly memory at addr
   n                       number of units
   f                       format, used by print 'x,d,u,o,t,a,c,f,s'
   u                       unit 'b,h,w,g' => 'byte, halfword, word, giant word'
+---------------------------------------------------------------------------------------------------------
+There are two main kinds of breakpoints: hardware and software:
+1. Hardware. Involve setting architecture-specific registers to produce breaks for you.
+   These are limited in number but are much faster, as well, allows to break on reading or writing
+   to a given address rather than only executing code there.
+2. Software. Involve modifying the code which is being executed on the fly.
+   These are unlimited in number but are slow. Memory at wanted address can be overwritten to call `int 3`
+   which pass controll to the breakpoint interrupt handler, which on Linux signals SIGTRAP.
+   When user wants to continue, we restore instruction overwritten with `int 3`.
 
 =========================================================================================================
 Random

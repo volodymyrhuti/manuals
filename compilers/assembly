@@ -1,22 +1,22 @@
 =========================================================================================================
                                Segments/registers
 =========================================================================================================
-SI      # Source Index
-DI      # Destination Index
+SI  | Source Index
+DI  | Destination Index
 
-AX      # accumulator
-DX      # double word accumulator
-CX      # counter
-BX      # base register
+AX  | accumulator
+DX  | double word accumulator
+CX  | counter
+BX  | base register
 
-CS      # code segment
-DS      # data segment
-SS      # stack segment
-FS      # points to exception handling chain (Windows??),
-         thread local storage (Linux??)
-ES      # extra segment
-GS      # general purpose segments (Windows??)
-          processor data area (Linux??)
+CS  | code segment
+DS  | data segment
+SS  | stack segment
+FS  | points to exception handling chain (Windows??),
+    | thread local storage (Linux??)
+ES  | extra segment
+GS  | general purpose segments (Windows??)
+    | processor data area (Linux??)
 
 =========================================================================================================
                  Stack (grows down, from high addresses to low)

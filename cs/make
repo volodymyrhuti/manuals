@@ -289,6 +289,13 @@ $(debugger 'arg')
 https://github.com/rocky/remake
 http://bashdb.sourceforge.net/remake/remake.html/index.html
 =========================================================================================================
+                                     Shell
+=========================================================================================================
+In order to execute a subshell from a makefile, you need to prefix the statement with double $$ sign
+    encrypt:
+        tar acvf private.data $$(ls) && encrypt_prog
+
+=========================================================================================================
                                     Patterns
 =========================================================================================================
 

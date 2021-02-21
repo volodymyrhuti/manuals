@@ -559,18 +559,82 @@ Disadvantages:
 - Removing a submodule requires several commands and tweaks, some of which are manual and unassisted.
 - You need to know what you`re doing
 ---------------------------------------------------------------------------------------------------------
+Will use `gsm` as an alias for `Git SubModule`
+gsm add <git_repo_path> <destination_path>   # note, destination path can be like for `make -p`
+This adds config line to `.git/config` and creates a new one (if not present already) called `.gitmodules`
+        [submodule "destination_path"]
+          url = git_repo_path
+The `.gitmodules` will have pretty much the same content, the difference is that config is local and this
+file is shared with your team by staging to the repo.
+The newly added git submodule will have a special file `.git` with a reference to it`s configuration file
+within root directory
+   $ cat submodule/.git
+     gitdir: ../ ... /.git/modules/submodule/
 
-git submodele add ../mainmod.git submod
-git submodule update
-git pull --recurse-submodules --jobs=10
-git submodule update --recursive --remote
+gsm add [-b brch] <url> [dst] # add submodule
+    init                    # reads `.gitmodules`, finds remotes and creates empty directories for
+                            # future submodules
+    update                  # downloads submodule content to directories created by init
+                            # NOTE: bydefault checkouts the last commit and stays in detached state
+            --init          # to avoid separate init command
+            --rebase        #
+            --remote        # pull(fetch+merge) all changes foro the submodules
+            --recursive     # fetch and checkout any nested submodules
+    sync                    #  incase submodule remote url has changed on the repo remote
+                            # this will refresh `.gitmodules`
+    foreach <cmd>           # Exmaples:
+                            #  git submodule foreach 'git reset --hard'
+                            #  Including nested ones
+                            #  git submodule foreach --recursive 'git reset --hard'
+    deinit <module_path>    # removes submodule files + `.config` module line
+                            # but not `.gitmodules` and `.git/modules`
+git rm <module_path>        # permamently removes the submodule, will update `.gitmodules`
+                            # NOTE, may leave info in `.config` and break status query
 
-git clone
-git submodule init
-git submodule update
-                     --init               # to avoid separate init command
-git clone --recursive remotes/main local  # to avoid init&update
+Possible alias for automated updating
+spull '!git pull && git submodule sync --recursive && git submodule update --init --recursive'
+spull '__git_spull() {                \
+    git pull "$@"                  && \
+    git submodule sync --recursive && \
+    git submodule update --init --recursive; }; __git_spull'
+
+
+Note submodules might have its` own submodules and you will need to go through them, one by one or
+git clone --recursive <remote/main> <local> # avoids init&update for (?all) nested repos
+                                            # TODO: difference with --recurse-submodules
+    pull --recurse-submodules               # git auto-fetches, but does not auto-update, requires
+                                            # simple pull won`t checkout submodules, this one will
+                                            # further submodule update
+         --jobs=n                           # update/pull `n` modules in parralel
+    diff --submodule=log
+
+
+Note, status, loke logs and diffs, is limited to the active repo, not to submodules (nested repos).
+git config --global status.submoduleSummary true       # submodule-aware status
+git config --global diff.submodule log                 #       -         diff
+git config --global fetch.recurseSubmodules on-demand  # fetch commits on module update
+
+https://www.vogella.com/tutorials/GitSubmodules/article.html
+https://git-scm.com/book/en/v2/Git-Tools-Submodules
 https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407
+=========================================================================================================
+                                    Subtrees
+=========================================================================================================
+With subtrees, there are no nested repos: there’s only one repo, the container, just like a regular
+codebase. That means just one lifecycle, and no special tricks to keep in mind for commands and workflows.
+
+Subtrees are not so much a feature as they are a concept, an approach to managing embedded code with Git.
+They mostly rely on the adequate use of classic porcelain commands (mostly merge and cherry-pick), along
+with a plumbing one (read-tree).
+
+There are three technical ways to handle your subtrees:
+1. Manual way. Git does not provide a native subtree command.
+   This works everywhere, and is quite simple, but requires a good understanding of the underlying notions
+   so you execute the few procedures properly. It offers the best degree of control over operations, and
+   leaves complete freedom in how we manage history (including its graph) and branches...
+
+
+https://medium.com/@porteneuve/mastering-git-subtrees-943d29a798ec
 =========================================================================================================
                                     Stashing
 =========================================================================================================
@@ -864,9 +928,9 @@ changed. As well, it`s content is mostly binary and not readable by human theref
 about changes within it, only about fact that it has changed. To avoid spending resources to check such
 files you ask git to ignore them. This is done using `git update-index --assume-unchanged <file>`, to
 temporarilt exclude the file from any tracking.
-git update-index --assume-unchanged <file>          # ignore file tracking
-git update-index --no-assume-unchanged <file>       # undo previous command
-git ls-files -v                                     # list `assume-unchanged` files
+  git update-index --assume-unchanged <file>          # ignore file tracking
+  git update-index --no-assume-unchanged <file>       # undo previous command
+  git ls-files -v                                     # list `assume-unchanged` files
 
 This can be used to hide a file without stashing + unstashing + checking out the file to avoid it`s getting
 into commit.
@@ -899,10 +963,40 @@ application secret-keys and so on outside of git history. Even if repo is privat
 party applications with git. Even, if application owners are not interested in your private data, if
 somebody breaks this application, he may get an access to your private data.
 
+There are multiple secret management tools for encryption
+1. Git-crypt. GPG/Symmetric key based tool with Git transparency.
+2. BlackBox. GPG key based tool with Git transparency.
+3. SOPS. Clould based tool without Git transparency.
+4. Transcrypt. Symmetric key based tool with Git transparency.
+5. HashiCorp. Large, production-ready solutition not for small organizations.
+
+Encryption manages include:
+- GPG. GNU Privacy Guard. GPG-based tools require users to create a GPG keypair. The public key is used
+  to encrypt and is shared with other users, while the private key is used to decrypt and is known by only
+  one user.
+- Symmetric key. Tools are password-based and work when given the correct password.
+- Cloud key services. Allow integration with services from cloud providers.
+  Amazon KMS (Key Management Service)
+  Google Cloud KMS
+  Azure Key Vault-based tools
+---------------------------------------------------------------------------------------------------------
+                                   git-secret
+---------------------------------------------------------------------------------------------------------
 git-secret is a bash script to store your private data inside a git repo. Basically, it just encrypts,
 using gpg, the tracked files with the public keys of all the users that you trust. So everyone of them can
 decrypt these files using only their personal secret key.
 
+Comparison with git-crypt: https://github.com/sobolevn/git-secret/issues/101
+---------------------------------------------------------------------------------------------------------
+                                   Git-crypt
+---------------------------------------------------------------------------------------------------------
+- Initialize the repository with the encryption tool
+- Designate files that should be treated as "secret"
+- git push to transparently encrypt the files
+- Share the symmetric key with other users who need access
+- Rotate the key each time a user is revoked access
+
+https://opensource.com/article/19/2/secrets-management-tools-git
 =========================================================================================================
                                     Markdown
 =========================================================================================================
@@ -922,3 +1016,10 @@ pandoc -s filename.md | lynx -stdin
 git update-ref -m 'mark: whatever' HEAD HEAD
 git update-ref -m 'mark: another thing' refs/heads/branch branch
 git update-ref -m 'mark: third thing' refs/heads/branch refs/heads/branch
+
+=========================================================================================================
+                                      TODO
+=========================================================================================================
+rerere https://medium.com/@porteneuve/fix-conflicts-only-once-with-git-rerere-7d116b2cec67
+https://stackoverflow.com/questions/17413493/create-a-submodule-repository-from-a-folder-and-keep-its-git-commit-history
+=========================================================================================================

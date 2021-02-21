@@ -65,9 +65,9 @@ update-alternatives --config <terminal_name>    # change default terminal-emulat
                                      Urxvt
 ---------------------------------------------------------------------------------------------------------
 /usr/lib/urxvt/perl/        | plugin files
-urxvt --help                # list all variables
-xrdb -query                 # list defined X variables
-xrdb -merge ~/.Xresources   # merge X resources
+urxvt --help                | list all variables
+xrdb -query                 | list defined X variables
+xrdb -merge ~/.Xresources   | merge X resources
 
 #parse man for default values
   man -Pcat urxvt | sed -n '/th: b/,/^B/p'|sed '$d'|sed '/^ \{7\}[a-z]/s/^ */^/g' |     \
@@ -87,6 +87,18 @@ https://funloop.org/post/2015-06-25-urxvt-plugins.html
 https://github.com/muennich/urxvt-perls#keyboard-select
 https://wiki.gentoo.org/wiki/Rxvt-unicode
 
+---------------------------------------------------------------------------------------------------------
+                               ANSI Escape codes
+---------------------------------------------------------------------------------------------------------
+ISO/IEC 6429 - SiS
+man console_codes
+man console_ioctl
+https://bluesock.org/~willkg/dev/ansi.html
+http://ascii-table.com/ansi-escape-sequences.php
+https://man7.org/linux/man-pages/man4/console_codes.4.html
+https://en.wikipedia.org/wiki/ANSI_escape_code
+https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
 ---------------------------------------------------------------------------------------------------------
                                      Gnome
 ---------------------------------------------------------------------------------------------------------
@@ -142,8 +154,8 @@ xev                  # see what keysym your key is configered to
 =========================================================================================================
                                       X11
 =========================================================================================================
-Get current window/screen stats:
-  xwininfo -id $(xdotool getactivewindow) | grep Width | awk '{$1="";print}'
+xwininfo -id $(xdotool getactivewindow)         # get current window geometry stats
+xprop -id $(xdotool getactivewindow)            #      -||-           X11     info
 
 gsettings set org.gnome.desktop.background show-desktop-icons false    # don`t start desktop when calling nautilus
 =========================================================================================================

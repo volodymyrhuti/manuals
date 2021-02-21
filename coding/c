@@ -161,3 +161,14 @@ http://c-faq.com/struct/padding.html 2.12
 http://c-faq.com/strangeprob/ptralign.html 16.7
 http://c-faq.com/struct/structhack.html
 =========================================================================================================
+                                   Alignment
+=========================================================================================================
+Align M down to the closest multiple of power of N
+  size_t size = ALIGN_UP(MAX(ARENA_BLOCK_SIZE, min_size), ARENA_ALIGNMENT);
+  #define ALIGN_DOWN(n, a) ((n) & ~((a) - 1))
+  #define ALIGN_UP(n, a) ALIGN_DOWN((n) + (a) - 1, (a))
+
+In case N is multiple of 2 => ~(N-1) will give all uper bits including bit currently set to 1 `M+N-1` will
+go over current request and in case result is power of 2 will decrese it by 1 so pool is not too big.
+
+===============================================================================================================

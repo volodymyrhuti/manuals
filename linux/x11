@@ -315,11 +315,20 @@ xserverrc => server to run, the default is X
 https://www.sitepoint.com/understanding-nix-login-scripts/
 https://unix.stackexchange.com/questions/281858/difference-between-xinitrc-xsession-and-xsessionrc
 =========================================================================================================
-To find window id by process pid use
-xdotool search --pid <pid>
+                                   Scripting
+=========================================================================================================
+xdotool search --pid <pid>      # find window id by process pid use
+xwininfo -root -tree            # dump window tree structure use
 
-To dump window tree structure use
-xwininfo -root -tree
+=========================================================================================================
+                                Troubleshooting
+=========================================================================================================
+/usr/share/xsessions                        # .desktop files
+/etc/X11/Xsession.d/                        # most of autostart X11 scripts
+sudo apt-get install --reinstall lightdm    # reinstalling display manager if it gets corrupted
+/usr/lib/lightdm/lightdm-set-defaults -u ubuntu        # Set user-session
+/usr/lib/lightdm/lightdm-set-defaults -g unity-greeter # Set greeter-session
+/usr/lib/lightdm/lightdm-set-defaults -l false         # Disable guest login
 =========================================================================================================
 To study
 nvidia troubleshooting

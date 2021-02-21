@@ -363,6 +363,25 @@ ELF Header
 .strtab     => string table for symbol table and .debug ?
 
 http://www.cirosantilli.com/elf-hello-world/
+---------------------------------------------------------------------------------------------------------
+                                     DWARF
+---------------------------------------------------------------------------------------------------------
+DWARF. Debug information format most commonly used with ELF. This format allows a compiler to tell the
+debugger how the original source code relates to the binary which is to be executed.
+This information is split across different ELF sections. Some of the defined sections:
+.debug_abbrev   # abbreviations used in the .debug_info section
+.debug_aranges  # mapping between memory address and compilation
+.debug_frame    # call (stack?) frame information
+.debug_info     # the core DWARF data containing DWARF Information Entries (DIEs)
+.debug_line     # line number program
+.debug_loc      # location descriptors
+.debug_macinfo  # macro descriptions
+.debug_pubnames # lookup table for global objects and functions
+.debug_pubtypes # lookup table for global types
+.debug_ranges   # address ranges referenced by DIEs
+.debug_str      # string table used by .debug_info
+.debug_types    # type descriptions
+
 =========================================================================================================
                                      Loader
 =========================================================================================================
