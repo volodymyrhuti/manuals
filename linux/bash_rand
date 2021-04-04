@@ -1,0 +1,93 @@
+=========================================================================================================
+                                     Prompt
+=========================================================================================================
+There are special hooks that are executed before/after user command:
+trap <cmd> DEBUG        # to execute your logic before user`s
+PROMPT_COMMAND          #           ||          after  user`s
+
+PS0 |
+PS1 | primary prompt
+PS2 | secondaty promt , dispalyed for multiline commands
+PS3 | prompt for bash select
+PS4 | used to display debug log level?
+
+=========================================================================================================
+                                      Case
+=========================================================================================================
+Bash case doesn`t understand number ranges, only shell patterns
+case $number in
+  1[2-3]) echo 12 or 13;;
+  4|5)    echo 4 or 5;;
+  *)
+esac
+
+If you really want to avoid if .. elif .. elif .. fi style code, and prefer case
+case 1 in
+  $((val < 100))) echo Less then 100;;
+  $((val < 200))) echo Less then 200;;
+  $((val < 300))) echo Less then 300;;
+                *) echo Default case;;
+esac
+=========================================================================================================
+                                 Job managment
+=========================================================================================================
+coproc <name> cmd <redirections>    | starts a cmd as a background job, setting up pipes connected
+                                    | to both its stdin and stdout so you can interact with it bidirectionally
+jobs -l                             | list background process + its pid
+
+=========================================================================================================
+                                 Notifications
+=========================================================================================================
+You can notify user with different user space applications and demons. Two the most common text based are
+`dunst` with it`s `notify-send <msg>` and `osd_cat <msg>`. If you wan`t to syntesis a speach, use a
+`spd-say <text>`
+
+https://askubuntu.com/questions/277215/how-to-make-a-sound-once-a-process-is-complete
+=========================================================================================================
+                                   Codestyle
+=========================================================================================================
+References for some codestyle guides
+https://github.com/icy/bash-coding-style/blob/master/LESSONS.md
+https://github.com/bahamas10/bash-style-guide
+https://github.com/icy/bash-coding-style
+---------------------------------------------------------------------------------------------------------
+                                    Packages
+---------------------------------------------------------------------------------------------------------
+There is no packages in bash but there is a naming conventions that purposes to use :: with function
+names, to make scripts more readable. There is no special syntax sugar, it is just allowed by lanuage
+to user : withing names, there is even a fork bomb created by `:` command.
+This convention is described in Google code style as follows
+Lower-case, with underscores to separate words. Separate libraries with ::. Parentheses are required after
+the function name. The keyword function is optional, but must be used consistently throughout a project.
+
+https://stackoverflow.com/questions/44558080/what-are-double-colons-in-a-shell-script
+https://unix.stackexchange.com/questions/404076/what-are-bash-packages
+=========================================================================================================
+                                    History
+=========================================================================================================
+!! is the whole command line
+!* is all the arguments of the command
+!:1 is the first argument of the command
+!:2 is the second argument of the command
+!$ is the last argument of the command
+
+=========================================================================================================
+                                     Random
+=========================================================================================================
+Creating a dummy process
+perl -MPOSIX -e '$0="<name>"; pause' &
+
+bind -x '"\C-e":hook'
+hook(){ echo "hook: $READLINE_LINE";  }
+bind 'RETURN: "\C-o\n"'
+http://www.lbreyer.com/bash-smart-parsing-howto.html
+
+History utility `fc`
+https://shapeshed.com/unix-fc/
+typeset     # list user functions with definitions
+typeset -F  # list name only
+
+Subcommands like in git
+https://stackoverflow.com/questions/37257551/defining-subcommands-that-take-arguments-in-bash
+Timeout workaround for shells without timeout
+http://mywiki.wooledge.org/BashFAQ/068
