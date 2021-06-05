@@ -208,6 +208,10 @@ assocarr+=([key]=val)           # add element to array
 
 unset assocarr[key]
 
+echo ${Array1[@]} ${Array2[@]} | tr ' ' '\n' | sort | uniq -u    # Looking for difference in arrays
+
+https://www.shell-tips.com/bash/arrays/
+https://stackoverflow.com/questions/2312762/compare-difference-of-two-arrays-in-bash
 =========================================================================================================
                               Variable Operations
 =========================================================================================================
@@ -570,6 +574,9 @@ ps -ef | tee >(awk '$1=="tom"' >toms-procs.txt) \
                >(awk 'NR>1{print $1}' >pids-only.txt)
 
 read -r random_line < <(shuf file)
+
+Examples of much more robust and complex redirection can be seen here:
+https://stackoverflow.com/questions/762348/how-can-i-exclude-all-permission-denied-messages-from-find
 ---------------------------------------------------------------------------------------------------------
                         Redirecting already running process
 ---------------------------------------------------------------------------------------------------------
@@ -909,16 +916,16 @@ done
 
 This builtin utility initializes couple of variables
 VARNAME | shell variable used for option reporting
-OPTARG  | argument after option
-OPTIND  | index of next argument to be processed, can be used for shifting but then u are required to
-        | reset it to 1
+OPTARG  | current argument
+OPTIND  | index of next argument to be processed
+        | can be used for shifting but then u are required to reset it to 1
 OPTERR  | whether bash should display errors or should it leave problem for you
 
-Filter is a string of continuous or separated by ':' character. If filter is started with ':', then
-verbose error reporting is disabled and next cases
-invalid option => VARNAME = ? and OPTARG = option character
-missing argument => VARNAME = : and OPTARG = option
-If option requires an argument, put : after its name
+Filter is a string of continuous or separated by ':' character.
+':<filter>'     | verbose error reporting is disabled +
+                | invalid option               | VARNAME = ? and OPTARG = option
+                | character | missing argument | VARNAME = : and OPTARG = option
+'a:b:'          | use `:` after argument to denote that argument is required
 
 ---------------------------------------------------------------------------------------------------------
                                 Double-dash '--'
@@ -1006,6 +1013,14 @@ this is done using `nohup` or `disown`. The difference between them:
     nohup <cmd> & # process is present in `jobs`
     disown        # process is abscent in `jobs`
 
+
+They have similar purposes, but they differ in many ways. nohup intercepts SIGHUP so that when the shell that ran it quits and sends SIGHUP to all its still-running children, long-running-process doesn't die. disown simply removes the specified job from Bash's child list, so it won't try to send SIGHUP at all. nohup is a program separate from the shell, so it works with all shells, whereas disown is a Bash builtin. nohup accepts the command to run, whereas disown only works after the job is started and you've backgrounded it so you can get back to the shell.
+https://unix.stackexchange.com/questions/479/keep-processes-running-after-ssh-session-disconnects
+
+NOTE, in order to mute jobs related prints, you may want to l
+wait $! 2>/dev/null
+
+https://stackoverflow.com/questions/81520/how-to-suppress-terminated-message-after-killing-in-bash
 https://unix.stackexchange.com/questions/3886/difference-between-nohup-disown-and
 =========================================================================================================
                                       sudo
@@ -1197,6 +1212,10 @@ https://superuser.com/questions/708462/alias-scoping-in-bash-functions
 =========================================================================================================
                                     To study
 =========================================================================================================
+https://wiki.bash-hackers.org/
+https://riptutorial.com/
+https://riptutorial.com/bash/awesome-learning/tutorial
+
 BASH_REMATCH usage
 https://stackoverflow.com/questions/34111281/bash-rematch-and-regex-with-nested-parens
 https://helloacm.com/simple-example-use-bash-shell-to-match-ip-address/

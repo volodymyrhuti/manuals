@@ -1,0 +1,98 @@
+=========================================================================================================
+                                    Systemd
+---------------------------------------------------------------------------------------------------------
+In `systemd`, a `unit` refers to any resource that the system knows how to operate on and manage; this is
+the primary object that the systemd tools know how to deal with; basically a standardized representation
+of system resources that can be managed by the suite of daemons and manipulated by the provided utilities.
+These resources are defined using configuration files called unit files.
+
+Some features that units are able implement easily are:
+- Socket-based activation. Sockets associated with a service are best broken out of the daemon itself in
+  order to be handled separately. This provides a number of advantages, such as delaying the start of a
+  service until the associated socket is first accessed. This also allows the system to create all
+  sockets early in the boot process, making it possible to boot the associated services in parallel.
+- Bus-based activation: Units can also be activated on the bus interface provided by D-Bus. A unit can be
+  started when an associated bus is published.
+- Path-based activation: A unit can be started based on activity on or the availability of certain
+  filesystem paths. This utilizes inotify.
+- Device-based activation: Units can also be started at the first availability of associated hardware by
+  leveraging udev events.
+- Implicit dependency mapping: Most of the dependency tree for units can be built by systemd itself. You
+  can still add dependency and ordering information, but most of the heavy lifting is taken care of for
+  you.
+- Instances and templates: Template unit files can be used to create multiple instances of the same
+  general unit. This allows for slight variations or sibling units that all provide the same general
+  function.
+- Easy security hardening: Units can implement some fairly good security features by adding simple
+  directives. For example, you can specify no or read-only access to part of the filesystem, limit kernel
+  capabilities, and assign private /tmp and network access.
+- Drop-ins and snippets: Units can easily be extended by providing snippets that will override parts of
+  the system’s unit file. This makes it easy to switch between vanilla and customized unit
+  implementations.
+
+
+---------------------------------------------------------------------------------------------------------
+                                Special targets
+---------------------------------------------------------------------------------------------------------
+
+Run Lvl | Target Units                        | Description
+---------------------------------------------------------------------------------------------------------
+0       | runlevel0.target, poweroff.target   | Shut down and power off
+1       | runlevel1.target, rescue.target     | Set up a rescue shell
+2,3,4   | runlevel[234].target,               | Set up a non-gfx multi-user shell multi-user.target
+5       | runlevel5.target, graphical.target  | Set up a gfx multi-user shell
+6       | runlevel6.target, reboot.target     | Shut down and reboot the system
+
+---------------------------------------------------------------------------------------------------------
+                                    Location
+---------------------------------------------------------------------------------------------------------
+The files that define how systemd will handle a unit can be found in many different locations, each of
+which have different priorities and implications.
+
+    /lib/systemd/system  | The system’s copy of unit files
+When software installs unit files on the system, this is the location where they are placed by default.
+This will be the generic, vanilla unit file, often written by the upstream project’s maintainers that
+should work on any system that deploys systemd in its standard implementation. You should not edit files
+in this directory. Instead you should override the file, if necessary, using another unit file location
+which will supersede the file in this location.
+
+    /etc/systemd/system  | Place to modify the unit
+Unit files found in this directory location take precedence over any of the other locations on the
+filesystem. If you need to modify the system’s copy of a unit file, putting a replacement in this
+directory is the safest and most flexible way to do this.
+    
+If you wish to override only specific directives from the system’s unit file, you can actually provide
+unit file snippets within a subdirectory. These will append or modify the directives of the system’s
+copy, allowing you to specify only the options you want to change.
+
+The correct way to do this is to create a directory named after the unit file with .d appended on the
+end. So for a unit called example.service, a subdirectory called example.service.d could be created.
+Within this directory a file ending with .conf can be used to override or extend the attributes of the
+system’s unit file.
+
+    /run/systemd/system  | run-time unit definitions
+Unit files found in this directory have a priority landing between those in `/etc/systemd/system` and
+`/lib/systemd/system`. Files in this location are given less weight than the former location, but more
+weight than the latter.
+Can be used for dynamically created unit files created at runtime. This directory can be used to change
+the system’s unit behavior for the duration of the session. All changes made in this directory will be
+lost when the server is rebooted.
+
+
+systemd-fstab-generator is a generator that translates /etc/fstab (see fstab(5) for details) into native
+systemd units early at boot and when configuration of the system manager is reloaded.
+This will instantiate mount and swap units as necessary.
+
+The passno field is treated like a simple boolean, and the ordering information is discarded. However,
+if the root file system is checked, it is checked before all the other file systems.
+
+       systemd.generator - systemd unit generators
+
+https://www.freedesktop.org/software/systemd/man/systemd-fstab-generator.html
+http://manpages.ubuntu.com/manpages/bionic/en/man7/systemd.generator.7.html
+https://www.commandlinux.com/man-page/man8/systemd-fstab-generator.8.html
+Read more at: https://www.commandlinux.com/man-page/man8/systemd-fstab-generator.8.html
+=========================================================================================================
+TODO:
+---------------------------------------------------------------------------------------------------------
+https://help.ubuntu.com/community/AutomaticallyMountPartitions

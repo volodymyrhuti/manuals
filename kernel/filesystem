@@ -1,0 +1,52 @@
+                                   Filesystem
+=========================================================================================================
+Unix systems separate the concept of a file from any associated information about it, such as access
+permissions, size, owner, creation time, and so on. This information is sometimes called file metadata
+(that is, data about the file’s data) and is stored in a separate data structure from the file, called the
+inode. This name is short for index node, although these days the term inode is much more ubiquitous.
+
+Superblock. Filesystem Metadata. A data structure containing information about the filesystem as a whole
+and individual files.
+
+The four primary object types of the VFS are:
+- The superblock object, which represents a specific mounted filesystem.
+- The inode object, which represents a specific file.
+- The dentry object, which represents a directory entry, which is a single component of a path.
+- The file object, which represents an open file as associated with a process.
+---------------------------------------------------------------------------------------------------------
+                                     inode
+---------------------------------------------------------------------------------------------------------
+Inode. An object that represents all the information needed by the kernel to manipulate a file or directory.
+This information may be stored separate from a file or internally with its contents. Some modern filesystems
+do neither and store structed in memory in whatever manner is applicable to the filesystem. Whatever the
+case, the inode object is constructed in memory in whatever manner is applicable to the filesystem.
+The object is represented by struct inode and is defined in <linux/fs.h>
+
+An inode represents each file on a filesystem, but the inode object is constructed in memory only as files
+are accessed. This includes special files, such as device files or pipes.
+
+
+---------------------------------------------------------------------------------------------------------
+                                     dentry
+---------------------------------------------------------------------------------------------------------
+In paths like `/bin/vi` both objects are considered files, but bin is a special directory file.
+An inode object represents each of these components. Despite this useful unification, the VFS often needs
+to perform directory-specific operations, such as path name lookup. Path name lookup involves translating
+each component of a path, ensuring it is valid, and following it to the next component.
+
+To facilitate this, the VFS employs the concept of a directory entry (dentry).
+Dentry. A specific component in a path. Using the previous example, / , bin , and vi are all dentry objects.
+The first two are directories and the last is a regular file.This is an important point:
+   Dentry objects are all components in a path, including files.
+
+Resolving a path and walking its components is a nontrivial exercise, time-consuming and heavy on string
+operations, which are expensive to execute and cumbersome to code.The dentry object makes the whole process
+easier.
+
+Unlike inode, the dentry object does not correspond to any sort on-disk data structure. The VFS creates it
+on-the-fly from a string representation of a path name. Because the dentry object is not physically stored
+on the disk, no flag in struct dentry specifies whether the object is modified (that is, whether it is
+dirty and needs to be written back to disk).
+
+
+=========================================================================================================

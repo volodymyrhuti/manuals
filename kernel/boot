@@ -1,0 +1,39 @@
+                                      Grub
+=========================================================================================================
+Understanding the Linux boot and startup processes is important to being able to both configure Linux and
+to resolving startup issues.
+
+There are two sequences of events that are required to boot a Linux computer and make it usable:
+1. Boot sequence. Starts when the computer is turned on, and is completed when the kernel is initialized
+   and systemd is launched.
+2. Startup. Takes over and finishes the task of getting the Linux computer into an operational state.
+
+Overall, the Linux boot and startup process is fairly simple to understand. It is comprised of the
+following steps:
+- BIOS POST. This is the hardware portion of the boot process and is the same for any operating system.
+  When power is first applied to the computer it runs the POST (Power On Self Test) which is part of the
+  BIOS. POST task is to ensure that the computer hardware functioned correctly.
+  If POST fails, the computer may not be usable and so the boot process does not continue.
+
+  BIOS POST checks the basic operability of the hardware and then it issues a BIOS interrupt, INT 13H,
+  which locates the boot sectors on any attached bootable devices. The first boot sector it finds that
+  contains a valid boot record is loaded into RAM and control is then transferred to the code that was
+  loaded from the boot sector.
+- Boot loader. There are three boot loaders used by most Linux distributions, GRUB, GRUB2, and LILO. 
+
+- Kernel initialization
+- Start systemd, the parent of all processes.
+
+GRUB2 and systemd are the current boot loader and initialization software for most major distributions.
+Other software options have been used historically and are still found in some distributions.
+
+https://opensource.com/article/17/2/linux-boot-and-startup
+=========================================================================================================
+Device Mapper. Kernel driver that provides a framework for volume management. It provides a generic way
+of creating mapped devices, which may be used as logical volumes. It does not specifically know about
+volume groups or metadata formats. 
+The Device Mapper provides the foundation for a number of higher-level technologies.
+
+
+
+=========================================================================================================

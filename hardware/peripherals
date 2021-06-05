@@ -1,0 +1,368 @@
+=========================================================================================================
+                                  Peripherals
+=========================================================================================================
+There are plenty of peripheral devices needed for comfort work with computer, such as mouse and keyboard.
+To controll them and send/receive command they need to be connected to the CPU. The simplest way is just
+to extend data/address bus through the motherboard, connecting all of the computer`s conntollers to the
+CPU. Therefore, ealy motherboards where coverd in controller chips.
+
+Over time, multiple contollers were packerd into specifically designed chipsets. Early chipsets consisted
+of two paired chops called the northbridge and southbridge.
+
+Today`s CPUs have controllers, such as the memory and display controllers, built in. Other are packed into
+a single chip called Platform Controller Hub by Intel and just chipset by others.
+The chipset extends the data bus to every device on the PC.
+
+Note, the CPU doesn`t know how to automatically talk with any device; it needs some support program loaded
+into memory that teaches it about a particular device. The BIOS (Basic Input/Output services) is a program
+that loads other programs dedicated to teaching CPU to communicate with devices and these are called
+services (or device drivers).
+
+Having BIOS creates a new set of probles. The main one is where to store all those programs for device
+communication. Possible solution is to keep it withing OS, which is fine when OS already installed on the
+device and is up running. But what to do when new system is built and there is not OS installed yet.
+You still need to have access to display and the keyboard so you can do at least something. These can
+be on the harddrive but where do we store the driver for that hardrive or it is not present at all. 
+The perfect place to store them is on the motherboard but type of memory is under a question. Some form of
+RAM is not valid, since it will loose all data on the reset. It should be peprmanent that does not depend
+on other peripherals to work and that needs to sit on the board. 
+
+ROM (Read Only Memory) chip is the solution to the previous problem.
+Motherboards use a type of ROM called flash ROM. Such chip is called the system ROM chop because it
+contains code that enables your CPU to talk to the basic hardware of your PC. All the utilities stored on
+the system ROM chip are called, collectively, the system BIOS or firmware since it is directly stored
+on the hardware ROM.
+
+This approche works fine for devices that are always present and never change like a keyboard but things
+get ore complicated when you want to change something in your device, like add more RAM or change hard.
+In this case, you would hold additional drivers on a harddrive which would be loaded on a boot.
+Modern systems use firmware grogramming called the UEFI (Unified Extensible Firmware Interface) instead
+of BIOS.
+
+All of the BIOS setting are saved to a tiny bit of RAM hooked up to a small battery to keep it
+working with the PC off, called CMOS. In addition to BIOS settings it holds an RTC value.
+The information stored in CMOS is necessary for the PC to function. If the data stored in CMOS about a
+piece of hardware is different from the specs of the actual hardware, the computer cannot access that
+piece of hardware.
+Note, MacOS machines are usually designed form the ground up as unified systems so there is not much
+flexebility in changing however you have less headache with CMOS configuration.
+
+To modify CMOS, every PC ships with a system setup utility built into the system ROM. These look different
+from vendor to vendor but all contain basically the same settings. The latest ones even support mouse
+usage.
+
+=========================================================================================================
+                                      PCI
+=========================================================================================================
+PCI. Peripheral Component Interconnect. A standard that describes how to connect the peripheral components
+of a system together in a structured and controlled way. The standard describes the way that the system
+are electrically connected and the way that they should behave
+
+PCI bus was defined to establish a high performance and low cost local bus that would remain through
+several generations of products. By combining a transparent upgrade path from 132 MB/s (32-bit at 33 MHz)
+to 528 MB/s (64-bit at 66 MHz) and both 5 volt and 3.3 volt signalling environments, the PCI bus meets the
+needs of both low end desktop systems and high-end LAN servers.
+
+The PCI bus component and add-in card interface is processor independent, enabling an efficient transition
+to future processors, as well as use with multiple processor architectures.
+The disadvantage of the PCI bus is the limited number of electrical loads it can drive. A single PCI bus
+can drive a maximum of 10 loads. 
+
+The CPU and the PCI devices need to access memory that is shared between them. This memory is used by
+device drivers to control the PCI devices and to pass information between them. Typically the shared memory
+contains control and status registers for the device. These registers are used to control the device and
+to read its status.
+
+Peripheral devices have their own memory spaces. The CPU can access these spaces but access by the devices
+into the system's memory is very strictly controlled using DMA (Direct Memory Access) channels. PCI has
+access to three address spaces; PCI I/O, PCI Memory and PCI Configuration space. All of these address
+spaces are also accessible by the CPU with the the PCI I/O and PCI Memory address spaces being used by the
+device drivers and the PCI Configuration space being used by the PCI initialization code within the Linux 
+kernel. 
+
+- PCI. Peripheral Component Interconnect. Common connection interface for attaching computer peripherals
+  to a PC`s motherboard. This interface was popular between 1995 and 2005 and now is changed for PCIe.
+  Some PCI can be present on motherboard for backward compatibility, but the devices that used to be
+  attached as PCI expansion cards are now either integrated onto motherboards or attached by other
+  connectors like PCIe.
+  One of the reasons behind it`s popularity was that Intel released PCI to the public domain.
+  Another is the capability to coexist with other expansion buses so you could buy a motherboard with
+  both old slots and a new PCI, therefore slowly migrating to the PCI
+- Mini PCI. Laptops variant of PCI, designed to use low power and to lie flat.
+- PCI Express, PCIe. The same PCI but it uses a point-to-point serial connection instead of PCI`s shared
+  parallel communication. It is more easy to use in high speed cases as well it is not shared by all devices
+  instead each one has a separate connection to the CPU.
+
+---------------------------------------------------------------------------------------------------------
+                                     Ports
+---------------------------------------------------------------------------------------------------------
+A PCI Express Port is a logical PCI-PCI Bridge structure. There are two types of PCI Express Port:
+1. Root Port. The Root Port originates a PCI Express link from a PCI Express Root Complex
+2. Switch Port. Connects PCI Express links to internal logical PCI buses.
+   Upstream Port. Port which has its secondary bus representing the switch's internal routing logic
+   Downstream Port. Port is bridging from switch's internal routing bus to a bus representing the
+   downstream PCI Express link from the PCI Express Switch.
+
+Root Port. Port on the root complex -- the portion of the motherboard that contains the host bridge.
+A PCI Express Port can provide up to four distinct functions, referred to in this document as services,
+depending on its port type.  PCI Express Port's services include native hotplug support (HP), power
+management event support (PME), advanced error reporting support (AER), and virtual channel support (VC).
+These services may be handled by a single complex driver or be individually distributed and handled by
+corresponding service drivers.
+
+---------------------------------------------------------------------------------------------------------
+Transfer rate. The number of operations happening per second.
+PCI uses one wire for sending and one for receiving, such pair is called a lane.
+Each ptp connection can use 1,2,4,8,12,16 lanes to achive a max theoretical bandwidth of up to 256 GTps.
+PCIe has following speed per lane
+    1.x | 2.5 GTps
+    2.x | 5   GTps
+    3.x | 8   GTps
+    4.0 | 16  GTps
+
+The most common PCIe slot is the 16-lane (x16) version most often used for video cards.
+https://tldp.org/LDP/tlk/
+---------------------------------------------------------------------------------------------------------
+                                Configuration
+---------------------------------------------------------------------------------------------------------
+The PCI specification provides for totally software driven initialization and configuration of each device
+(or target) on the PCI Bus via a separate Configuration Address Space.
+All PCI devices, except host bus bridges, are required to provide 256 bytes of configuration registers for
+this purpose.
+
+Configuration read/write cycles are used to access the Configuration Space of each target device.
+A target is selected during a configuration access when its IDSEL signal is asserted.
+The IDSEL acts as the classic "chip select" signal. During the address phase of the configuration cycle,
+the processor can address one of 64 32-bit registers within the configuration space by placing the required
+register number on address lines 2 through 7 (AD[7..2]) and the byte enable lines.
+
+PCI devices are inherently little-endian, meaning all multiple byte fields have the least significant
+values at the lower addresses. This requires a big-endian processor, such as a Power PC, to perform the
+proper byte-swapping of data read from or written to the PCI device, including any accesses to the
+Configuration Address Space. 
+
+---------------------------------------------------------------------------------------------------------
+                          BDF. Bus:Device.Function
+---------------------------------------------------------------------------------------------------------
+BDF stands for the Bus:Device.Function notation used to succinctly describe PCI and PCIe devices.
+        00:02.0   -> Bus 0, Device 2, Function 0:
+
+There is an extended form of the BDF notation, which confusingly is also typically referred to as BDF.
+Fortunately both variants are typically interchangeable.
+PCI Domain number, often padded using leading zeros to four digits and colon 
+    0000:00:02.0   -> Domain 0 , Bus 0, Device 2, Function 0
+
+https://wiki.xenproject.org/wiki/Bus:Device.Function_(BDF)_Notation
+---------------------------------------------------------------------------------------------------------
+                                     Reset
+---------------------------------------------------------------------------------------------------------
+The Question: I have a PCIe device that only works correctly when the computer is fully powered off then
+on again. Issuing a simple reboot or reboot -p command does not appear to cycle the power to the PCIe
+card, which causes it not to work after the reboot.  Is there a way to, from the OS, cycle power to a
+device in a PCIe slot? I can find it in /sys/bus/pci/devices/0000*/, but I can't figure out how to
+properly reset the board. Toggling power seems to be the only way.  Barring that, can I change a setting
+somewhere that will cause a full power cycle on a reboot command?  I'm running Ubuntu 12.10 by the way.
+
+Resets in PCI express are a bit complex. There are two main types of resets:
+- conventional reset
+  - fundamental resets
+  - non-fundamental resets
+- function-level reset 
+
+Cold Reset. Fundamental reset. Takes place after power is applied to a PCIe device.
+There appears to be no standard way of triggering a cold reset, save for turning the system off and back
+on again. On my machines, the /sys/bus/pci/slots directory is empty. 
+
+Warm Reset. Fundamental reset. Is triggered without disconnecting power from the device.
+There appears to be no standard way of triggering a warm reset.
+
+Hot Reset. Conventional reset. Is triggered across a PCI express link. Triggered either when a link is
+forced into electrical idle or by sending TS1 and TS2 ordered sets with the hot reset bit set.
+Software can initiate a hot reset by setting and then clearing the secondary bus reset bit in the bridge
+control register in the PCI configuration space of the bridge port upstream of the device.
+
+FLR. Function-Level Reset. Affects only a single function of a PCI device and must not reset whole device.
+Implementing function-level resets is not required by the PCIe specification.
+A function-level reset is initiated by setting the initiate function-level reset bit in the function's
+device control register in the PCI express capability structure in the PCI configuration space. 
+
+https://unix.stackexchange.com/questions/73908/how-to-reset-cycle-power-to-a-pcie-device
+---------------------------------------------------------------------------------------------------------
+== This solution helped 17 people == **** Potential Method #1 ****
+I think you can do it with these commands:
+    disable
+    echo 0 ＞ /sys/bus/pci/slots/$NUMBER/power
+    enable
+    echo 1 ＞ /sys/bus/pci/slots/$NUMBER/power
+Where $NUMBER is the number of the PCI slot.
+lspci -vv may help to identify the device. This is not very well documented...
+
+**** Potential Method #2 ****
+I came across this https://unix.stackexchange.com/questi...  device-in-linux, similar issue:
+there are some answers to that question that say you can reset with this command:
+    echo "1" ＞ /sys/bus/pci/devices/$NUMBER/reset
+However, I would read the answers there! There are conditions around doing it this way!
+Specifically I would https://unix.stackexchange.com/a/4235...
+
+**** Potential Method #3 ****
+There is a Unix command, setpci, that may give you a method for resetting a device in the PCI bus.
+I did not see any specific examples with this command so you'll have to google for examples and look
+through the http://linux.die.net/man/8/setpci. I would tread lightly with this command until you're
+confident in it's use. From what I've read about it, it's manipulating the hardware directly and so there
+are always risks in doing it yourself vs. using a tool that is exposing this type of functionality!
+
+== This solution helped 10 people ==
+remove and rescan will allow the kernel to cycler-power the PCI device without reboot:
+    echo "1" ＞ /sys/bus/pci/devices/DDDD:BB:DD.F//remove
+    sleep 1
+    echo "1" ＞ /sys/bus/pci/rescan
+    where DDDD.BB.DD.F = https://www.kernel.org/doc/Documentat...
+    sysfs-bus-pci
+
+echo 1 > /sys/bus/pci/devices/rescan            # rescan after plugin
+echo 1 > /sys/bus/pci/devices/xxxx/xx.x/remove  # clear cached pci device data
+
+Reset PCI script
+https://github.com/ggeorgovassilis/linuxscripts/blob/master/reset-pci-device/reset-pci-device.sh
+https://unix.stackexchange.com/questions/73908/how-to-reset-cycle-power-to-a-pcie-device
+https://wiki.osdev.org/PCI
+=========================================================================================================
+                           DMA. Direct Memory Access
+=========================================================================================================
+In the original PC architecture, the CPU is the only bus master of the system, that is, the only hardware
+device that drives the address/data bus in order to fetch and store values in the RAM’s locations.
+
+With more modern bus architectures such as PCI, each peripheral can act as bus master, if provided with the
+proper circuitry. Thus, nowadays all PCs include auxiliary DMA circuits, which can transfer data between
+the RAM and an I/O device.
+Once activated by the CPU, the DMA is able to continue the data transfer on its own; when the data transfer
+is completed, the DMA issues an interrupt request. The conflicts that occur when CPUs and DMA circuits need
+to access the same memory location at the same time are resolved by a hard- ware circuit called a memory
+arbiter.
+
+The DMA is mostly used by disk drivers and other devices that transfer a large num- ber of bytes at once.
+Because setup time for the DMA is relatively high, it is more effi- cient to directly use the CPU for the
+data transfer when the number of bytes is small.
+
+Synchronous DMA. Data transfers are triggered by processes.
+Asynchronous DMA. Data transfers are triggered by hardware devices.
+
+=========================================================================================================
+                                  Power Suply
+=========================================================================================================
+Electricity works essentially the same way as water through pipes. Electric companies gather or generate
+electricity and then push it to your house under pressure through wires.
+
+Voltages. Measure of the electrons pressure in the wire, measured in volts.
+Current/Amperage. The amount of electrons moving past a certain point on a wire, measured in amperes.
+Wattage. The amps and volts needed so that a particular device will function. 
+ V | Presure, voltage
+ A | Volume, ampers
+ W | Work, wattage
+ Q | Resistence, ohms
+ W = V x A
+
+The voltage from the power supply tends to sag (drop well below) and surge/spike the standard. These sags
+and spikes usually don`t affect lamps and refrigeratos but they can keep your PC from running or can even
+destroy a PC or peripheral device. Spikes can be handled at the supply of AC using surge suppressors and
+uninterruptible power supplies.
+
+Surge Supperssors. Any surge can harm your computer, and a strong can destroy components, therefore, every
+PC should use a surge suppressor device that absorbs the extra voltage from a surge to protect the PC.
+The power supply may handle small surges but it takes a lot of damage from this and will eventually fail.
+To protect your power supplu, a dedicated surge suppressor works between the power supply and the outlet
+to protect the system from power surges. Note, they have grades and you need to research before buying.
+
+UPS. Uninterruptible Power Supply.Contains a big battery that provides AC power to your computer regardless
+of the power coming from the AC outlet.
+
+---------------------------------------------------------------------------------------------------------
+                                   Connectors
+---------------------------------------------------------------------------------------------------------
+Mother boards use 20/24 pin P1 power connectors, some may require special 4/6/8 pin connectors to supply
+extra power. 
+
+The typical PC power supply has at least three types of connectors that plug into peripherals:
+- Molex. Supplies 5/12-V current for fans and older drives. Require a firm push to plug in properly, and
+  a strong person can defeat the chamfers (notches) plugging a Molex in uppside down. Always check for
+  proper orientation before you push it in.
+- Mini. A few power supplies still support it.
+- SATA. Serial ATA drives need a 15pin SATA power connector. The large pin count supports the SATA
+  hot-swappable feature and 3.3/5/12 V devices.
+Another connectors include:
+- PCIe 6/8pin connector. Higher-end video cards have one or two sockets that require specific 6/8pin
+  PCIr power connectors.
+
+ATX power supplies.
+Had two distinguishing physical features: the motherboard power connector and soft power.
+Motherboard power came from a single cable with a 20pin P1 motherboard power connector.
+Also had at least two other cables each populated with two or more Molex or mini connectors for peripheral
+power.
+
+Rails. AC is conerted to DC by the power supply into three main voltage rails: 3.3/5/12V and groups of
+wires run from each of these voltage rails to the various connectors. Each rail has a maximum amount of
+power it can supply which is usually quite above needed for simple PC but can be not enough for some high
+end ones. The most popular solution is to include multiple rails in the power supply and an OCP (over
+current protection) which prevents overusage of the single rail.
+
+
+Splitters. If you don`t have enough connectors to power all of the devices inside your PC, you can use
+spllitiers to create more connections.
+
+Adapters. You may need a SATA connectors but having only a spare Molex. Because the voltages on the wires
+are the same, a simple adapter will take of the problem.
+
+---------------------------------------------------------------------------------------------------------
+                                    Cooling
+---------------------------------------------------------------------------------------------------------
+Fans sizes are measured in millimeters (mm) or centimeters (cm). Traditionally, the industry used 80mm
+power supply and cooling fans, but today you`ll find 100/120mm and even larger fans in power supplies and
+cases.
+
+TODO: sleeve-bearing vs ball-bearing fans.
+=========================================================================================================
+                                     Busses
+=========================================================================================================
+The relation of the different busses is roughly as follows:
+                                              / SATA
+CPU => Northbridge => PCI Bus => Southbridge => IDE
+                                              \ USB
+
+Northbridge and Southbridge are two main controller chips inside a PC.  They are bridges because USB/IDE/...
+packets are forwarded through them to CPU. Packet like USB are encapsulated into PCI packets and sent do CPU.
+
+IDE and SATA perform the same job but through differebt physical media, they are fore attaching hard drives etc.
+
+IDE ("Integrated Device Electronics") => also known as "ATA" or "ATAPI"(ATA Peripheral Intreface)
+Parallel bus used primarily inside computers to communicate with disk drives.
+
+SATA (Serial ATA) => the same ATA protocol but serial instead of parallel It is high speed serial replacement
+for IDE, uses a lot fewer wires
+
+USB is a serial communications bus which can communicate with any number of devices, not just hard drives
+and other storage devices. It speaks a completely different protocol to the ATA family.
+
+PCI (and the derivatives PCIe, etc) are much closer to the CPU and generally provides much more direct
+access to the CPU.
+
+---------------------------------------------------------------------------------------------------------
+                           Simulating usb plug/unplug
+---------------------------------------------------------------------------------------------------------
+Get id of usb device with dmesg, or from `udev/mdev` logs
+echo #id > /sys/bus/usb/drivers/usb/unbind
+echo #id > /sys/bus/usb/drivers/usb/bind
+
+https://raspberrypi.stackexchange.com/questions/6782/commands-to-simulate-removing-and-re-inserting-a-usb-peripheral
+https://lwn.net/Articles/143397/
+---------------------------------------------------------------------------------------------------------
+This will power-off the device and detach it from the system.
+NOTE: It won`t be detected again till it is disconnected and re-attached
+    echo 'offline' > /sys/block/sdb/device/state
+    echo '1' > /sys/block/sdb/device/delete
+
+https://unix.stackexchange.com/questions/35508/eject-usb-drives-eject-command
+---------------------------------------------------------------------------------------------------------
+
+https://stackoverflow.com/questions/1723481/relation-between-usb-and-pci
+https://electronics.stackexchange.com/questions/24077/difference-between-busses
+=========================================================================================================

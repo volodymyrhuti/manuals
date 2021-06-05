@@ -1,0 +1,662 @@
+=========================================================================================================
+                                  Kernel types
+=========================================================================================================
+Kernels design can be devided for monolithic kernel and the microkernel (and exokernel in reasearch systems).
+
+Monolithic kernels are implemented as a single process running in a single address space. Such kernel
+typically exist on disk as single static binarie. All kernel services exist and execute in the large kernel
+address space.  Communication within the kernel is trivial because everything runs in kernel mode in the
+same address space: The kernel can invoke functions directly, as a user-space application might.
+Such model is simple and has good performance.
+
+Microkernels are broken down into separate processes, usually called servers, running in different address
+spaces. Server can be runned not in privilleged mode unless it requires it. Direct function call, as in
+monolithic ones, is not possible and replaced with message based IPC. The separation of the various
+servers prevents a failure of one server from bringing down another and allows swapping out one with another.
+Message based IPC and context switches (when server is implemented in user space) decreases the performance.
+To avoid context switching, all servers are usually implemented in the kernel space.
+
+Linux is a monolithic kernel that implements some features of microkernel. For instance, swapping of servers
+is implemented using swapping kernel modules, there is a kernel preemptiom, kernel threads.
+
+=========================================================================================================
+                       Preemtion (multi-tasking paradigm)
+=========================================================================================================
+Kernels can be classified by the way context switch is working. There are 3 types:
+1. Preemptive. On a preemptive kernel, a process running in kernel mode can be replaced by another process
+   while in the middle of a kernel function. If a user mode process wants to request a service from the
+   kernel, he has to issue an exception which the kernel can handle.
+2. Non-preemptive. Process will use all the processor time until he is finished or voluntarily decides to
+   allow other processes to interrupt him (a planned process switch).
+3. Selective Preemptive.
+
+Preemption. The ability of the operating system to preempt or stop a currently scheduled task in favour
+of a higher priority task. The scheduling may be one of, but not limited to, process or I/O scheduling etc.
+Under Linux, user-space programs have always been preemptible : the kernel interrupts user-space programs
+to switch to other threads, without waiting for user space process to release the processor.
+
+Traditional unix kernels had a single lock, which was held by a thread while kernel code was running.
+Therefore no other kernel code could interrupt that thread.
+Until 2.6 kernels, the kernel itself was not preemtible : as soon as one thread has entered the kernel,
+it could not be preempted to execute an other thread. Kernel preemption has been introduced in 2.6 kernels,
+and one can enable or disable it using the CONFIG_PREEMPT option. If CONFIG_PREEMPT is enabled, then kernel
+code can be preempted everywhere, except when the code has disabled local interrupts.
+Resources were divided up into much smaller units, protected by individual locks, and the kernel code was
+reviewed to make sure that locks were only held while the corresponding resources were in use
+
+If the system allows that task to be preempted while it is running kernel code, then we have what is called
+a "preemptive kernel." Such a system is immune to unpredictable delays that can be encountered during
+syscalls, so it might be better suited for embedded or real-time tasks.
+The argument against preemption is that all kernel code that might be called in task context must be able
+to survive preemption -- there's a lot of poor device driver code, for example, that might be better off
+if it's always able to complete an operation before allowing some other task to run on that processor. 
+An interrupt can only be interrupted by interrupts of higher priority. All interrupts of the same priority
+are queued for handling (bottom halves?).
+
+One way to provide reentrancy is to write functions so that they modify only local variables and do not
+alter global data structures. Such functions are called reentrant functions. Another way is to protect
+critical sections/resources with some synchronization algorithm.
+
+Note, there a notion of reentrance which describes whether function handles the situation when it gets
+bloked during which it gets called again.
+
+https://stackoverflow.com/questions/5283501/what-does-it-mean-to-say-linux-kernel-is-preemptive
+https://unix.stackexchange.com/questions/5180/what-is-the-difference-between-non-preemptive-preemptive-and-selective-preempti
+=========================================================================================================
+                           Interrupts and Exceptions
+=========================================================================================================
+Interrupt. Signal provide a way to diver processor to code outside the normal flow of control; event that
+alters the sequence of instructions executed by a processor. Such events correspond to electrical signals
+generated by hardware circuits both inside and outside the CPU chip.
+
+Interrupts are often divided into synchronous and asynchronous interrupts:
+1. Synchronous interrupts are produced by the CPU control unit while executing instructions and are called
+   synchronous because the control unit issues them only after terminating the execution of an instruction.
+   It is commonly referred as Exception. It is delivering one of the signals to the process 
+2. Asynchronous interrupts are generated by other hardware devices at arbitrary times with respect to the
+   CPU clock signals. Commonly refered just as Interrupt. Kernel will recover from anomalous condition
+   on its own
+
+When an interrupt signal arrives, the CPU must stop what it’s currently doing and switch to a new activity;
+it does this by saving the current value of the program counter (i.e., the content of the eip and cs registers)
+in the Kernel Mode stack and by placing an address related to the interrupt type into the program counter.
+
+But there is a key difference between interrupt handling and process switching: the code executed by an
+interrupt or by an exception handler is not a process. Rather, it is a kernel control path that runs at
+the expense of the same process that was running when the interrupt occurred. As a kernel control path,
+the interrupt handler is lighter than a process (it has less context and requires less time to set up or
+tear down).
+
+Interrupt handling is one of the most sensitive tasks performed by the kernel, because it must satisfy the
+following constraints:
+1. Interrupts can come anytime, when the kernel may want to finish something else it was trying to do.
+   The kernel’s goal is therefore to get the interrupt out of the way as soon as possible and defer as
+   much processing as it can.  The activities that the kernel needs to perform in response to an interrupt
+   are thus divided into a critical urgent part that the kernel executes right away and a deferrable part
+   that is left for later.
+2. Because interrupts can come anytime, the kernel might be handling one of them while another one (of a
+   different type) occurs. This should be allowed as much as possible, because it keeps the I/O devices
+   busy. As a result, the interrupt handlers must be coded so that the corresponding kernel control paths
+   can be executed in a nested manner.
+   When the last kernel control path terminates, the kernel must be able to resume execution of the
+   interrupted process or switch to another process if the interrupt signal has caused a rescheduling activity.
+3. Although the kernel may accept a new interrupt signal while handling a previous one, some critical
+   regions exist inside the kernel code where interrupts must be disabled. Such critical regions must be
+   limited as much as possible because, according to the previous requirement, the kernel, and particularly
+   the interrupt handlers, should run most of the time with the interrupts enabled.
+
+Interrupt masking: 
+- Maskable. All IRQs issued by I/O
+  It can be in two states: masked or unmasked, masked is ignored by the control unit as long as it
+  remains masked.
+- Nonmaskable. Critical events always recognized by the CPU, like hardware failure
+
+Interrupt types:
+Software Int | When a software signals CPU that it needs kernel attention - generally system calls
+Hardware Int | When a hardware, for example button pressed on a keyboard
+Exceptions   | Interrupt generated by CPU, when the CPU detects error e.g.: division by 0 or accessing a
+             | memory page which is not in RAM
+
+Exception types:
+# Generated when the CPU detects an anomalous condition while executing an instruction, are divided into
+# three groups depending on value of eip register that is saved on the Kernel Mode stack when the CPU
+# raises the exception
+# Never perform ops that can induce page faults => potentially process switch
+Faults   | Can be corrected (like page fault) and then continue an execution
+Traps    | Repported immediately following the execution of the trapping inctruction
+         | The main use is debugging purposes (notify the debugger that a specific insturction has been
+         | executed). Saved eip points to instruction that should be executed after exception
+Aborts   | Serious error occured. Corresponding abort exception handler has no choise but to force the
+         | affected process to terminate. It may be unable to save eip. Result of hardware faults and
+         | incosistent values in system tables.
+
+Programmed exceptions (Intel mannual). Occur at the request of the programmer, triggered by int/int3
+instruction. The main use is to implement system calls and to notify a debugger of a specific event.
+Often are reffered as software interrupts.
+
+Each interrupt/exception is identified by a number 0..255, 8 bit unsigned number called vector.
+The vectors of nonmaskable interrupts and exceptions are fixed, while those of maskable interrupts can be
+altered by programming the Interrupt Controller.
+There is common practive to use first 32 vector numbers for exceptions, and vector numbers from number
+from 31 to 255 are used for user-defined interrupts. CPU uses vector number as an index in the IDT
+(Interrupt Descriptor Table). It is located using a special register called IDTR (R for register).
+
+TODO:
+https://www.tldp.org/LDP/khg/HyperNews/get/devices/exceptions.html
+https://binarydebt.wordpress.com/2018/11/16/try-catch-in-linux-kernel/
+https://www.linuxjournal.com/article/2135
+http://mammon.github.io/Text/linux_hooker.txt
+---------------------------------------------------------------------------------------------------------
+                              IRQs and Interrupts
+---------------------------------------------------------------------------------------------------------
+IRQ. Interrupt Request. Each hardware device controller capable of issuing interrupt request usually has
+a single output line designated as the Interrupt ReQuest line. All IRQ lines are connected to the input
+pins of a hardware circuit called the Programmable Interrupt Controller (PIC).
+
+PIC performs next actions:
+1. Monitors the IRQ lines, checking for raised signals. If two or more IRQ lines are raised, selects the
+   one having the lower pin number.
+2. If a raised signal occurs on an IRQ line:
+ - Converts the raised signal received into a corresponding vector.
+ - Stores the vector in an Interrupt Controller I/O port, thus allowing the CPU to read it via the data bus.
+ - Sends a raised signal to the processor INTR pin—that is, issues an interrupt.
+ - Waits until the CPU acknowledges the interrupt signal by writing into one of the Programmable Interrupt
+   Controllers (PIC) I/O ports; when this occurs, clears the INTR line.
+3. Goes back to step 1.
+
+The mapping between IRQs and vectors can be modified by issuing suitable I/O instructions to the PIC ports.
+PIC IRQ line can be disabled, in this case interrupts are getting buffered and resend on enabling. This
+feature is used by most interrupt handlers, because it allows them to process IRQs of the same type serially.
+
+APIC (advanced). Created to handle intrerrups when there is more than one CPU
+Each CPU may have its local APIC connected to the ICC (Interrupt Controller Communication) bus with routes
+IRQs from main APIC connected to hardware devices.
+
+Interrupt requests coming from external hardware devices can be distributed throught I/O APIC to available
+CPUs next way:
+- Static distribution. Signal is delivered to local APICs listed in corresponding Redirection Table entry.
+  The interrupt is delivered to one specific CPU, to a subset, or to all at once
+- Dynamic distribution. The IRQ is delivered to the local APIC of the  prorcessor that is executing the
+  process with the lowest priority. If all CPUs run process of same priority, then arbitration is applied
+  and process are assigned in round-robin fashion
+
+IPIs. Interprocessor interrupts. Method of exchaning messages among CPUs.
+IDT. Interrupt Descriptor Table. System table that associates each interrupt or exception vector with
+address of handler. Each entry consists of an 8byte descriptor.  Is initialized by BIOS routines and
+reinitilized by Linux once it takes over, since Linux doesn`t use BIOS routines.
+IDTR. CPU register specifies base linear address of IDT, it is loaded using `lidt` instruction
+
+Types of IDT descriptors, Intel spec: 
+Task gate      | Includes TSS (Task State Segment saved in tr register) selector of the process that must
+               | replace the current one when an interrupt signal occurs.
+Interrupt gate | Includes segment selector and offset inside the segment of an handler.
+               | Clears IF flag so no other interrupts are possible while executing
+Trap gate      | "interrupt gate" without modifing the IF (Interrupt Mask) flag.
+
+The price for allowing nested kernel control paths is that an iterrupt handler must never block, no process
+switch can take place until an interrupt handler is running. An interrupt handler can be preempt both other
+interrupt handlers and exception handlers. Conversely, an exception handler never preempts an interrupt
+handler, however page fault is the exception (? is not triggered within intrrupt handler).
+
+Types of IDT descriptors used by linux:
+Interrupt gate        | Activates all Linux interrupt handlers, all are restricted to
+                      | Kernel Mode (cannot be accessed by a User Mode process)
+System gate           | Allows User Mode process access trap gate by issuing into, bound, int 80
+System interrupt gate | Interrupt gate accessible from User process by int3
+Trap gate             | Actives most of Linux exception handlers (Kernel Mode)
+Task gate             | Activate "Double fault" exception handler (Kernel Mode)
+
+General Handling. After executing an instruction, the cs and eip pair of registers cotain the logical
+address of the next instruction to be executed. Before dealing with that instruction, the control unit
+checks whether an interrupt or an exception occurred while the control uniw executed the previous
+instruction.  Then it validates the interrupt vector and performs the IDT lookup and verifies the
+authorization before calling the handler.
+
+The IDT is initialized and used by the BIOS routines while the computer still operates in Real Mode. Once
+Linux takes over, the IDT is moved to another area of RAM and initialized a second time, because Linux
+does not use any BIOS routine.
+
+SMP. Symmetric Multiprocessing model. Model in which kernel should not have any bias toward one CPU
+with respect to the others (used in Linux).
+
+TPR. Task Priority Register. Register of CPU initialized during setup_local_APIC call, initialized to
+static value meaning that CPU is eilling to handle every kind of IRQ signal regardless of its priority
+
+---------------------------------------------------------------------------------------------------------
+                                    Handling
+---------------------------------------------------------------------------------------------------------
+In general, an IO interrupt handler must be flexible enough to service several devices at the same time.
+This means that the interrupt vector alove does not tell the whole story. For instance, vector 43 is
+assigned to the USB and sound card. Flexibility is achieved in two distinct ways:
+- IRQ sharing. Each ISR is executed to verify whether its device needs attention; if so ISR handles it
+- IRQ dynamic allocation. An IRQ line is associated with a device driver at the last possible moment.
+  This way the same vector may be used by several hardware devices eve if they cannot share the IRQ line;
+  of course, the hardware devices cannot be used at the same time
+
+---------------------------------------------------------------------------------------------------------
+                              Double Fault. Abort
+---------------------------------------------------------------------------------------------------------
+Raised if processor cannot handle new exception nested within other exception serially (usually in can).
+It is handled by means of a task gate instead of a trap or system gate, because it denotes a serious
+kernel misbehaviour. Thus, the exception handler that tries to print out the register values does not
+trust the current value of the `esp` register. The CPU fetches the TGD (Task Gate Descriptor) which
+pointer to the special TSS segment descriptor. Next, the CPU loads the `eip` and `esp` from TSS and calls
+`doublefault_fn()` on its own private stack.
+
+---------------------------------------------------------------------------------------------------------
+                                 Context types
+---------------------------------------------------------------------------------------------------------
+- CPU context.
+  Every CPU architecture has a mechanism for interrupt handling, like interrupt vector or dispatching CPU
+  to handler address based on interrupt source. As well CPU has it`s own state not associated with kernel,
+  like it`s own hidden stack and registers.
+- Linux context.
+
+https://stackoverflow.com/questions/22453739/why-do-we-need-interrupt-context
+---------------------------------------------------------------------------------------------------------
+                                Bottom-Top half 
+---------------------------------------------------------------------------------------------------------
+Interup context has a range of constraints on it usage like which operation are available and how much
+they should use but the main issue is handling all interupts in a fair fashion since all other interrupts
+are dissabled when one is handled. Therefore it`s common approach to divide an interrupt handling in two
+phases bottom/top when the interrupt handler itself is a top half which saves hardware request to buffer
+and schedules a work for main logic, which is called a bottom half.
+Bottom Half has an accronym that is used through kernel source code - bh
+
+One thing to keep in mind with bottom-half processing is that all of the restrictions that apply to
+interrupt handlers also apply to bottom halves. Thus, bottom halves cannot sleep, cannot access user space,
+and cannot invoke the scheduler. Reasoning:
+- Sleep. Under the hood, sleeping means save current state to stack and switching to another proccess.
+  This requires a scheduler which can change currently active tasks and this routing should an associated
+  entity that schedulet knows how to use, like a process. However interrupt handler is just a routine and
+  has no assoctiated process or entity. 
+  Another problem, interrupt could be called during executing of the proccess that can`t sleep, in such
+  case handler couldn`t not sleep, or user-space code and kernel space might dead lock on shared resource.
+  Note, the page fault handler can sleep because it is associated with the user-space process which is
+  managed by the scheduler.
+- User space -> may result in a new interrupt however interrupts are disabled ?
+- Scheduling. As it was already said, interrupt has no asscociated process or any other entity that could
+  scheduler can manage.
+
+Bh handling is impelented in two ways, using softirqs and tasklets (another form of softirq).
+- Allocation. Softirq are statically allocated at compile time, while tasklets can be dynamically alocated.
+- Reentrance. Tasklets are not reentrant, while softirqs are, therefore the same softirq can be runed
+  on different CPUs.
+- Processing.
+
+https://stackoverflow.com/questions/1053572/why-kernel-code-thread-executing-in-interrupt-context-cannot-sleep
+---------------------------------------------------------------------------------------------------------
+                              Softirqs & Tasklets
+---------------------------------------------------------------------------------------------------------
+Softieqs and tasklets are strictly correlated, because tasklets are implemented on top of softirqs.
+Allocation: softirqs - compile time, tasklets - can be runtime allocated
+Concurency:
+softirqs - can run concurrently on several CPU, even if are of the same type, therefore, they are reentrant
+and must explicitly protect their data structures with spin locks.
+tasklets - tasklets are always serialized, the same type cannot run on different CPU at the same time ->
+no need for locking.
+
+For most purposes, tasklets are good enough and are much easier to write because they do not need to be
+reentrant. The index of a softirq determines its priority: a lower index means higher priority because
+softirq functions will be executed starting from index 0.
+
+NOTE: Interrupt service routines of an interrupt handler are serialized, and often there should be no occurrence
+of an interrupt until the corresponding interrupt handler has terminated.
+
+=========================================================================================================
+                          Multiple Kernel Mode stacks
+=========================================================================================================
+If size of the thread_union structure is 8KB the Kernel Mode stack of current process is used for every
+type of kernel control path: exceptions, interrupts, deferrable functions. Otherwise, kernel makes use of
+three types of stacks:
+- Exception (+system calls) stack. Is contained in per-process thread_unio structure
+- Hard IRQ stack. Used for interrupt handling, one per CPU, contained withing single page frame
+- Soft IRQ stack. Used for deferrable functions, one per CPU, single page frame
+
+=========================================================================================================
+                               Memory
+=========================================================================================================
+Address types:
+Logical address  | Operand address specified in instruction
+                 | Each logical address consists of a segment and an segment offset
+Linear address   | Virtual Address. uint describing size of your RAM ?
+Physical address |
+
+MMU transforms logical address into linear subsequently into physical
+Logical => | Segment Unit | = Linear => |Paging Unit| = Physical
+
+Memory arbiter. Circuit inserted between the bus and every RAM so whenever one chip uses RAM another is
+delayed, since access is expected to be serial
+
+---------------------------------------------------------------------------------------------------------
+                                 Protected mode
+---------------------------------------------------------------------------------------------------------
+Logical address consists of two parts:
+- Segment identifier(selector) 16 bit:
+  13 bit | ID | index into descriptor table
+  1 bit  | TI | Table indecator GDT or LDT
+  2 bit  | requestor privilege level
+- Segment offset 32 bit
+
+Segment Descriptor. Each segment is represented by an 8-byte Segment Descriptor describing segment
+characteristics and is stored in Global Descriptor Table (GDT) or in Local(LDT). Address and size of GDT
+is contained in gdtr register and LDT in ldtr register. Access to segment is restricted with DPL
+(Descriptor Privilege Level) where 0 - Kernel only access, 3 - always
+Avaiable types: 
+- Code SD
+- Data SD
+- Task State SD (GDT only, S=0)
+- Local Descriptor Table Descriptor
+
+GDT
+
+cs register contains 2bit field that specified Currept Privilege Level(CPL)
+0 - the highest Kernel Mode, 3 - the lowest User Mode
+
+=========================================================================================================
+                                 Virtual memory
+=========================================================================================================
+The OS store the mappings between virtual and physical addresses in a data structure called as pagetable
+The most recently used mappings are cahed by the MMU in TLB (Translation Lookaside Buffer)
+Address translation is done by on the CPU chip by element called MMU (Memory Managment Unit), where as the
+virtual address spaces managment is done by the OS
+There are three types of virtual addresses in Linux:
+1. Kernel Logical Addresses which have a fixed mapping between physical and virtual address space implying
+  the virtually-contiguous regions are by nature also physically contiguous.
+2. Kernel Virtual Addresses which are used for non-contiguous memory mappings.
+3. User Virtual Addresses which represent memory used by user space programs, where each process has its
+   own mapping. Unlike kernel logical addresses, which use a fixed mapping between virtual and physical
+   addresses, user space processes make full use of the MMU.
+
+---------------------------------------------------------------------------------------------------------
+                                     Paging
+---------------------------------------------------------------------------------------------------------
+Paging unit thinks of RAM as partitioned into fixed-length page frames.
+Page is just a data that can be in RAM as well as in memory however page frame
+is only RAM thing, that has same size as page and can keep it.
+
+Linear address structure, 32 bit:
+Directory | 10 bits
+Table     | 10 bits
+Offset    | 12 bits | Depends on size of page => 2^12 = 4kb page
+
+Each active process has Page Directory assigned to it.
+Address of Page Directory is stored in control register named cr3.
+
+Extended paging.  Allows page frames to be 4 MB instead of 4KB, in this case
+kernel can do without intermediate Page Tables thus save memory and preserve TLB
+entries. Is enabled with flag in control register. Address structure:
+Directory | 10 bits (multiple of 4MB)
+Offset    | 22 bits
+
+PAE. Physical Address Extension. Is activated by setting PAE flag in the cr4 control register.
+
+Kernel is load into RAM starting at 0x00100000... because
+- Page frame 0 is used by BIOS to store the system hardware configuration detected during the
+  Power-On Self-Test (POST).
+- Some of address space is used by BIOS and another to map internal mempry of ISA graphics cards.
+- Reserved by specific computer models
+- To avoid loading kernel into group of noncontiguos page frames
+
+The kernel maintains a set of page tables for its own use, tooted at a master kernel Page Global Directory.
+
+=========================================================================================================
+                                    Process
+=========================================================================================================
+                             Priority and niceness
+---------------------------------------------------------------------------------------------------------
+You can change the process priority using nice and renice utility. Linux Kernel schedules the process and
+allocates CPU time accordingly for each of them. But, when one of your process requires higher priority
+to get more CPU time, you can use nice and renice command. The process scheduling priority range is from
+-20 to 19, it called niceness, where -20 is the hieghest priority  By default, each process start with
+prio of 0. Current priority value can be seen with `ps` NI column.
+To launch program with nondefaul prioritym issue `nice -<prio> <executable>`, note that the hypen is used
+to clarify that it is option and it will be stripped before parsing value, therefore to icrease priority
+you to use double hyphen `nice --<prio> <exec>`.
+If you want to adjust value of already running process, issue `renice -n <prio> -p <pid>`. It is possible
+to make process of group/user have higher priority with -u/-g options.
+renice -n 5 -u <user>
+renice -n 5 -g <group>
+
+Niceness is user space conept and kernel uses piority instead. It is needed to expand value ranges for
+real time systems. There are two types of processes:
+Normal processes: PR = 20 + NI (NI is nice and ranges from -20 to 19)
+Real time processes: PR = - 1 - real_time_priority (real_time_priority ranges from 1 to 99)
+
+https://askubuntu.com/questions/656771/process-niceness-vs-priority
+https://www.thegeekstuff.com/2013/08/nice-renice-command-examples/
+---------------------------------------------------------------------------------------------------------
+                                 Pid/Lock file
+---------------------------------------------------------------------------------------------------------
+
+http://www.guido-flohr.net/never-delete-your-pid-file/
+https://unix.stackexchange.com/questions/12815/what-are-pid-and-lock-files-for
+---------------------------------------------------------------------------------------------------------
+=========================================================================================================
+                                   Threading
+=========================================================================================================
+                                Cores vs Threads
+---------------------------------------------------------------------------------------------------------
+A core is part of a CPU that receives instructions and performs calculations, or actions, based on those
+instructions. A set of instructions can allow a software program perform a specific function. Processor
+can have one or more cores at the same time.
+
+Thread is a CPU execution unit. One core controlls one thread a time. 
+
+---------------------------------------------------------------------------------------------------------
+                                 Hyper-threading
+---------------------------------------------------------------------------------------------------------
+Hyper-threading (simultaneous multithreading SMT). Process of a CPU splittin each of its physical cores
+into virtual cores, which are known as threads. This is done in order to increase performance and allow
+each core to run two instruction streams at once.
+
+---------------------------------------------------------------------------------------------------------
+                                      Fork
+---------------------------------------------------------------------------------------------------------
+Call that initializes a separate child process.
+Child shares initial state of parent since it is implemented as COW (Copy On Wright). However Copy is
+avtomatically performed on the first write both for local and global data.
+
+On success, the PID of the child process is returned in the parent, and 0 is returned in the child.
+On failure, -1 is returned in the parent, no child process is created, and errno is set appropriately.
+Both then continue from that point forward.
+
+If your code is:
+---------------------------------------------------------------------------------------------------------
+int myfun() {
+    if(fork()>0){
+        //Program code part 2
+    }
+    return 0;
+}
+int main() {
+    //Program code part 1
+    myfun();
+    //Program code part 3
+    return 0;
+}
+---------------------------------------------------------------------------------------------------------
+Then the parent will run part 2 and both the parent and the child will run part 3 (unless the fork() call
+failed with -1, in which case there's no child).
+If you want to limit the child, do _exit(SomeExitCode) where it should end. This function version is
+preferred because it skips flushing of stdio streams and calling atexit handlers which is usually
+undesirable in a child that has its filedescriptors and process image duplicated from the parent.)
+
+https://stackoverflow.com/questions/47186139/c-processes-fork-scope
+https://stackoverflow.com/questions/4298678/after-forking-are-global-variables-shared
+=========================================================================================================
+                           Understanding oops message
+=========================================================================================================
+When an invalid pointer is dereferenced, the paging mechanism fails to map the pointer to a physical address
+and the processor signals a page fault yo the OS. If the address in not valid, the kernel is not able to
+'page in' the missing address, it usually generates an oops id this happens while the processor is in kernel
+space
+
+https://opensourceforu.com/2011/01/understanding-a-kernel-oops/
+https://stackoverflow.com/questions/16731570/how-to-interpret-addresses-in-a-kernel-oops
+=========================================================================================================
+                                 Kernel dont`s
+=========================================================================================================
+# It is not allowed to issue page fault in kernel code (atomic context)
+Sometimes u can see __user structure fields in kernel code, this means that this filed (probably poiter
+to some data) is pointing to resources in user space and in kernel space u won`t have direct access to it.
+When u try to dereference such pointer, pagefault is issued and caller gets 'oops'
+
+=========================================================================================================
+                                     Device
+=========================================================================================================
+The smallest unit of addressible memory in block device is called sector It is some power of two, usually
+512, and device cannot work with smaller data set.
+
+The smallest unit of addressible memory in file system is called block. Block is abstraction used in
+filesystem and is usually bigger than sector but smaller then page. Usual size 512B/1K/4K.
+
+=========================================================================================================
+                                     SysRq
+=========================================================================================================
+
+https://linux.101hacks.com/sysadmin-tasks/magic-sysrq-key/
+=========================================================================================================
+                                    Logging
+=========================================================================================================
+syslog is a standart for message logging which separates software that genrates messages, the system that
+stores them, and the software that reports and analyzes them. Each message is labeled with a facility code,
+indicating the software type generating the message, and assigned a severity level.
+syslog usually refers to protocol that sends data to a syslog daemon (syslogd) over TCP/UDP.
+
+Generated log messages may be directed to various destinations including console, files, remote syslog
+servers, or relays. Most implementations provide a command line utility, often called logger, as well as
+a software library, to send messages to the log. To display and monitor the collected logs one need to use
+a client application or access the log file directly on the system. The basic command line tools are tail
+and grep.
+
+syslog is based on client-server architecture, therefore there is always server (syslogd or other daemon)
+that receives messages. It will receive log messages from other daemons, programs, and even the kernel.
+Linux systems also come with a daemon called klogd, the Linux kernel log daemon.
+
+Why do we have separate sets of demons/apis for kernel and user space ?
+Creating this api/service in kernel space would require it to be reentrant, meaning we can intrupt call
+to this api by enterring it again, and the second call must have no effect on a prior call. Therefore
+this code can`t use global/static variables, only locals. Otherwise we are require to sync access to
+such resources which may be expensive/hard to implement.
+
+---------------------------------------------------------------------------------------------------------
+                                 Syslog vs klog
+---------------------------------------------------------------------------------------------------------
+Syslog is used for user space logging. It can be issued by calling libc function `syslog()` which logs
+the user message to unix socket /dev/log. There can be multiple of such sockets. As well it received
+messages from klogd. syslogd can write the messages to any log file or UDP ports for remote hosts
+
+Klog is a kernel space logging system. Kernel logging is implemented as as in-memort buffer that can be
+accessed through: dmest, /proc/kmsg (read only + read once mechanism), /dev/kmsg (character device interface,
+read + write, can be read multiple times). klogd reads the messages from either /proc/kmsg or calls sys_syslogd
+and provides kernel log data streams to the appropriate files, sockets or users.
+
+---------------------------------------------------------------------------------------------------------
+                                 Syslog levels
+---------------------------------------------------------------------------------------------------------
+LOG_EMERG     # A panic condition.This is normally broadcast to all users.
+LOG_ALERT     # A condition that should be corrected immediately, Such as a corrupted system database
+LOG_CRIT      # Critical conditions, e.g., hard device errors
+LOG_ERR       # Errors
+LOG_WARNING   # Warning messages
+LOG_NOTICE    # Conditions that are not error conditions, but should possibly be handled specially
+LOG_INFO      # Informational messages
+LOG_DEBUG     # Messages that contain information normally of use only when debugging a program
+
+---------------------------------------------------------------------------------------------------------
+                   Pros/Cons of syslog vs filesystem logging
+---------------------------------------------------------------------------------------------------------
+Cons
+1. Limited number of categories (e.g., when compared to log4j), which limits filtering capabilities
+2. System-wide, requires administrator privileges to set up
+3. Not available on all OS-s (e.g., Windows)
+
+Pros
+1. Application logging is plug-and-play, with well-known locations
+2. Single place to filter all messages
+3. Factors a lot of common functionality (such as writing to a file, sending logs remotely, rotating log files)
+4. Tools can be build (and actually exist) which can look at the logs of all applications at once
+
+https://stackoverflow.com/questions/10175234/logging-to-syslog-vs-filesystem-pros-and-cons
+---------------------------------------------------------------------------------------------------------
+                                System log files
+---------------------------------------------------------------------------------------------------------
+Configuration, definining which data is saved to which files can be found under `/etc/syslog.conf`,
+default configuration may look like follwing:
+/var/log/kern.log captures only the kernel's messages of any loglevel; i.e. the output of dmesg.
+/var/log/messages instead aims at storing valuable, non-debug and non-critical messages. This log should
+                  be considered the "general system activity" log.
+/var/log/syslog in turn logs everything, except auth related messages.
+/var/log/auth.log 
+/var/log/mail.log
+
+Utmp/Wtmp 
+The utmp file is where information such as the terminal line, login time, and command executing are stored
+for access by the who command. The wtmp keeps track of logins and logouts since reboot. The command last
+reads that file and processes the information
+https://askubuntu.com/questions/26237/difference-between-var-log-messages-var-log-syslog-and-var-log-kern-log
+---------------------------------------------------------------------------------------------------------
+                           Syslog-ng (new generation)
+---------------------------------------------------------------------------------------------------------
+Syslog-ng, as the name shows, is a syslogd replacement, but with new functionality for the new generation.
+New things:
+1. Extended log sorting, now regex can be used on content (only priotiry/facility before)
+2. More intuitive and powerful configuration scheme
+3. Forwarding logs over TCP and remembering all forwarding hops makes it ideal for firewalled environments?
+4. Logging directly into a database
+5. TCP for transport
+6. TLS encryption
+
+Addressed problems:
+1. Since messages are single line only, there's no easy way to correlate related messages that span
+   multiple lines  (e.g. stack trace). A log parsing application can be programmed to analyze it properly,
+   but this really has nothing to do with syslog.
+2. Many syslog programs, when configured to relay messages on to another syslog program on another host,
+   will leave out certain parts of the syslog message - complicating proper identification of certain fields.
+   E.g. Solaris machine skip hostname message in log, therefore receiver doesn`t know if it`s Solaris log
+   or of some another client.
+3. Different deamons used different (non-standart) formats.
+
+Today, among syslog projects, syslog-ng is the reference in most cases, as it is the most mature project
+offering the main features you may need, in addition to an easy and comprehensive setup and configuration.
+---------------------------------------------------------------------------------------------------------
+                                    RSyslog
+---------------------------------------------------------------------------------------------------------
+Exntended syslog with next features:
+1. RELP Protocol support
+2. Buffered operation support
+
+Probably, you can copy a syslog.conf file directly into rsyslog.conf and it works.
+---------------------------------------------------------------------------------------------------------
+Rsyslog is mainly available for Linux and recently for Solaris. The syslog-ng application is highly portable
+and available for many more platforms including AIX, HP-UX, Linux, Solaris, Tru64 and most variants of BSD.
+This makes syslog-ng more suitable for sites with diverse platforms.
+
+
+---------------------------------------------------------------------------------------------------------
+https://www.linuxjournal.com/article/4036
+https://annvix.com/syslog_and_klog
+https://habr.com/ru/post/321262/
+https://en.wikipedia.org/wiki/Syslog
+https://serverfault.com/questions/692309/what-is-the-difference-between-syslog-rsyslog-and-syslog-ng
+https://web2.clarkson.edu/class/cs457/security.sp06/classInput/syslog.html
+=========================================================================================================
+                               Reference resource
+=========================================================================================================
+Good hashtable explanations:
+https://programmersought.com/article/50344581399/
+https://danielmaker.github.io/blog/linux/list_hlist_hashtable.html
+
+Linux (mainly Ubuntu) logs files with description:
+https://help.ubuntu.com/community/LinuxLogFiles#X11_Server_Log
+=========================================================================================================
+                                    To Study
+=========================================================================================================
+Kernel testing qemu
+https://github.com/cirosantilli/linux-kernel-module-cheat#getting-started
+Ftrace implementation:
+https://www.apriorit.com/dev-blog/544-hooking-linux-functions-1
+https://www.apriorit.com/dev-blog/546-hooking-linux-functions-2
+https://www.apriorit.com/dev-blog/547-hooking-linux-functions-3
+=========================================================================================================

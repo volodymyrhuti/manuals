@@ -1,0 +1,42 @@
+                                     Kdump
+=========================================================================================================
+Kdump. Way to acquire a crashed Linux kernel dump, but finding documents that explain its usage and
+internals can be challenging. It relies on kexec, which can be used to boot a Linux kernel from the context
+of another kernel, bypass BIOS, and preserve the contents of the first kernel’s memory that would otherwise
+be lost. 
+
+Kexec. Linux kernel-to-kernel boot loader that helps to boot the second kernel from the context of first
+kernel. Kexec shuts down the first kernel, bypasses the BIOS or firmware stage, and jumps to second kernel.
+Thus, reboots become faster in absence of the BIOS stage.
+
+Common usecase of Kdump  with the kexec: when the second kernel is booted when the first kernel panics,
+the second kernel is used to copy the memory dump of first kernel, which can be analyzed with tools such
+as gdb and crash to determine the panic reasons.
+
+In order for kdump to be able to capture a kernel crash dump and save it for further analysis, a part of
+the system memory has to be permanently reserved for the capture kernel. When reserved, this part of the
+system memory is not available to main kernel. 
+
+/etc/systemd/system
+/run/systemd/system
+/usr/local/lib/systemd/system
+/usr/lib/systemd/system
+
+The kdump service can be started by executing
+  $ systemctl start kdump
+When this service starts, it creates a root file system (initramfs) that contains resources to mount the
+target for saving vmcore, and a command to copy/dump vmcore to the target. This service then loads the
+kernel and initramfs at the suitable location within the crash kernel region so that they can be executed
+upon kernel panic.
+
+Possible configuration files:
+- `/etc/kdump.conf` specifies configuration parameters whose modification requires rebuild of the initramfs.
+   For example, if you change the dump target from a local disk to an NFS-mounted disk, you will need
+   NFS-related kernel modules to be loaded by the capture kernel.
+- `/etc/sysconfig/kdump` specifies configuration parameters whose modification do not require rebuild of
+   the initramfs. For example, you do not need to rebuild the initramfs if you only need to modify
+   command-line arguments passed to the capture kernel.
+
+https://opensource.com/article/17/6/kdump-usage-and-internals
+https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/kernel_administration_guide/kernel_crash_dump_guide
+=========================================================================================================

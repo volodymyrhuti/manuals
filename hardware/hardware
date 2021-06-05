@@ -431,184 +431,6 @@ this, AMD chops are no longer compatible with sockets or motherboards made for I
 use an Intel CPU
 
 =========================================================================================================
-                                  Peripherals
-=========================================================================================================
-There are plenty of peripheral devices needed for comfort work with computer, such as mouse and keyboard.
-To controll them and send/receive command they need to be connected to the CPU. The simplest way is just
-to extend data/address bus through the motherboard, connecting all of the computer`s conntollers to the
-CPU. Therefore, ealy motherboards where coverd in controller chips.
-
-Over time, multiple contollers were packerd into specifically designed chipsets. Early chipsets consisted
-of two paired chops called the northbridge and southbridge.
-
-Today`s CPUs have controllers, such as the memory and display controllers, built in. Other are packed into
-a single chip called Platform Controller Hub by Intel and just chipset by others.
-The chipset extends the data bus to every device on the PC.
-
-Note, the CPU doesn`t know how to automatically talk with any device; it needs some support program loaded
-into memory that teaches it about a particular device. The BIOS (Basic Input/Output services) is a program
-that loads other programs dedicated to teaching CPU to communicate with devices and these are called
-services (or device drivers).
-
-Having BIOS creates a new set of probles. The main one is where to store all those programs for device
-communication. Possible solution is to keep it withing OS, which is fine when OS already installed on the
-device and is up running. But what to do when new system is built and there is not OS installed yet.
-You still need to have access to display and the keyboard so you can do at least something. These can
-be on the harddrive but where do we store the driver for that hardrive or it is not present at all. 
-The perfect place to store them is on the motherboard but type of memory is under a question. Some form of
-RAM is not valid, since it will loose all data on the reset. It should be peprmanent that does not depend
-on other peripherals to work and that needs to sit on the board. 
-
-ROM (Read Only Memory) chip is the solution to the previous problem.
-Motherboards use a type of ROM called flash ROM. Such chip is called the system ROM chop because it
-contains code that enables your CPU to talk to the basic hardware of your PC. All the utilities stored on
-the system ROM chip are called, collectively, the system BIOS or firmware since it is directly stored
-on the hardware ROM.
-
-This approche works fine for devices that are always present and never change like a keyboard but things
-get ore complicated when you want to change something in your device, like add more RAM or change hard.
-In this case, you would hold additional drivers on a harddrive which would be loaded on a boot.
-Modern systems use firmware grogramming called the UEFI (Unified Extensible Firmware Interface) instead
-of BIOS.
-
-All of the BIOS setting are saved to a tiny bit of RAM hooked up to a small battery to keep it
-working with the PC off, called CMOS. In addition to BIOS settings it holds an RTC value.
-The information stored in CMOS is necessary for the PC to function. If the data stored in CMOS about a
-piece of hardware is different from the specs of the actual hardware, the computer cannot access that
-piece of hardware.
-Note, MacOS machines are usually designed form the ground up as unified systems so there is not much
-flexebility in changing however you have less headache with CMOS configuration.
-
-To modify CMOS, every PC ships with a system setup utility built into the system ROM. These look different
-from vendor to vendor but all contain basically the same settings. The latest ones even support mouse
-usage.
----------------------------------------------------------------------------------------------------------
-                                      PCI
----------------------------------------------------------------------------------------------------------
-- PCI (Peripheral Component Interconnect). Common connection interface for attaching computer peripherals
-  to a PC`s motherboard. This interface was popular between 1995 and 2005 and now is changed for PCIe.
-  Some PCI can be present on motherboard for backward compatibility, but the devices that used to be
-  attached as PCI expansion cards are now either integrated onto motherboards or attached by other
-  connectors like PCIe.
-  One of the reasons behind it`s popularity was that Intel released PCI to the public domain.
-  Another is the capability to coexist with other expansion buses so you could buy a motherboard with
-  both old slots and a new PCI, therefore slowly migrating to the PCI
-- Mini PCI. Laptops variant of PCI, designed to use low power and to lie flat.
-- PCI Express, PCIe. The same PCI but it uses a point-to-point serial connection instead of PCI`s shared
-  parallel communication. It is more easy to use in high speed cases as well it is not shared by all devices
-  instead each one has a separate connection to the CPU.
-  
-Transfer rate. The number of operations happening per second.
-PCI uses one wire for sending and one for receiving, such pair is called a lane.
-Each ptp connection can use 1,2,4,8,12,16 lanes to achive a max theoretical bandwidth of up to 256 GTps.
-PCIe has following speed per lane
-    1.x | 2.5 GTps
-    2.x | 5   GTps
-    3.x | 8   GTps
-    4.0 | 16  GTps
-
-The most common PCIe slot is the 16-lane (x16) version most often used for video cards.
-=========================================================================================================
-                                  Power Suply
-=========================================================================================================
-Electricity works essentially the same way as water through pipes. Electric companies gather or generate
-electricity and then push it to your house under pressure through wires.
-
-Voltages. Measure of the electrons pressure in the wire, measured in volts.
-Current/Amperage. The amount of electrons moving past a certain point on a wire, measured in amperes.
-Wattage. The amps and volts needed so that a particular device will function. 
- V | Presure, voltage
- A | Volume, ampers
- W | Work, wattage
- Q | Resistence, ohms
- W = V x A
-
-The voltage from the power supply tends to sag (drop well below) and surge/spike the standard. These sags
-and spikes usually don`t affect lamps and refrigeratos but they can keep your PC from running or can even
-destroy a PC or peripheral device. Spikes can be handled at the supply of AC using surge suppressors and
-uninterruptible power supplies.
-
-Surge Supperssors. Any surge can harm your computer, and a strong can destroy components, therefore, every
-PC should use a surge suppressor device that absorbs the extra voltage from a surge to protect the PC.
-The power supply may handle small surges but it takes a lot of damage from this and will eventually fail.
-To protect your power supplu, a dedicated surge suppressor works between the power supply and the outlet
-to protect the system from power surges. Note, they have grades and you need to research before buying.
-
-UPS. Uninterruptible Power Supply.Contains a big battery that provides AC power to your computer regardless
-of the power coming from the AC outlet.
-
----------------------------------------------------------------------------------------------------------
-                                   Connectors
----------------------------------------------------------------------------------------------------------
-Mother boards use 20/24 pin P1 power connectors, some may require special 4/6/8 pin connectors to supply
-extra power. 
-
-The typical PC power supply has at least three types of connectors that plug into peripherals:
-- Molex. Supplies 5/12-V current for fans and older drives. Require a firm push to plug in properly, and
-  a strong person can defeat the chamfers (notches) plugging a Molex in uppside down. Always check for
-  proper orientation before you push it in.
-- Mini. A few power supplies still support it.
-- SATA. Serial ATA drives need a 15pin SATA power connector. The large pin count supports the SATA
-  hot-swappable feature and 3.3/5/12 V devices.
-Another connectors include:
-- PCIe 6/8pin connector. Higher-end video cards have one or two sockets that require specific 6/8pin
-  PCIr power connectors.
-
-ATX power supplies.
-Had two distinguishing physical features: the motherboard power connector and soft power.
-Motherboard power came from a single cable with a 20pin P1 motherboard power connector.
-Also had at least two other cables each populated with two or more Molex or mini connectors for peripheral
-power.
-
-Rails. AC is conerted to DC by the power supply into three main voltage rails: 3.3/5/12V and groups of
-wires run from each of these voltage rails to the various connectors. Each rail has a maximum amount of
-power it can supply which is usually quite above needed for simple PC but can be not enough for some high
-end ones. The most popular solution is to include multiple rails in the power supply and an OCP (over
-current protection) which prevents overusage of the single rail.
-
-
-Splitters. If you don`t have enough connectors to power all of the devices inside your PC, you can use
-spllitiers to create more connections.
-
-Adapters. You may need a SATA connectors but having only a spare Molex. Because the voltages on the wires
-are the same, a simple adapter will take of the problem.
-
----------------------------------------------------------------------------------------------------------
-                                    Cooling
----------------------------------------------------------------------------------------------------------
-Fans sizes are measured in millimeters (mm) or centimeters (cm). Traditionally, the industry used 80mm
-power supply and cooling fans, but today you`ll find 100/120mm and even larger fans in power supplies and
-cases.
-
-TODO: sleeve-bearing vs ball-bearing fans.
-=========================================================================================================
-                                     Busses
-=========================================================================================================
-The relation of the different busses is roughly as follows:
-                                              / SATA
-CPU => Northbridge => PCI Bus => Southbridge => IDE
-                                              \ USB
-
-Northbridge and Southbridge are two main controller chips inside a PC.  They are bridges because USB/IDE/...
-packets are forwarded through them to CPU. Packet like USB are encapsulated into PCI packets and sent do CPU.
-
-IDE and SATA perform the same job but through differebt physical media, they are fore attaching hard drives etc.
-
-IDE ("Integrated Device Electronics") => also known as "ATA" or "ATAPI"(ATA Peripheral Intreface)
-Parallel bus used primarily inside computers to communicate with disk drives.
-
-SATA (Serial ATA) => the same ATA protocol but serial instead of parallel It is high speed serial replacement
-for IDE, uses a lot fewer wires
-
-USB is a serial communications bus which can communicate with any number of devices, not just hard drives
-and other storage devices. It speaks a completely different protocol to the ATA family.
-
-PCI (and the derivatives PCIe, etc) are much closer to the CPU and generally provides much more direct
-access to the CPU.
-
-https://stackoverflow.com/questions/1723481/relation-between-usb-and-pci
-https://electronics.stackexchange.com/questions/24077/difference-between-busses
-=========================================================================================================
                                    Video card
 =========================================================================================================
 The display adapter, or video card, processes information for the CPU and sending it to othe display.
@@ -945,12 +767,12 @@ VESA. Video Electronics Standards Association. Nealry universally accepted stand
 to monitor arms (or other applications and surfaces). Monitor being VESA compatible can be mounted for a
 range of arms. The back of your monitor should have four screwholes either 75mm or 100mm ... apart.
 When choosing the arm, you should take to consideration the following metrics:
-- Mounting method
-  Edge Clamp. Attaches the monitor arm to any edge of the desk, this method gives you more distance
-  Grommet Mounting. Allows to mount the arm through the grommet hole in your desk top
-      Note, some arms may support both of these methods
-  Free Standing
+- Mounting method:
+  Edge Clamp        | attach monitor arm to any edge of the desk, gives you more distance
+  Grommet Mounting  | Allows to mount the arm through the grommet hole in your desk top
+  Free Standing     |
   Wall or celling
+  Note, many arms may support both of these methods
 - Lift Mechanism. Arms hold up their loads using either a spring or gas lift mechanism.
   Spring    | Has the longest lifetime and is more economical
   Gas       | Provide smoother response to movement
@@ -1385,6 +1207,12 @@ SATAe drops both the SATA link and transport layers, embracing the full performa
 NOTE ATA drivers are referred to as IDE (Integrated Drive Electronics) drives, meaning any hard drive with
 a built-in controller.
 --------------------------------------------------------------------------------------------------------- 
+                                      NVMe
+--------------------------------------------------------------------------------------------------------- 
+NVMe. Non-Volatile Memory Express. Protocol for accessing high-speed storage media that brings many
+advantages compared to legacy protocols. 
+
+--------------------------------------------------------------------------------------------------------- 
                                 Types of memory
 ---------------------------------------------------------------------------------------------------------
 There are two types of memory used in computer: Primary memory (Volatile) and Secondary memory (non-volatile).
@@ -1510,6 +1338,30 @@ The name flash was used after sugestion that erasure process of the memory remin
 https://searchstorage.techtarget.com/definition/flash-memory
 
 =========================================================================================================
+                                   Bluetooth
+=========================================================================================================
+Bletooth multiport. Feature introduced in Bluetooth 4.0 over 10 years ago. Feature that allows a single
+Bluetooth headset to maintain simultaneous connections to at least two source devices like a laptop and
+smartphone. For it to function, a device must support both A2DP and HFP/HSP connections for audio 
+streaming and talking, respectively.
+
+Originally it was intended for professional use, say you have multiple work phones and use them all to
+field phone calls—Bluetooth multipoint would come in handy because you can be on one call without missing
+notifications from another device.
+
+Bluetooth multipoint doesn’t necessarily mean that you can stream media from two devices at a time.
+Few headsets support this properly, and most are limited to designating one device as a media player and
+the other strictly for pushing notifications through. Other devices, like the Sony WH-1000XM4, only
+support multipoint connectivity over the AAC Bluetooth codec. It’s a mixed bag and something that’s
+rarely stated in marketing copy.
+
+Simple and advanced Bluetooth multipoint operate on the same principle: one headset connects to two
+devices at a time. However, simple multipoint is less, well, advanced because it drops the current call
+from the primary source device once you answer an incoming call from the secondary source device.
+
+https://www.jabra.com/blog/multipoint-explained-one-headset-for-all-devices/
+https://www.soundguys.com/bluetooth-multipoint-explained-28601/
+=========================================================================================================
                                  Virtualization
 =========================================================================================================
 OS uses porgramming called a supervisor to handle very low-level interactions among hardware and software,
@@ -1517,6 +1369,38 @@ such as task scheduling, allocation of time and resources. The virtualization, e
 multiple guest OS, reures an extra layer of sophisticated programming called a hypervisor to manage the
 vastly more complex interactions.
 
+=========================================================================================================
+                                   Batteries
+=========================================================================================================
+Basics. Common batteries, such as AAA, AA, C and D, have positive and negative terminals and two ineternal
+layers called electrodes that include a cathode (which transports a positive charge) and an anode (to carry
+a negative charge). All batteries also have some type of electrolyte—a substance that conducts electricity
+(a flow of electrons) between the battery’s terminals. When you put a battery in a device, like a headlamp,
+the electrolyte, cathode and anode interact and a chemical reaction (basically oxidation) occurs.
+Ions (positively charged) and electrons (negatively charged) flow through the electrolyte, exit via the
+negative terminal and enable your device to function.
+Over time, a battery's internal chemicals begin to degrade and interaction diminishes. Eventually they can
+no longer retain a charge and are considered “dead.”
+The mix of chemicals in a battery aims to provide some combination of the four holy grails of the elusive
+"ideal" battery—long life, high performance, reasonable cost and low environmental impact. 
+
+Finger battaries size are identified according to alphabet, where the further you get through the alphabet,
+the larget the battery. Letters can be duplicated to show that battery is a bit smaller,
+e.g., A vs AA vs AAA.
+As well, there are coin/button cell batteries. These have another form and naming scheme, usually 2 letters
+followed by 4 numbers:
+- 1 letter  -> chemical composition
+- 2 letter  -> shape
+- 4 numbers -> size of the battery, 2 for diameter and 2 for height
+CR2032 -> C is Lithium, R stands for roundm 20mm in diameter and 3.2mm high 
+
+https://www.rei.com/learn/expert-advice/batteries.html
+=========================================================================================================
+                                    Testing
+=========================================================================================================
+https://www.notebookcheck.net/Guide-How-to-check-a-new-laptop-for-issues.232476.0.html
+=========================================================================================================
+                                   Unfiltered
 =========================================================================================================
 CPU => Central Processing Unit
 MPU => Micro Processing Unti
@@ -1574,34 +1458,3 @@ it can self burn, in this case there is only task to trasfer program from PC to 
 
 If you want to program the chip through USB, the chip needs to be preprogrammed with a bootloader from the
 factory, The bootloader is called DFU Bootloader?
-=========================================================================================================
-                                   Batteries
-=========================================================================================================
-Basics. Common batteries, such as AAA, AA, C and D, have positive and negative terminals and two ineternal
-layers called electrodes that include a cathode (which transports a positive charge) and an anode (to carry
-a negative charge). All batteries also have some type of electrolyte—a substance that conducts electricity
-(a flow of electrons) between the battery’s terminals. When you put a battery in a device, like a headlamp,
-the electrolyte, cathode and anode interact and a chemical reaction (basically oxidation) occurs.
-Ions (positively charged) and electrons (negatively charged) flow through the electrolyte, exit via the
-negative terminal and enable your device to function.
-Over time, a battery's internal chemicals begin to degrade and interaction diminishes. Eventually they can
-no longer retain a charge and are considered “dead.”
-The mix of chemicals in a battery aims to provide some combination of the four holy grails of the elusive
-"ideal" battery—long life, high performance, reasonable cost and low environmental impact. 
-
-Finger battaries size are identified according to alphabet, where the further you get through the alphabet,
-the larget the battery. Letters can be duplicated to show that battery is a bit smaller,
-e.g., A vs AA vs AAA.
-As well, there are coin/button cell batteries. These have another form and naming scheme, usually 2 letters
-followed by 4 numbers:
-- 1 letter  -> chemical composition
-- 2 letter  -> shape
-- 4 numbers -> size of the battery, 2 for diameter and 2 for height
-CR2032 -> C is Lithium, R stands for roundm 20mm in diameter and 3.2mm high 
-
-https://www.rei.com/learn/expert-advice/batteries.html
-=========================================================================================================
-				    Testing
-=========================================================================================================
-https://www.notebookcheck.net/Guide-How-to-check-a-new-laptop-for-issues.232476.0.html
-=========================================================================================================

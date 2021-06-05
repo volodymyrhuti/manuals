@@ -97,23 +97,6 @@ echo "a.b.c.txt" | rev | cut -d"." -f2- | rev   # get file extension without nam
 echo "a.b.c.txt" | rev | cut -d"." -f1  | rev   # get file name without extension
 echo 'foo bar'   | rev | cut -d' ' -f1  | rev   # get last word from list
 =========================================================================================================
-                                     Xargs
-=========================================================================================================
-# NOTICE declaring function with -f flag is enough to use it within bash under xargs 
-find . -maxdepth 1 -not -type d | xargs -i{} bash -c "$(declare -f gri) ;  gri package  {}"
-
-echo arg1 arg2 | xargs  bash -cil 'myFuncOrAlias "$@"' arg0
-
-ls | grep dir | xargs -i{} mv {} ../       ## foreach
-find ./ -type f -name *".html" | xargs sed -i "s/php/html/g"
-#  cpy and rename files
-find -name '*.as' | while read f; do cp $f ${f%.as}_dir.as; done 
-
-# Using user defined function with xargs
-export -f custom_grep
-find -iname '*makefile*' | xargs bash -c 'custom_grep -i targer $@'
-
-=========================================================================================================
                                       Find
 =========================================================================================================
 find . -type f

@@ -127,8 +127,9 @@ Or alternative way
   sudo gdebi <pakage>.deb
   sudo apt install <pakage>.deb
 
-# List of packages
+List of packages:
 debian.pkgs.org
+pkgs.org
 
 https://askubuntu.com/questions/40011/how-to-let-dpkg-i-install-dependencies-for-me
 ---------------------------------------------------------------------------------------------------------
@@ -146,6 +147,38 @@ Probably ur trying to overwrite currently installed package. If you want to forc
 sudo dpkg -i --force-overwrite /var/cache/apt/archives/<pkg>
 ? sudo apt-get -f install
 
+[~/tmp_/pa-applet][0|100] [vhuti]## sudo apt-get install libgtk-3-dev
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+E: The package pyacme needs to be reinstalled, but I can't find an archive for it.
+[ 0s448 | Apr 19 12:48PM ]
+
+[~/tmp_/pa-applet][0|100][vhuti]## sudo dpkg --remove --force-all pyacme
+dpkg: pyacme: dependency problems, but removing anyway as you requested:
+ connections-disco-agent depends on pyacme (>= 1.0.4).
+ connections-disco-agent depends on pyacme (>= 1.0.4).
+
+dpkg: warning: overriding problem because --force enabled:
+dpkg: warning: package is in a very bad inconsistent state; you should
+ reinstall it before attempting a removal
+(Reading database ... 364859 files and directories currently installed.)
+Removing pyacme (1.8.0xenial1) ...
+Processing triggers for gnome-menus (3.13.3-11ubuntu1.1) ...
+Processing triggers for desktop-file-utils (0.23-1ubuntu3.18.04.2) ...
+Processing triggers for mime-support (3.60ubuntu1) ...
+[ 1s378 | Apr 19 12:50PM ]
+
+If that fails:
+  sudo rm -i /var/lib/dpkg/info/hl1440lpr.*
+  sudo dpkg --remove --force-remove-reinstreq hl1440lpr
+Confirm Apt is fixed. The following command should return no errors:
+  sudo apt-get update
+
+Maybe?
+[vhuti]## sudo apt --fix-broken install
+
+https://askubuntu.com/questions/88371/apt-synaptic-needs-to-reinstall-package-but-cant-find-the-archive-for-it
 =========================================================================================================
                                       Snap
 =========================================================================================================

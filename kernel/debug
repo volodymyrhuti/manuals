@@ -1,0 +1,180 @@
+                                   Debugging
+=========================================================================================================
+                                    Logging
+=========================================================================================================
+One of ways to troubleshoot kernel, is printk logging. It`s limited by ratelimit, therefore some faulty
+module doesn`t fills it up with trash. Limit can be configured with `printk_ratelimit()` or from
+/proc/sys/kernel/printk_ratelimit_burst. After reaching the limit of prints, kernel would stop printing
+for a predefined number of seconds which is set in the file /proc/sys/kernel/printk_ratelimit.
+
+The log level is used by the kernel to determine the importance of a message and to decide whether it
+should be presented to the user immediately, by printing it to the current console. For this the kernel
+compares the log level of the message to the console_loglevel (a kernel variable) and if the priority is
+higher (i.e. a lower value) than the console_loglevel the message will be printed to the current console.
+To determine your current console_loglevel you simply enter:
+$ cat /proc/sys/kernel/printk
+    7         4         1           7
+ current | default | minimum | boot-time-default
+Console level can be changed with following ways
+echo <n> > /proc/sys/kernel/printk
+dmesg -n <n>
+Only messages with a value lower (not lower equal) than the console_loglevel will be printed.
+You can also specify the console_loglevel at boot time using the `loglevel` boot parameter. 
+
+
+Sometimes, especially when doing automated testing, it is quite useful to insert some messages in the
+kernel log buffer in order to annotate what's going on. This can be in a following way:
+# echo "Hello Kernel-World" > /dev/kmsg
+As well it can be read, like `cat /dev/kmsg` or `tail -F /dev/kmsg`, it works like a FIFO and blocks
+until new messages appear. Reading from /proc/kmsg consumes the messages in the ring buffer so they may
+not be available for other programs.
+If /dev/kmsg does not exist, it can be created with: 'mknod -m 600 /dev/kmsg c 1 11' 
+
+Printk is implemented by using a ring buffer, size of which can be configured within kernel config.
+Using a ring buffer implies that older messages get overwritten once the buffer fills up.
+Using a reasonably large buffer size should give you enough time to read your important messages before
+they are overwritten. 
+Note, dmesg reads by default a buffer of max 16392 bytes, so if you use a larger logbuffer you have to
+reconfigure dmesg, like `dmesg -s <buf_size in bytes?>`
+
+https://elinux.org/Debugging_by_printing
+---------------------------------------------------------------------------------------------------------
+                                     Ftrace
+---------------------------------------------------------------------------------------------------------
+Ftrace in a tracing utility in the Kernel that can be used for debugging/analuzing latencies and performance
+issues that take place outside of user-space. It uses debugfs file system to hold the control files as
+well as the files to display output. Mounting
+    /etc/fstab: tracefs       /sys/kernel/debug/tracing       tracefs defaults        0       0
+    $ mount -t tracefs nodev /sys/kernel/debug/tracing
+Key files `ls /sys/kernel/debug/tracing` include:
+ available_tracers | list of available tracers
+ tracing_on        | enter 0/1 to enable/disable
+ trace             | output of currently active tracer
+ current_tracer    | display the current tracer that is configured
+
+Use example
+  mount -t tracefs nodev /sys/kernel/tracing
+  cd /sys/kernel/tracing
+  sysctl kernel.ftrace_enabled=1
+  echo function > /sys/kernel/debug/tracing/current_tracer
+  echo 10 > max_graph_depth
+  echo '*:mod:your_kernel_mod' >> set_ftrace_filter
+  echo 1 > /sys/kernel/debug/tracing/tracing_on
+  sleep 1
+  echo 0 > /sys/kernel/debug/tracing/tracing_on
+  echo nop > current_tracer
+  cat /sys/kernel/debug/tracing/trace
+
+Trace filters
+set_ftrace_filter   | enabling or disabling specific functions to be traced
+set_ftrace_notrace  | any function that is added here will not be traced
+set_ftrace-pid      | only traces functions executed by a task with the given pid
+set_graph_function  | functions listed in this file will cause the function graph tracer to only trace
+                    | these functions and the functions that they call.
+set_graph_notrace   | disable function graph tracing when the function is hit until it exits the function.
+
+These are function calls, but there are special debug events that can be monitored as well. Tracepoints
+placed in code provides a hook to call a function (probe) that you can provide at runtime can be used
+without creating custom kernel modules to register probe functions using the event tracing infrastructure.
+  cat /sys/kernel/debug/tracing/available_events
+  echo 0 > /sys/kernel/debug/tracing/tracing_on
+  echo 1 > /sys/kernel/debug/tracing/events/syscalls/enable
+  echo 1 > /sys/kernel/debug/tracing/events/exceptions/enable
+  sh -c 'echo $$ > /sys/kernel/debug/tracing/set_event_pid;
+         echo 1 > /sys/kernel/debug/tracing/tracing_on;
+         exec echo ftrace'
+  cat /sys/kernel/debug/tracing/trace
+  echo 'neigh:*' > /sys/kernel/debug/tracing/set_event
+
+The ftrace has a front-end utility to avoid messing up with a filesystem called `trace-cmd`
+  echo ‘*sched*’ > set_ftrace_filter | trace-cmd start -p function -l ‘*sched*’
+  echo function > current_tracer     | trace-cmd start -p function
+  echo nop > current_tracer          | trace-cmd start -p nop
+  echo 0 > tracing_on                | trace-cmd stop
+  cat trace                          | trace-cmd show
+  cat trace_pipe                     | trace-cmd show -p
+  cat available_filter_functions     | trace-cmd list -f
+  ls /sys/kernel/debug/tracing/events | trace-cmd list -e
+
+NOTE?: you can filter out your driver calls using following
+  echo $$ >> /sys/kernel/debug/tracing/set_ftrace_pid
+  insmode <your_driver>
+
+Related configs:
+CONFIG_FUNCTION_TRACER
+CONFIG_FUNCTION_GRAPH_TRACER
+CONFIG_STACK_TRACER
+CONFIG_DYNAMIC_FTRACE
+
+https://lwn.net/Articles/365835/
+https://www.andreasch.com/2017/12/06/ftrace/
+https://events.static.linuxfound.org/sites/events/files/slides/linuxconjapan-ftrace-2014.pdf
+---------------------------------------------------------------------------------------------------------
+                                 Debugging oops
+---------------------------------------------------------------------------------------------------------
+In Linnux, the System.map file is a symbol table used by the kernel. It is used to resolve function address
+to its human readable name, note, this may require having CONFIG_KALLSYMS enabled. The function that is
+displayed is the closest one from address where crash was executed.
+1. Look for an PC value, this is expected to look like
+      PC : is at function+offset/length
+      pc : [<adderss>]
+2. Now you can disasemble objct file where the function is and look at `+offset` from function start to
+   identify issue line. The same can be done using vmlinux file, identify function address from System.map
+   or by substracting offset from pc, disasemble vmlinux and give a look at the calculated address.
+      objdump -D -S --show-raw-insn --prefix-addresses --line-numbers vmlinux > objdump
+
+   Note, to simplify the process of detecting line, you can open object file in gdb and execute
+      list *(function_name+offset)
+
+
+In case, you code get`s inline or optimized in other ways making backtrace not very infromative, you can
+try to dissable them from makefile, like following
+ccflags-y += -fno-default-inline -fno-inline -fno-inline-small-functions \
+             -fno-indirect-inlining -fno-inline-functions-called-once
+
+Debug configs:
+CONFIG_RELOCATABLE=y
+CONFIG_KEXEC=y
+CONFIG_CRASH_DUMP=y
+CONFIG_DEBUG_INFO=y
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_PROC_VMCORE=y
+
+cat /proc/kallsyms  # list of loaded symbols and their address.
+---------------------------------------------------------------------------------------------------------
+                                Custom functions
+---------------------------------------------------------------------------------------------------------
+
+https://gist.github.com/mcnewton/14322391d50240ec9ebf
+---------------------------------------------------------------------------------------------------------
+USE_KDUMP ? won`t system journals hold needed info?
+https://sanjeev1sharma.wordpress.com/tag/debug-kernel-panics/
+=========================================================================================================
+                                     Kdump
+=========================================================================================================
+Kdump. A feature of the Linux kernel that creates crash dumps in the event of a kernel crash.
+When triggered, kdump exports a memory image (also known as vmcore) that can be analyzed for the purposes
+of debugging and determining the cause of a crash. The dumped image of main memory, exported as an ELF
+object, can be accessed either directly through /proc/vmcore during the handling of a kernel crash, or
+it can be automatically saved to a locally accessible file system, to a raw device, or to a remote system
+accessible over network.
+
+Once crash is detected kdump boots another Linux kernel `called dump-capture` kernel. This gives a
+stable kernel from which it is possible to dump the environment for further analysis. This might be
+a separate kernel imgae built for this purpose, or the primary kernel image can be reused on arch that
+support relocatable kernels.
+
+This is performed by a `kexec` system call that allows to boot `over` the currently running kernel while
+avoiding the execution of a bootloader and hardware initialization performed by the system firmware.
+
+The system reserves a small amount of memory and preloads the kdump there so it does not interfier with
+memory resources of the crashed one.
+
+=========================================================================================================
+                                   Resources
+=========================================================================================================
+https://sites.google.com/site/lpicguide/sl-nova--intro/vmcore-kdump     # good guide on debug
+Decent description of kdump/kexec usage flow
+https://events.static.linuxfound.org/sites/events/files/slides/kdump_usage_and_internals.pdf
+
+=========================================================================================================

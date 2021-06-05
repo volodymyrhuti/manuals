@@ -389,20 +389,6 @@ The loader is a program called execve, which loads the code and data of the exec
 into memory and then runs the program by jumping to the first instruction. 
 
 =========================================================================================================
-                                Init vs Systemd
-=========================================================================================================
-Init is a daemon process which starts as soon as the computer starts and continue running till, it is
-shutdown. It is the first process after boot, making it the parent of all other running processes directly
-or indirectly and hence typically it is assigned pid=1. If init couldn`t  stat you will receive kernel
-panic. There are many replacements for init, some of which are:
-1. Upstart. Implemented in Ubuntu and designed to start process asynchronously
-2. Epoch. Daemon built around simplicity and service managment, designed to start process single-threaded
-3. Mudar. Daemon written in Python, implemented on Pardus and designed to start processes asynchronously
-4. System. Daemon designed to start process in parallel, implemented in a number of standart distribution.
-
-Init starts serially, one task starts only after last task startup was successful which resulted in
-delayed and long booting time. Systemd is parallel
-=========================================================================================================
                                Linux init scripts
 =========================================================================================================
 Init scripts are saved to /etc/rc.d, where you can find rc[1-6].d directories and rcS.d. File used to
@@ -424,6 +410,28 @@ will read configuration file in /etc/init/rc-sysinit.conf
 To detect active inite system issue one of following
 ps -p 1
 file /sbin/init                        # will show full path behind link
+
+---------------------------------------------------------------------------------------------------------
+                                Init vs Systemd
+---------------------------------------------------------------------------------------------------------
+Init is a daemon process which starts as soon as the computer starts and continue running till, it is
+shutdown. It is the first process after boot, making it the parent of all other running processes directly
+or indirectly and hence typically it is assigned pid=1. If init couldn`t  stat you will receive kernel
+panic. There are many replacements for init, some of which are:
+1. Upstart. Implemented in Ubuntu and designed to start process asynchronously
+2. Epoch. Daemon built around simplicity and service managment, designed to start process single-threaded
+3. Mudar. Daemon written in Python, implemented on Pardus and designed to start processes asynchronously
+4. System. Daemon designed to start process in parallel, implemented in a number of standart distribution.
+
+Init starts serially, one task starts only after last task startup was successful which resulted in
+delayed and long booting time. Systemd is parallel
+---------------------------------------------------------------------------------------------------------
+                                   How to use
+---------------------------------------------------------------------------------------------------------
+initctl list               # list initV services
+service --status-all       # the same
+
+---------------------------------------------------------------------------------------------------------
 
 https://unix.stackexchange.com/questions/18209/detect-init-system-using-the-shell
 https://www.debian.org/doc/manuals/debian-faq/ch-customizing.en.html

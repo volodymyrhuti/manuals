@@ -15,6 +15,20 @@ Afterwards you need to rebuild cache and verify that font was found
     fc-cache -fv
     fc-list | grep <font_name>
 
+Taken from siji/install.sh
+update_cache()
+{
+	success "Updating font cache... Please Wait"
+	mkfontdir $font_dir
+	xset +fp $font_dir
+	xset fp rehash
+	fc-cache -f
+	success "Finished. Your font cache has been updated"
+
+	# Perform post install stuff
+	post_install
+}
+
 ---------------------------------------------------------------------------------------------------------
 Font formats:
 TrueType. Vector format with rendering hints therefore can be rendered of different size

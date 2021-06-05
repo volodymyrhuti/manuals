@@ -55,21 +55,22 @@ file contains instructions for booting process.  This mechanism is designed for 
 https://cromwell-intl.com/open-source/linux-boot.html
 https://www.happyassassin.net/2014/01/25/uefi-boot-how-does-that-actually-work-then/
 =========================================================================================================
-                   Chain loading
-Chain loading => method used by computer programs to replace the currently executing program with a new
+                                 Chain loading
+=========================================================================================================
+Chain Loading. Method used by computer programs to replace the currently executing program with a new
 program, using a 'common data area' to pass information from the current program to the new program.
 
 =========================================================================================================
                                   Boot sector
 =========================================================================================================
-Boot sector => region of a hard/floppy/optical disk or other data storage device that contains machine code
+Boot sector. Region of a hard/floppy/optical disk or other data storage device that contains machine code
 to be loaded into RAM by computer built-in firmware. It is a physical sector or section on hard drive that
 includes information about how to start the boot process in order to load an OS
 
 On IBM PC compatible machine, the BIOS selects a boot device, then copies the first sector from the device
 (MBV/VBR or any executable code), into physical memory at address 0x7C00
 
-Exmaple of boot sector =>
+Exmaple of boot sector:
 - Master Boot Record (MBR)
 - Volume Boot Record (VBR)
 =========================================================================================================
@@ -110,10 +111,21 @@ GUID partition table (GPT) => standart for doing partition tables - the informat
 that defines what partitions that disk contains.
 
 ... TODO note that GPT is backward capable to MBR
+
 =========================================================================================================
-Adapter => hardware device / software component that converts data from one presentation form to another.
-Almost every peripheral device uses an adapter to communicate with system bus =>
-- Display adapter => used to transmit signal to monitor
+                           PXE. Preboot Execution Env
+=========================================================================================================
+PXE. Pronounced as pixie. Specification describes a standardized client–server environment that boots a
+software assembly, retrieved from a network, on PXE-enabled clients. On the client side it requires only
+a PXE-capable network interface controller (NIC), and uses a small set of industry-standard network
+protocols such as DHCP and TFTP. 
+
+=========================================================================================================
+                                  Peripherals
+=========================================================================================================
+Adapter. Hardware device / software component that converts data from one presentation form to another.
+Almost every peripheral device uses an adapter to communicate with system bus:
+- Display adapter - used to transmit signal to monitor
 - USB adapters for printers, keyboards and mice, among others
 - Network adapter required to attach to any network
 
@@ -205,8 +217,11 @@ kernel module has detected the devices (is associated with that device) while th
 which specific device it is (kernel returns pointer to device or you can find it by its number in device
 table, kernel doesn`t know anything about minor numbers beyond the fact that they refer to devices
 implemented by your driver)
-brw-rw----    1 root     root        8,   0 Jan  1 01:00 /dev/sda
-Your own device node can be created with 'mknod name <type c/d> <min> <maj>'
+    brw-rw----    1 root     root        8,   0 Jan  1 01:00 /dev/sda
+
+Your own device node can be created with
+    mknod name <type c/d> <min> <maj>
+
 /dev is automatically filled by utils like 'udev' that just monitors device events and calls 'mknod / rm'
 Some of what you find in /dev are pseudo-devices not coresponding to hardware. These provide functions
 provided by the kernel, for instance /dev/zero, an endless source of all-zero bytes.
@@ -215,20 +230,27 @@ https://cromwell-intl.com/open-source/sysfs.html
 =========================================================================================================
                                      Mount
 =========================================================================================================
-Filesystem => in this context, hierarchy of directories that is located on a single partition (physical?)
-or other devices like DVD, CDROM ... and has a single filesystem type (method for organizing data)
+Filesystem. Hierarchy of directories that is located on a single partition (physical?) or other devices
+like DVD, CDROM ... and has a single filesystem type (method for organizing data).
 
-UUID (Universally Unique IDentifier) => 128 bit identifier used in Linux to identify disk in the /etc/fstab
-file. It was created as more flexiable solution to mount names like sda,sdb,... . If you wanted to add
-partion as sdb, when one is alredy defined, you would need to change fstab which involved many issues?
-It can be used to give persistant namings for devices, just configure it in fstab
+UUID. Universally Unique IDentifier. 128 bit identifier used in Linux to identify disk in the /etc/fstab
+file. It was created as more flexiable solution to mount names like sda,sdb,... .
+If you wanted to add partion as sdb, when one is alredy defined, you would need to change fstab which
+involved many issues? It can be used to give persistant namings for devices, just configure it in fstab.
 
-GUID (Globally Unique IDentifier) => is an Microsoft`s implementation of UUID
+GUID. Globally Unique IDentifier. Microsoft`s implementation of UUID.
 
-Root partition => start of filesystem denoted with '/'
-All partitions of a system can be found in /etc/mtab
+Root Partition. Start of filesystem denoted with '/'
+Mounting creates a view of a storage device as a directory tree.
 
 Mounting/Unmounting can be seen in kernel logs `dmesg`
+All partitions of a system can be found in /etc/mtab
+The kernel also keeps information for /proc/mounts, which lists all currently mounted partitions.
+For troubleshooting purposes, if there is a conflict between /proc/mounts and /etc/mtab information,
+the /proc/mounts data is always more current and reliable than /etc/mtab.
+
+https://backdrift.org/how-to-use-bind-mounts-in-linux
+https://unix.stackexchange.com/questions/198590/what-is-a-bind-mount
 ---------------------------------------------------------------------------------------------------------
                                    Swap space
 ---------------------------------------------------------------------------------------------------------
@@ -257,10 +279,6 @@ Disks that are mounted on boot are saved in /etc/fstab, it can be edited for you
 are left to remount all disks from file with `mount -a`
 
 ---------------------------------------------------------------------------------------------------------
-                         LVM (Logical Volume Managment)
----------------------------------------------------------------------------------------------------------
-                                      TODO
----------------------------------------------------------------------------------------------------------
                             Consistent device naming
 ---------------------------------------------------------------------------------------------------------
 Devices names are abbreviation of fullname + device order + partition number
@@ -278,6 +296,9 @@ cat /proc/mounts
 cat /proc/mtd
 cat /etc/mtab       # old variant of fstab that may not support some advanced Linux features like containers?
 cat /etc/fstab      # mounted on boot
+
+mount
+    -B <src_path> <dest>  # bind mount; alternate view of a directory tree; like a hard link
 
 If you want to override options used when mounting, use following, options will be appended, last option
 wins when ambiguous
@@ -347,22 +368,37 @@ then render if another then download ...).
 https://unix.stackexchange.com/questions/207276/how-are-file-types-known-if-not-from-file-suffix/207290#207290
 https://unix.stackexchange.com/questions/266999/why-does-linux-use-file-extension-to-decide-the-default-program-for-opening-a-fi
 =========================================================================================================
-                           Simulating usb plug/unplug
+                                      Udev
 =========================================================================================================
+Udev. Linux subsystem that supplies your computer with device events; Linux dynamic device management;
+replacement for the Device File System (DevFS) starting with the Linux 2.6 kernel series;
+dynamically creates or removes device node files at boot time in the /dev directory for all types of devices
+It allows you to identify devices based on their properties, like vendor ID and device ID, dynamically.
+udev runs in userspace (as opposed to devfs which was executed in kernel space).  That makes it a
+potentially useful utility, and it's well-enough exposed that a standard user can manually script it to
+do things like performing certain tasks when a certain hard drive is plugged in.
 
-Get id of usb device with dmesg, or from udev/mdev logs
-To unbind => echo #id > /sys/bus/usb/drivers/usb/unbind
-To bind => echo #id > /sys/bus/usb/drivers/usb/bind
-https://raspberrypi.stackexchange.com/questions/6782/commands-to-simulate-removing-and-re-inserting-a-usb-peripheral
-https://lwn.net/Articles/143397/
+Udev is now part of systemd, which can be noticed by inspecting systemd rpm package
+  $ rpm -ql systemd | grep udev
+    /etc/udev
+    /etc/udev/hwdb.bin
+    /etc/udev/rules.d
+    /etc/udev/udev.conf
+    /usr/bin/udevadm
 
-This will power-off the device and detach it from the system.
-It won`t be detected again till it is disconnected and re-attached
-echo 'offline' > /sys/block/sdb/device/state
-echo '1' > /sys/block/sdb/device/delete
-https://unix.stackexchange.com/questions/35508/eject-usb-drives-eject-command
+/lib/udev/rules.d/           # The default rules directory
+/etc/udev/rules.d/           # The custom rules directory. These rules take precedence.
 
+With the `$ udevadm monitor` command, you can tap into udev in real time and see what it sees when you
+plug in different devices. Become root and try it.
+  udevadm info -a -n /dev/<dev>     # get device info once noticed on monitor 
+  udevadm control --reload          # NOTE: you need to reboot device to sync changes
+                                    #        but this might work as well
+To add such handler, you will need to edit `/etc/udev/rules.d` files, like `80-local.rules`
 
+https://wiki.debian.org/udev
+https://opensource.com/article/18/11/udev
+https://www.thegeekdiary.com/beginners-guide-to-udev-in-linux/
 =========================================================================================================
                                       UBI
 =========================================================================================================
@@ -373,8 +409,42 @@ An UBI volume is a set of consecutive logical eraseblocks (LEBs). Each logical e
 to any physical eraseblock (PEB). This mapping is managed by UBI
 
 =========================================================================================================
+                                     Ramfs
+=========================================================================================================
+
+
+https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+=========================================================================================================
                               Initrd and Initramfs
 =========================================================================================================
+That's what initramfs is for: It is a CPIO archive that gets attached to the kernel image (the kernel
+image is the container for the initramfs not other way round) either in the kernel image itself, or by
+the bootloader at boot time.
+
+That CPIO archive contains an initial rootfs with the modules required to setup all devices to access the
+proper root filesystem and some programs to identify those devices, load the modules, do some other
+startup tasks remount the proper root file system to / and start /sbin/init
+
+initrd is similar, with the main difference that it is an filesystem image, that may be and usually is
+compressed. The kernel must have support for the filesystem used built in and will mount this image as
+the initial /.
+
+Since CPIO is simpler by several orders of magnitudes, initramfs is prefered over initrd, as this saves
+both the requirement for any filesystem modules being built in and also makes initramfs creation easier.
+Instead of having to create an ext2 image, loopdevice mount and populate it, it boils down to a simple
+archive creation, not unlike using tar.
+
+However if you compile your kernel with all required drivers and modules built into the kernel image, and
+your root file system device has a fixed name in the system you don't need a initramfs as the kernel can
+do things by itself then.
+
+initrd/initramfs is optional and not a requirement. bzImage is the pure kernel image and can be booted
+directly by the bootloader. However it might be neccesary to execute some tasks (loading filesystem
+modules, drivers for disk access, mounting the root file system from some exchangeable media without
+fixed name/path, etc.) that would usually require access to a filesystem and userspace tools.
+
+https://stackoverflow.com/questions/6405083/is-it-possible-to-boot-the-linux-kernel-without-creating-an-initrd-image
+---------------------------------------------------------------------------------------------------------
 There are complicated boot setups, for instance multiple filesystems were detected, /usr with different
 tools and drivers is saved on another partition and cannot be used without mounting (what if it contains
 tools needed to access itself), or root filesystem is encrypted and kernel cannot find init executable.
@@ -386,14 +456,192 @@ switches to real filesystem and calls init.  There are some disadvantages =>
   communicate, meaning that kernel should have compiled-in driver 
 - Data is duplicated from some another filesystem
 - Block device fills cache with used files
+
 To reduce memory usage, initramfs was created
-Initrams => base filesystem in RAM, based on tmpfs (light filesystem with changable size) which doesnt use
-block device. Its content (scripts, utilities, libraries, configs) is archived into cpio, then archive in
-gziped and saved with kernel. Bootloader will forward it to kernel which  will create tmpfs file system,
+Initramfs. Base filesystem in RAM, based on tmpfs (light filesystem with changable size) which doesnt use
+block device. Its content (scripts, utilities, libraries, configs) is archived into cpio, then archive is
+gziped and saved with kernel. Bootloader will forward it to kernel which will create tmpfs file system,
 unzip archive to there and start init script
 
 http://linuxdevices.org/introducing-initramfs-a-new-model-for-initial-ram-disks-a/
 https://stackoverflow.com/questions/15444917/initrd-ramdisk-initramfs-uclinux
+=========================================================================================================
+                                      LVM
+=========================================================================================================
+LVM. Logical Volume Managment. System of managing logical volumes, or filesystems, that is much more
+advanced and flexible than the traditional method of partitioning a disk into one or more segments and
+formatting that partition with a filesystem. You can do the same with gparted and mannual reconfiguration,
+though it LVM is better in some parts.
+
+You can think of LVM as "dynamic partitions", meaning that you can create/resize/delete LVM "partitions"
+(they're called "Logical Volumes" in LVM-speak) from the command line while your Linux system is running:
+no need to reboot the system to make the kernel aware of the newly-created or resized partitions.
+
+here are 3 concepts that LVM manages:
+- Volume Group. Named collection of physical and logical volumes.
+  Typical systems only need one Volume Group to contain all of the physical and logical volumes on the
+  system, and commonly named after the name of the machine.
+- Physical Volume. Correspond to disks; they are block devices that provide the space to store logical volumes.
+- Logical Volume. Correspond to partitions: they hold a filesystem.
+  Unlike partitions though, logical volumes get names rather than numbers, they can span across multiple
+  disks, and do not have to be physically contiguous.
+
+---------------------------------------------------------------------------------------------------------
+                                     Features
+---------------------------------------------------------------------------------------------------------
+One of the biggest advantages LVM has is that most operations can be done on the fly, while the system is
+running. Most operations that you can do with gparted require that the partitions you are trying to
+manipulate are not in use at the time, so you have to boot from the livecd to perform them.
+
+You also often run into the limits of the msdos partition table format with gparted, including only 4
+primary partitions, and all logical partitions must be contained within one contiguous extended partition. 
+
+
+Many Partitions
+---------------------------------------------------------------------------------------------------------
+If you like to test various Linux distributions, or just different version of Ubuntu, or both, you can
+quickly end up with quite a few partitions. With conventional msdos partitions, this becomes problematic
+due to its limitations. With LVM you can create as many Logical Volumes as you wish, and it is usually
+quite easy since you usually have plenty of free space left. Usually people allocate the entire drive to
+one partition when they first install, but since extending a partition is so easy with LVM, there is no
+reason to do this. It is better to allocate only what you think you will need, and leave the rest of the
+space free for future use. If you end up running out of the initial allocation, adding more space to that
+volume is just one command that completes immediately while the system is running normally.
+
+Snapshots
+---------------------------------------------------------------------------------------------------------
+This is something you simply can not do without LVM. It allows you to freeze an existing Logical Volume
+in time, at any moment, even while the system is running. You can continue to use the original volume
+normally, but the snapshot volume appears to be an image of the original, frozen in time at the moment
+you created it. You can use this to get a consistent filesystem image to back up, without shutting down
+the system. You can also use it to save the state of the system, so that you can later return to that
+state if you mess things up. You can even mount the snapshot volume and make changes to it, without
+affecting the original.
+
+Usage
+---------------------------------------------------------------------------------------------------------
+
+https://wiki.ubuntu.com/Lvm
+https://askubuntu.com/questions/3596/what-is-lvm-and-what-is-it-used-for
+=========================================================================================================
+                   RAID. Redundant Array of Inexpensive Disks
+=========================================================================================================
+A way of logically putting multiple disks together into a single array. The idea then is that these disks
+working together will have the speed and/or reliability of a more expensive disk.
+Now, the exact speed and reliability you'll achieve from RAID depends on the type of RAID you're using. 
+
+---------------------------------------------------------------------------------------------------------
+                                  Failure Rate
+---------------------------------------------------------------------------------------------------------
+Spinning disk, mechanical HDDs are typically chosen in situations where needs such as speed and
+performance fall second to cost.
+- Due to physical limitations and the mechanical nature of many high speed moving parts contained in them
+- HDDs also have a relatively high failure rate compared to SSDs
+
+RAID is meant to help alleviate both of these issues, depending on the RAID type you use.
+Typically, a mechanical hard drive has a 2.5% chance of failure each year of its operation.
+This has been proven by multiple reports and no specific manufacturer or model has a dramatic variation
+from that 2.5% rate.
+
+SSDs are typically chosen in situations where speed and performance take a priority to cost considerations.
+- As they have no moving parts, their ability to both write and read data on them is significantly faster
+  than on a HDD (at least 8-10x faster.)
+- Failure rate is roughly .5% during each year of is operation, which significantly reduces the risk
+  compared to a spinning HDD.  
+
+Because of the dramatic difference between the technologies of HDDs and SSDs, it’s important to state
+that some RAID implementations that are great for HDDs are not for SSDs, and vice versa. 
+---------------------------------------------------------------------------------------------------------
+                                 Types
+---------------------------------------------------------------------------------------------------------
+1. RAID 0. Striping. Taking any number of disks and merging them into one large volume.
+   + This will greatly increase speeds, as you're reading and writing from multiple disks at a time.
+   + An individual file can then use the speed and capacity of all the drives of the array.
+   - It is NOT redundant. The loss of any individual disk will cause complete data loss.
+   - This RAID type is very much less reliable than having a single disk.
+
+   There are rarely a situation where you should use RAID 0 in a server environment.
+   You can use it for cache or other purposes where speed is important and reliability/data loss does not
+   matter at all. But it should not be used for anything other than that.
+
+   As an example, with the 2.5% annual failure rate of drives, if you have a 6 disk RAID 0 array, you've
+   increased your annual risk of data loss to nearly 13.5%.
+
+2. RAID 1. Mirroring. Almost every use case of RAID 1 is where you have a pair of identical disks
+   identically mirror/copy the data equally across the drives in the array.
+   The point of RAID 1 is primarily for redundancy.
+   If you completely lose a drive, you can still stay up and running off the additional drive.
+
+   In the event that either drive fails, you can then replace the broken drive with little to no downtime.
+   + Gives you the additional benefit of increased read performance, as data can be read off any of the
+     drives in the array
+   - You will have slightly higher write latency.
+   - Since the data needs to be written to both drives in the array, you'll only have the available
+     capacity of a single drive while needing two drives.
+
+3. RAID 5/6. Striping + Distributed Parity. Requires at least 3 drives (RAID 6 requires at least 4 drives).
+   It takes the idea of RAID 0, and strips data across multiple drives to increase performance.
+   But, it also adds the aspect of redundancy by distributing parity information across the disks.
+
+   In short, with RAID 5 you can lose one disk, and with RAID 6 you can lose two disks, and still maintain
+   your operations and data.
+
+   + RAID 5 and 6 will get you significantly improved read performance
+   - Write performance is largely dependent on the RAID controller used. For RAID 5 or 6, you will most
+     certainly need a dedicated hardware controller. This is due to the need to calculate the parity data
+     and write it across all the disks.
+
+   RAID 5 and RAID 6 are often good options for standard web servers, file servers, and other general
+   purpose systems where most of the transactions are reads, and get you a good value for your money.
+   This is because you only need to purchase one additional drive for RAID 5 (or two additional drives for
+   RAID 6) to add speed and redundancy.
+
+   RAID 5 or RAID 6 is not the best choice for a heavy write environment, such as a database server, as it
+   will likely hurt your overall performance. 
+
+   NOTE: RAID 5 / RAID 6, if you lose a drive, you’re going to be seriusly sacrificing performance to keep
+   your environment operational. Once you replace the failed drive, data will need to be rebuilt out of the
+   parity information. This will take a significant amount of the total performance of the array. These
+   rebuild times continue to grow more and more each year, as drives get larger and larger.
+4. RAID 10. Mirroring + Striping.
+   Requires at least 4 drives and is a combination of RAID 1 (mirroring) and RAID 0 (striping).
+
+   + This will get you both increased speed and redundancy.
+   + This is often the recommended RAID level if you're looking for speed, but still need redundancy.
+   + Improved read and write performance
+   + Fast rebuild time of RAID 1
+   - Just like RAID 1, you'll only have the capacity of half the drives
+
+   In a four-drive configuration, two mirrored drives hold half of the striped data and another two mirror
+   the other half of the data. This means you can lose any single drive, and then possibly even a 2nd
+   drive, without losing any data.
+
+---------------------------------------------------------------------------------------------------------
+RAID can be implemented at software or hardware level.
+1. Software RAID.
+   - leverages some of the system’s computing power to manage the RAID configuration.
+   - If you’re looking to maximize performance of a system, such with a RAID 5 or 6 configuration,
+     it’s best to use a hardware-based RAID card when you’re using standard HDDs.
+2. Hardware RAID.  Requires a dedicated controller installed in the server.
+   Hardware based RAID card does all the management of the RAID array(s), providing logical disks to the
+   system with no overheard on the part of the system itself.
+
+   Additionally, hardware RAID can provide many different types of RAID configurations simultaneously to
+   the system. This includes providing a RAID 1 array for the boot and application drive and a RAID-5 array
+   for the large storage array.
+---------------------------------------------------------------------------------------------------------
+NOTE:
+- RAID will not protect you against data corruption, human error, or security issues.
+  While it can protect you against a drive failure, there are innumerable reasons for keeping backups.
+  So do not take RAID as a replacement for backups. If you don’t have backups in place, you’re not ready
+  to consider RAID as an option.
+- RAID does not necessarily allow you to dynamically increase the size of the array.
+  If you need more disk space, you cannot simply add another drive to the array.
+  You are likely going to have to start from scratch, rebuilding/reformatting the array
+- RAID isn’t always the best option for virtualization and high-availability failover.
+
+https://www.prepressure.com/library/technology/raid
+https://www.steadfast.net/blog/almost-everything-you-need-know-about-raid
 =========================================================================================================
                              Data buferizing
 =========================================================================================================
@@ -456,7 +704,7 @@ ncdu                           # nice cli scanner
 
 
 =========================================================================================================
-                        Debugfs
+                                    Debugfs
 =========================================================================================================
 Linux RAM based file system used by kernel developers to hold usefull information. There are no rulles
 affecting it`s usage, it should be used as developer wish. By default it is mounted to /sys/kernel/debug
