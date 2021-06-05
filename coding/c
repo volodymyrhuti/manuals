@@ -133,7 +133,7 @@ For example, there must be at least one other member, and the flexible array mus
 Note, otherwise, zero length array is makes behaviour undefined, but if use it like `char name[];`
 compiler will warn you about this.
 
-One advantage is data locality, all members and array are saved continiously, ortherwise you would have
+One advantage is data locality, all members and array are saved continuously, ortherwise you would have
 pointer for array, and data is allocated somewhere on heap, far from other fields. You could go around
 by allocationg struct + payload in one malloc, like
 struct name {
@@ -171,4 +171,9 @@ Align M down to the closest multiple of power of N
 In case N is multiple of 2 => ~(N-1) will give all uper bits including bit currently set to 1 `M+N-1` will
 go over current request and in case result is power of 2 will decrese it by 1 so pool is not too big.
 
+===============================================================================================================
+                                     Random
+===============================================================================================================
+Why do we have to pass the file name twice in exec functions?
+https://unix.stackexchange.com/questions/187666/why-do-we-have-to-pass-the-file-name-twice-in-exec-functions
 ===============================================================================================================

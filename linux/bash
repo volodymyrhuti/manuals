@@ -42,6 +42,18 @@ there.
 
 https://stackoverflow.com/questions/25165808/should-i-use-a-shebang-with-bash-scripts
 https://www.shellscript.sh/tips/shebang/
+---------------------------------------------------------------------------------------------------------
+                            Sending string to stdin
+---------------------------------------------------------------------------------------------------------
+cat <<< "This is coming from the stdin"         # one-line heredoc
+
+cat <<EOF                                       # same as above
+This is coming from the stdin
+EOF
+
+diff <(ls /bin) <(ls /usr/bin)
+
+https://stackoverflow.com/questions/6541109/send-string-to-stdin
 =========================================================================================================
                               Variables/Arguments
 =========================================================================================================
@@ -307,8 +319,6 @@ To list sourced functions, use `declare -f`, which will provide name and definit
 If you don`t want definiton, use `declare -F`
 
 ---------------------------------------------------------------------------------------------------------
-                                     Scope
----------------------------------------------------------------------------------------------------------
 `local`. Alloocation/Scope type. Declare variable as local in order to hide global varible within scope of
 your function, and accidentaly not modify it.
 NOTE: local variables are seen by children functions
@@ -331,6 +341,25 @@ foo
 echo $global_var
 # 1
 
+---------------------------------------------------------------------------------------------------------
+                                     Export
+---------------------------------------------------------------------------------------------------------
+Before considering what is the purpose of export, you need to know difference between sub-shell/process
+subshell   | created with: (), ``, $(), loops
+subprocess | invoked by name: /bin/bash, /bin/ls ...
+
+The difference is that subprocess can see only explicitly exported variables, while subshells inherit
+all parental variables. However, neither can pass variables back to the parent shell. 
+
+Export add variable to shell environment so they are further available to all sub-processes.
+  $ export name=value
+NOTE: usually you will source exported variables from cofig files like .bashrc and .profile to setup
+      environment. All following subterminal/shell are inheriting these from profile console.
+
+If you run this command within a subshell, e.g. some script that calls subscripts, it is not saved to
+executor, since it is subenvironment. Source 
+
+https://stackoverflow.com/questions/1158091/defining-a-variable-with-or-without-export/1158231#1158231
 ---------------------------------------------------------------------------------------------------------
                                       Eval
 ---------------------------------------------------------------------------------------------------------
@@ -479,22 +508,6 @@ There is option for multiline input, which can be done in next way
 command << DELIMITER
    ...
 DELIMITER
-
-The format of here-documents is:
-    [n]<<[-]word
-            here-document
-    delimiter
-
-If the redirection operator is <<-, then all leading tab characters are stripped from input lines and the line  containing  delimiter.   This
-allows here-documents within shell scripts to be indented in a natural fashion.
-
-This can be used to hold file in script, so you dont need to create it outsied and pipe into script or
-for progrmas with interactiv input like ftp
-  ftp << DEL
-    user ...
-    get file path
-    ...
-  DEL
 
 If u want to pipe this command into another, pipe should be used after first delimiter
   command << DELIM | command2 | ...
@@ -998,11 +1011,21 @@ ERR         | executed each time a command's failure would cause the shell to ex
 https://www.linuxjournal.com/content/bash-trap-command
 https://jichu4n.com/posts/debug-trap-and-prompt_command-in-bash/
 =========================================================================================================
-                           Run script without parent
+                                 Nohup & Disown
 =========================================================================================================
-If u want to leave command active when terminal is closed, you have to make it immune to hangups(SIGHUP),
-this is done using `nohup` or `disown`. The difference between them:
-1. `nohup` is used when command is executed while disown should be used after command has already started
+If u want to leave command active when terminal is closed, you have to make it immune to SIGHUP hangups.
+It is the signal sent by the kernel when the parent shell is closed. This can be done using `nohup` or
+`disown`.
+
+Running a job in the background (with & or bg) is a shell feature, stemming from the ability of modern
+systems to multitask. Instead of forking a new shell instance for every program you want to launch, modern
+shells will have the ability to manage a list of programs (or jobs). Only one of them at a time can be at
+the foreground, meaning it gets the shell focus. 
+
+The difference between them:
+1. `nohup` is used when command is executed while disown should be used after command has already started.
+    The command is registering SIGHUP handler and starts command, but does not send it ot background, thats
+    why you want & mannualy
     nohup <cmd> &  |  <cmd> &
                    |  disown
 2. nohup process becomes a child of init process, with closed stdin and stdout/err redirected to `nohup.out` file
@@ -1012,16 +1035,23 @@ this is done using `nohup` or `disown`. The difference between them:
 5. `disown` removes the process from shell job list while `nohup` doesn`t
     nohup <cmd> & # process is present in `jobs`
     disown        # process is abscent in `jobs`
+6. nohup does not handle shell functions calls
 
+NOTE: shell runs fork to execute any new process regardless of `&`, except shell functions, that are
+executed from caller context.
 
 They have similar purposes, but they differ in many ways. nohup intercepts SIGHUP so that when the shell that ran it quits and sends SIGHUP to all its still-running children, long-running-process doesn't die. disown simply removes the specified job from Bash's child list, so it won't try to send SIGHUP at all. nohup is a program separate from the shell, so it works with all shells, whereas disown is a Bash builtin. nohup accepts the command to run, whereas disown only works after the job is started and you've backgrounded it so you can get back to the shell.
 https://unix.stackexchange.com/questions/479/keep-processes-running-after-ssh-session-disconnects
 
-NOTE, in order to mute jobs related prints, you may want to l
+Wait for last process?
 wait $! 2>/dev/null
+
+TODO: the differences between a process running in the foreground and one in the background (the main one
+      being acess to stdin/stdout).
 
 https://stackoverflow.com/questions/81520/how-to-suppress-terminated-message-after-killing-in-bash
 https://unix.stackexchange.com/questions/3886/difference-between-nohup-disown-and
+https://unix.stackexchange.com/questions/32574/when-do-you-need-nohup-if-youre-already-forking-using
 =========================================================================================================
                                       sudo
 =========================================================================================================

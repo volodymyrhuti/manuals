@@ -179,6 +179,19 @@ Maybe?
 [vhuti]## sudo apt --fix-broken install
 
 https://askubuntu.com/questions/88371/apt-synaptic-needs-to-reinstall-package-but-cant-find-the-archive-for-it
+---------------------------------------------------------------------------------------------------------
+sudo apt-get build-dep pidgin
+Reading package lists... Done
+E: You must put some 'source' URIs in your sources.list
+
+The easy method: software-properties-gtk - toggle source files
+In-oder to rebuild you package from source, you need to download it
+  $ sudo apt build-dep <package>
+Donwload instruction is saved to `/etc/apt/sources.list`. You need to uncomment `deb-src` lines and perform
+update to refresh them.
+
+https://unix.stackexchange.com/questions/468215/how-to-compile-less-pager/468218#468218
+https://askubuntu.com/questions/496549/error-you-must-put-some-source-uris-in-your-sources-list
 =========================================================================================================
                                       Snap
 =========================================================================================================

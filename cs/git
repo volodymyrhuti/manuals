@@ -120,7 +120,7 @@ directory alongside its .git root).
 git remote add  <remote_name> <location>          # adds remote to your local repo
                                git@github.com:User/UserRepo.git
                                http://host/path/to/repo.git
-                               ssh://user@host/path/to/repo.gi
+                               ssh://user@host/path/to/repo.git
                                <local_path>/git_repo/
 git remote set-url <local_remote> <location>      # change local remote to point to <location>
                                                   # fails if there is no <local_remote>
@@ -446,6 +446,9 @@ When merge occurs, diverged hunks will be outlined with
 ============= Divider, divides changes done by commits
 >>>>>>>>>>>>> End of confilct
 
+NOTE: you can issue merge on files on your own by issuing
+  git merge-file <file_br1> <file_base> <file_br2>
+
 https://dev.to/neshaz/how-to-use-git-merge-the-correctway-25pd
 ---------------------------------------------------------------------------------------------------------
                                  Merge history
@@ -571,10 +574,11 @@ within root directory
    $ cat submodule/.git
      gitdir: ../ ... /.git/modules/submodule/
 
-gsm add [-b brch] <url> [dst] # add submodule
+gsm add [-b brch] <url> [dst]           # add submodule
+                  <link> <local_path>   # add locally downloaded repo as submodule
     init                    # reads `.gitmodules`, finds remotes and creates empty directories for
                             # future submodules
-    update                  # downloads submodule content to directories created by init
+    update  <module_name>   # downloads submodule content to directories created by init
                             # NOTE: bydefault checkouts the last commit and stays in detached state
             --init          # to avoid separate init command
             --rebase        #
@@ -613,6 +617,9 @@ Note, status, loke logs and diffs, is limited to the active repo, not to submodu
 git config --global status.submoduleSummary true       # submodule-aware status
 git config --global diff.submodule log                 #       -         diff
 git config --global fetch.recurseSubmodules on-demand  # fetch commits on module update
+
+Adding locally downloaded repo as submodule
+https://stackoverflow.com/questions/16725107/how-to-add-already-cloned-projects-as-submodules/48525964
 
 https://www.vogella.com/tutorials/GitSubmodules/article.html
 https://git-scm.com/book/en/v2/Git-Tools-Submodules
@@ -798,7 +805,7 @@ git fetch
       --unshallow
       --shallow-since=day/month/year
       --deepen=<depth>                 # incremental one, number of commits from the current shallow
-                                         boundary instead of from the tip of each remote branch history
++                                        boundary opposite to the tip of each remote branch history
                                          Note, this by default assumes --single-branch flag but can be
                                          overriden with --no-single-branch
       --update-shllow
@@ -986,6 +993,19 @@ git-secret is a bash script to store your private data inside a git repo. Basica
 using gpg, the tracked files with the public keys of all the users that you trust. So everyone of them can
 decrypt these files using only their personal secret key.
 
+git secret init              # creates .gitsecret/ folder
+                             # NOTE: should not stage `random_seed`, it`s automatically gitignored
+git secret tell <gpg_email>  # add user
+git secret add <files>       # add files you wish to encrypt inside the git-secret repository
+                             # NOTE: these files should be ignored from .gitignore
+git secret hide              # encrypt previously added files
+                             # data is encrypted with the public-keys described by the git secret tell
+NOTE: It’s recommended to add the git secret hide command to your pre-commit hook, so you won’t miss any changes
+git add <secret_files>
+git commit ....
+git secret reveal            # to decrypt
+git secret cat               # to just print the content
+
 Comparison with git-crypt: https://github.com/sobolevn/git-secret/issues/101
 ---------------------------------------------------------------------------------------------------------
                                    Git-crypt
@@ -997,6 +1017,18 @@ Comparison with git-crypt: https://github.com/sobolevn/git-secret/issues/101
 - Rotate the key each time a user is revoked access
 
 https://opensource.com/article/19/2/secrets-management-tools-git
+---------------------------------------------------------------------------------------------------------
+                            Removing sensitive data
+---------------------------------------------------------------------------------------------------------
+In case you have commited some sensitive data, you can remove it from history with the following commands:
+  git filter-branch --force --index-filter \
+    'git rm --cached --ignore-unmatch PATH-TO-YOUR-FILE-WITH-SENSITIVE-DATA' \
+    --prune-empty --tag-name-filter cat -- --all
+  echo "YOUR-FILE-WITH-SENSITIVE-DATA" >> .gitignore
+  git push origin --force --all
+  git push origin --force --tags
+
+https://gardener.cloud/documentation/guides/applications/commit_secret_fail/
 =========================================================================================================
                                     Markdown
 =========================================================================================================

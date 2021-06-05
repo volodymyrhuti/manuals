@@ -1,4 +1,75 @@
 =========================================================================================================
+                                    HereDoc
+=========================================================================================================
+HereDoc. Block of code or text which can be redirected to the command script or interactive program.
+To use here document in any bash script, you have to use the symbol << followed by any delimiting
+identifier after any bash command and close the HereDoc by using the same delimiting identifier at end of
+the text.
+
+The format of here-documents is:
+    [n]<<[-]word
+            here-document
+    delimiter
+Simple example includes
+  cat <<ADDTEXT
+    This text is
+    added by Here Document
+ADDTEXT
+
+If the redirection operator is <<-, then all leading tab characters are stripped from input lines and the 
+line  containing  delimiter. This allows here-documents within shell scripts to be indented in a natural
+fashion.
+
+This can be used to hold file in script, so you dont need to create it outsied and pipe into script or
+for progrmas with interactiv input like ftp
+  ftp << DEL
+    user ...
+    get file path
+    ...
+  DEL
+
+Other common application is generation of other scripts/objects:
+---------------------------------------------------------------------------------------------------------
+new_file=output.sh
+(
+  cat <<'ADDTEXT'
+  #!/bin/bash
+  echo "This script creates a new file"
+  ADDTEXT
+) > $new_file
+---------------------------------------------------------------------------------------------------------
+function BookInfo {
+  read ISBN
+  read bookName
+  read authorName
+  read edition
+  read publication
+  read price
+}
+
+BookInfo <<ADDTEXT
+  ISBN-78633567809
+  Easy Laravel 5
+  Jason Gilmore
+  9th Edition
+  Learpub
+  100
+ADDTEXT5
+---------------------------------------------------------------------------------------------------------
+NOTE: expansion of variable within doc depends on the quotation delimiter.
+   var=1
+   cat << 'IN'
+    echo $var
+   IN
+   # $var
+
+   cat << IN
+    echo $var
+   IN
+   # 1
+
+https://linuxhint.com/bash-heredoc-tutorial/
+=========================================================================================================
                                      Prompt
 =========================================================================================================
 There are special hooks that are executed before/after user command:
@@ -35,6 +106,13 @@ coproc <name> cmd <redirections>    | starts a cmd as a background job, setting 
                                     | to both its stdin and stdout so you can interact with it bidirectionally
 jobs -l                             | list background process + its pid
 
+In order to kill program if it is not finished after some time, issue `timeout`
+  $ timeout 10 sleep 20             # will kill (SIGTERM) sleep in 10 seconds
+  $ timeout -k 5 10 sleep 20        # same, but if sleep doesn`t react after initial timeout, the KILL is
+                                    # sent and process gets cilled
+
+https://www.cyberciti.biz/faq/linux-run-a-command-with-a-time-limit/
+https://stackoverflow.com/questions/29936956/linux-how-does-the-kill-k-switch-work-in-timeout-command
 =========================================================================================================
                                  Notifications
 =========================================================================================================

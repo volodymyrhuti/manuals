@@ -434,7 +434,7 @@ In another shell : gdb prog
 target remote | vgdb
 
 =========================================================================================================
-                        Youtube dl
+                                   Youtube dl
 =========================================================================================================
 -F                  # list quality 
 -f <num>            # choose possible quality from prev list to download
@@ -443,25 +443,21 @@ target remote | vgdb
 
 youtube-dl --extract-audio --audio-format mp3 <video URL>
 =========================================================================================================
-			Random convertions
+                               Random convertions
 =========================================================================================================
-To convert docx to pdf, use doc2pdf
-doc2pdf *.docx
+doc2pdf {{docx_files ...}}                            ## convert docx to pdf, use doc2pdf
+pdfunite {{pdf_list ...}} {{res.pdf}}                 ## merge pdfs
+convert files.{{jpeg|png|txt|pdf...}} {{res.pdf}}     ## convert files and merge as pdf
+pdftk {{file}}.pdf cat {{range}} output {{res}}.pdf   ## remove pages
+pdftk {{files}} cat output {{res}}.pdf                ## merge
+pdftk {{files}} output {{res}}                        ## convert?
 
-To merge all pdf files to one, issue pdfunite
-pdfunite *.pdf merge_output.pdf
-pdftk <files> cat output <res>.pdf
-convert image1.jpg image2.png text.txt PDFfile.pdf outputFileName.pdf  # will automatically convert .png/.txt
-convert zavdannja.pdf $(ls --sort=v *.jpg) bilet.pdf
-pdftk <files> output <res>
-
-convert $(ls --sort=v *.jpg) bilet.pdf
-pdftk zavdannja.pdf bilet.pdf output _v3.pdf
-
-Split pdf
-pdftk <file>.pdf cat <range> output <res>.pdf
+---------------------------------------------------------------------------------------------------------
+convert quiz.pdf $(ls --sort=v *.jpg) solution.pdf
+convert $(ls --sort=v *.jpg) solution.pdf
+pdftk task.pdf quiz.pdf output solution_v3.pdf
 pdftk full-pdf.pdf cat 12-15 output outfile_p12-15.pdf
-
+pdftk vodafone_reg.pdf cat 1 5 7 9 13-end output out.pdf && mv out.pdf vodafone_reg.pdf # remove empty pages
 =========================================================================================================
                              Working with binaries
 =========================================================================================================

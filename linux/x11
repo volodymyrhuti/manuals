@@ -77,14 +77,19 @@ or honor the preferences it indicates through the WM hints.
 =========================================================================================================
                                    Selection
 =========================================================================================================
-X clients need to deal with three selections
-1.Primary. Typically used used by terminals when selection text and pasting with middle mouse button
+The clipboard is a facility used for short-term data storage and/or data transfer between documents or
+applications, via copy and paste operations.
+
+X clients need to deal with three selections:
+1.Primary. Used for the currently selected text, even if it is not explicitly copied, and for middle-mouse
+  -click pasting. In some cases, pasting is also possible with a keyboard shortcut. Typically used used by
+  terminals when selection text and pasting with middle mouse button.
   Used for the currently selected text, even if it is not explicitly copied, and for middle-mouse-click
   pasting.
 2.Secondary. It does not have a consensually agreed upon purpose.
 3.Clipboard. Primarily used in conection with MS Windows-style clipboard operations. Select+Copy.
   Used for explicit copy/paste commands involving keyboard shortcuts or meny items. Unlike PRIMARY, it
-  can also handle multiple data formats.
+  can also handle multiple data formats, e.g. text, files.
 
 There is as well drag and drop which is part of Xdnd protocol, it uses XdndSelection
 
@@ -93,12 +98,12 @@ pasted. For example, if you select some word in a terminal window, close the ter
 paste it somewhere else, it will not work because the terminal is gone and the text has not been copied
 anywhere. If you want the word to be preserved after closing terminal window, consider installing a
 clipboard manager.
----------------------------------------------------------------------------------------------------------
-                               Syncing Selections
----------------------------------------------------------------------------------------------------------
-$ autocutsel &
-$ autocutsel -s PRIMARY &
----------------------------------------------------------------------------------------------------------
+
+You can use `autocutsel` to sync multiple types of selections buffers
+  $ autocutsel &
+  $ autocutsel -s PRIMARY &
+
+
 https://wiki.archlinux.org/index.php/Clipboard
 https://tronche.com/gui/x/icccm/sec-2.html#s-2.6.1
 http://www.cs.man.ac.uk/~lindsec/secondary-selection.html
@@ -330,8 +335,11 @@ sudo apt-get install --reinstall lightdm    # reinstalling display manager if it
 /usr/lib/lightdm/lightdm-set-defaults -g unity-greeter # Set greeter-session
 /usr/lib/lightdm/lightdm-set-defaults -l false         # Disable guest login
 =========================================================================================================
-To study
+                                    TODO
+=========================================================================================================
 nvidia troubleshooting
+
+https://www.x.org/wiki/guide/concepts/          # X programming
 https://askubuntu.com/questions/1244376/cant-get-internal-and-external-monitor-working-simultaneously-with-20-04-on-lap
 https://jichu4n.com/posts/how-x-window-managers-work-and-how-to-write-one-part-ii/
 =========================================================================================================

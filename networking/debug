@@ -68,11 +68,11 @@ iperf3 -n 900Kb -c 192.168.151.14   # client
 ---------------------------------------------------------------------------------------------------------
 me/remote -> hostname@ip/domain
 
-scp username@hostname:file      # copy to me
-scp file username@hostname      # copy to remote
-scp -r dir username@hostname    # copy folder to remote
-scp -r username@hostname:path . # copy folder from remote
-scp me1@file me2@file   # cp from one user to another
+scp username@hostname:file          # copy to me
+scp file username@hostname          # copy to remote
+scp -r dir username@hostname        # copy folder to remote
+scp -r username@hostname:path .     # copy folder from remote
+scp me1@file me2@file               # cp from one user to another
 
 scp g564220@192.168.1.9:/home/tree.tar
 

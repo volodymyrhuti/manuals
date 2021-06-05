@@ -112,7 +112,7 @@ https://events.static.linuxfound.org/sites/events/files/slides/linuxconjapan-ftr
 ---------------------------------------------------------------------------------------------------------
                                  Debugging oops
 ---------------------------------------------------------------------------------------------------------
-In Linnux, the System.map file is a symbol table used by the kernel. It is used to resolve function address
+In Linux, the System.map file is a symbol table used by the kernel. It is used to resolve function address
 to its human readable name, note, this may require having CONFIG_KALLSYMS enabled. The function that is
 displayed is the closest one from address where crash was executed.
 1. Look for an PC value, this is expected to look like

@@ -7,7 +7,7 @@ fc-cache -fv           # rebuild font cashe
 fc-list -v             # font fullname
 fc-match <font>        # check if aliased font
 
-gucharmap              # to see what keys you have , look at :Private Use Area 
+gucharmap              # to see what keys you have , look at :Private Use Area
 xfd -fa <fontname>     # lookup font glyphs and hex value for them from terminal
 
 To add fonts you can link them into `~/.fonts/*` or into $XDG_DATAHOME to avoid $HOME clattering
@@ -53,7 +53,7 @@ https://github.com/powerline/fontpatcher
 https://www.hanselman.com/blog/PatchingTheNewCascadiaCodeToIncludePowerlineGlyphsAndOtherNerdFontsForTheWindowsTerminal.aspx
 
 =========================================================================================================
-                                     Ranger 
+                                     Ranger
 =========================================================================================================
 Ranger is a terminal file manager that is highly extesible (with python) and supports many vim like
 commands. By default configuration is saved to ~/.config/ranger/*.
@@ -73,7 +73,7 @@ To test if your terminal is capable of displaying images issue (note argumet <im
 =========================================================================================================
                                     Terminal
 =========================================================================================================
-update-alternatives --config <terminal_name>    # change default terminal-emulator 
+update-alternatives --config <terminal_name>    # change default terminal-emulator
 
 ---------------------------------------------------------------------------------------------------------
                                      Urxvt
@@ -92,6 +92,15 @@ xrdb -merge ~/.Xresources   | merge X resources
 Note, you can export `URXVT_PERL_VERBOSITY=11` variable to get verbose output of terminal actions.
 E.g. can be used to see how long it takes to source the fonts...
 
+Recompilation procedure:
+./configure --prefix=$HOME/bin --enable-everything
+# Download missing libraries
+make
+make install
+
+Extension guide
+http://jeromebelleman.gitlab.io/posts/productivity/urxvt/
+
 Some links
 http://www.netswarm.net/misc/urxvt-xtermcompat.txt
 https://www.opennet.ru/man.shtml?topic=urxvt&category=7&russian=2
@@ -104,9 +113,34 @@ https://wiki.gentoo.org/wiki/Rxvt-unicode
 ---------------------------------------------------------------------------------------------------------
                                ANSI Escape codes
 ---------------------------------------------------------------------------------------------------------
+C  | A single (required) character.
+Ps | A single (usually optional) numeric parameter, composed of one or
+   | more digits.
+Pm | Any number of single numeric parameters, separated by ;
+   | character(s).  Individual values for the parameters are listed with
+   | Ps .
+Pt | A text parameter composed of printable characters.
+https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-ReGIS-Graphics
+
 ISO/IEC 6429 - SiS
 man console_codes
 man console_ioctl
+man 5 terminfo
+man 7 urxvt         # urxvr FAQ
+
+https://salsa.debian.org/debian/rxvt-unicode        # urxvt debian repo (contains patches)
+http://qiita.com/kefir_/items/78e64c545a70a0ebea8a  # vim picture preview
+https://translate.google.com/translate?sl=auto&tl=en&js=y&prev=_t&hl=en&ie=UTF-8&u=http%3A%2F%2Fqiita.com%2Fkefir_%2Fitems%2F78e64c545a70a0ebea8a&edit-text=&act=url
+
+https://bluesock.org/~willkg/dev/ansi.html          # refernces to other guides
+https://www.xfree86.org/current/ctlseqs.html        # xterm control sequences
+https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-ReGIS-Graphics
+https://github.com/tmux/tmux/blob/master/tools/ansicode.txt              # summary of ANSI ascii terminals
+http://pod.tst.eu/http://cvs.schmorp.de/rxvt-unicode/src/urxvt.pm#Hooks  # urxvt hooks doc
+https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
+https://www.gnu.org/software/termutils/manual/termcap-1.3/html_mono/termcap.html
+http://www.huge-man-linux.net/man7/urxvt.html
 https://bluesock.org/~willkg/dev/ansi.html
 http://ascii-table.com/ansi-escape-sequences.php
 https://man7.org/linux/man-pages/man4/console_codes.4.html
@@ -162,9 +196,40 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-mute "''"   # u
 dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-down "''"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/volume-up "''"
 
+---------------------------------------------------------------------------------------------------------
+                                  Compose key
+---------------------------------------------------------------------------------------------------------
+Often it is useful to be able to switch between German keyboard and an English keyboard. One can also use
+Unicode or the number keypad and the Alt key to add letters that are not one your usual keyboard
+
+Compose key. Begins a keypress sequence that involves (usually two) additional keypresses.
+Usage is typically either for entering characters in a language that the keyboard was not designed for, or
+for other less-used characters that are not covered with the AltGr modifier.
+For example, pressing Compose ' e produces é, or Compose - - - will produce an "em dash": —
+You will rarelly find a separate key for this on common keyboards. It is commonly remaped to some other
+key.
+
+To do this with a normal US/British keyboard, press Alt Gr+[, and then press either a, o, or u. Alt Gr is
+the Alt key usually directly to the right of the space bar. Using Alt Gr with letters also gets you special
+characters, and for the requirements of German, pressing Alt Gr+s (without any need to press a key
+afterwards) produces ß. 
+
+Example list of posible combinations: /usr/share/X11/locale/en_US.UTF-8/Compose 
+
+setxkbmap -option compose:caps          # set compose key
+
+https://help.ubuntu.com/community/ComposeKey
+https://en.wikibooks.org/wiki/German/Appendices/Keyboard
+https://askubuntu.com/questions/304277/how-do-i-insert-an-umlaut-on-the-u-in-ubuntu
+https://wiki.archlinux.org/index.php/Xorg/Keyboard_configuration#Configuring_compose_key
+https://unix.stackexchange.com/questions/195065/remapping-caps-lock-to-compose/195160#195160
+---------------------------------------------------------------------------------------------------------
+
 xprop                # list properties of window
 xmodmap -pke         # list current mappings
 xev                  # see what keysym your key is configered to
+onboard              # old keyboard visualizer
+xkeycaps             # more fancy oncase that can be used to look at pressed keycodes
 =========================================================================================================
                                       X11
 =========================================================================================================
@@ -172,6 +237,11 @@ xwininfo -id $(xdotool getactivewindow)         # get current window geometry st
 xprop -id $(xdotool getactivewindow)            #      -||-           X11     info
 
 gsettings set org.gnome.desktop.background show-desktop-icons false    # don`t start desktop when calling nautilus
+
+Enable click on touch for touchpad: sudo apt install xserver-xorg-input-synaptics
+gsettings set org.gnome.desktop.peripherals.touchpad tap-to-click true
+gsettings set org.gnome.desktop.peripherals.touchpad tap-to-click true
+
 =========================================================================================================
                                       Tmux
 =========================================================================================================
@@ -183,11 +253,11 @@ tmux new -s #name                   # start new session with name
 tmux list-keys
 
 prefix c                            # create window
-prefix q    :display-panes          # show number and window size 
+prefix q    :display-panes          # show number and window size
 prefix f    :find-window            # find window by name
 prefix w                            # list windows
 prefix x                            # max current window
-prefix ?                            # list available commands 
+prefix ?                            # list available commands
 prefix C + arrow                    # resize current pane
 prefix ,                            # rename current window
 prefix .                            # relink (change number) window
@@ -213,6 +283,12 @@ Errors from bindsym execution are saved to .xsession-errors
 dm-tool switch-to-greeter                   # switch user
 i3-msg 'exit'                               # logout user
 =========================================================================================================
+                                    Browser
+=========================================================================================================
+You can apply custom css logic to firefox by editing
+~/.mozilla/firefox/<default_profile>/chrome/userChrome.css
+
+=========================================================================================================
                                       EFI
 =========================================================================================================
 
@@ -223,7 +299,7 @@ https://github.com/josephsurin/refind-theme-circle
 =========================================================================================================
 There is option to bind keys using WM, but there will be lost whenever you switch your WM, therefore
 it is preferable to use WM independent key bunding utilities. Two the most common are `xbindkeys`(older
-utility) and `sxhkd` (simple x hot key demon, not that old one) 
+utility) and `sxhkd` (simple x hot key demon, not that old one).
 
 xbindkeys => requires you to enclose commands into quotation, has some problems with quotes escaping,
 pipes within commands may not work.
@@ -301,7 +377,7 @@ Themes
 ---------------------------------------------------------------------------------------------------------
 https://github.com/Kthulu120/i3wm-themes
 https://github.com/flumm/Themes
-https://github.com/unix121/i3wm-themer      
+https://github.com/unix121/i3wm-themer
 https://github.com/lcpz/awesome-copycats    rdy styles for awesome-vm
 
 ---------------------------------------------------------------------------------------------------------
@@ -315,7 +391,7 @@ https://www.reddit.com/comments/3dyvhw
 /desktop/gnome/interface/cursor_blink)  desktop-wide one that disables cursor blinking for all Gnome applications
 https://github.com/chriskempson/base16
 cmd cheatshit
-https://www.reddit.com/r/i3wm/comments/a00s8p/made_myself_a_pretty_popup_cheat_sheet/ 
+https://www.reddit.com/r/i3wm/comments/a00s8p/made_myself_a_pretty_popup_cheat_sheet/
 ---------------------------------------------------------------------------------------------------------
 Guides
 ---------------------------------------------------------------------------------------------------------

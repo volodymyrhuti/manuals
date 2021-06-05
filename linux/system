@@ -735,9 +735,62 @@ gzip -c file2 >> foo.gz
 =========================================================================================================
                                     Hardware
 =========================================================================================================
+                                      PCI
+---------------------------------------------------------------------------------------------------------
+On the `lspci` command lists all PCI devices connected to a host. Example output:
+
+   BDF    | Device class | Vendor            | Name                        | Rev
+  00:00.0 | Host bridge: | Intel Corporation | Haswell-ULT DRAM Controller | (rev 0b)
+
+Each device is given a bus number, a device number and a function number. On Linux, PCI devices are also
+given domain numbers, but they are usually omitted by lspci since very often all devices have the same
+domain number (usually zero).
+These four numbers are assigned by Linux to each device either on boot or when a device is hot-plugged.
+
+Since the PCI specification permits a system to host up to 256 buses, nonzero domain numbers are only used
+to group PCI buses in very large systems. Each bus can host up to 32 devices, and a PCI device can have up
+to eight functions.
+
+In more technical terms, a device's location is specified by:
+- 16-bit domain number
+- 8-bit bus number
+- 5-bit device number
+- 3-bit function number
+the last three numbers are commonly referred to as the device's BDF or B/D/F (for bus/device/function).
+
+The Device's Configuration Space. PCI device set of registers. Contains:  device ID (DID), vendor ID (VID)
+and the device class that can be queried by the system.
+
+These are just numeric codes which the operational system maps into human-readable names through a
+predefined table. Vendor IDs are assigned by a group of companies called the PCI Special Interest Group
+and device IDs are assigned by their respective vendors. To display these IDs 
+    $ lspci -nn
+
+Understaing device path
+/sys/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.4/3-3.4:1.2/0003:2965:5023.0006/input/input7
+/sys/                 | mountpint of the sysfs filesystem
+/devices/             | contains a filesystem representation of the device tree
+/pci0000:00/          | PCI domain (0000) and the bus number (00)
+/0000:00:14.0/        | domain + bus repeated, along with slot (14) and function (0)
+/usb3/                | USB controller attached to bus number 3
+/3-3/3-3.4/3-3.4:1.2/ | redundant info, the last /3-3.4:1.2/ means we are referring to the USB controller
+                      | attached to bus 3, port 3, port 4, configuration number 1 and interface number 2
+/0003:2965:5023.0006/ | device is attached to bus 0003, has a vendor ID of 2965 and a product ID of 5023
+
+
+lspci -tv             | PCIs are displayed as a tree
+      -v[vvv]         | verbose details
+      -v -s <BDF>     | details of a specific device
+      -vmm            | machine-readable? form
+      -xnn            | dump configuration space
+
+---------------------------------------------------------------------------------------------------------
+
 use lshw to lookup info about hardware
-lspci
 lsusb
+
+https://diego.assencio.com/?index=649b7a71b35fc7ad41e03b6d0e825f07
+https://superuser.com/questions/1375202/how-to-understand-lspci-tree-format
 =========================================================================================================
                                      Distro
 =========================================================================================================
@@ -870,6 +923,34 @@ pstree -aps $pid    # for tree like outout
 pstree -hp $pid     # straight tree
 cat /proc/$pid/status | grep PPid:
 cat /proc/$pid/stat # 4th parameter
+
+=========================================================================================================
+                                    Signals
+=========================================================================================================
+TERM  | Soft Kill. In UNIX-like systems used for terminating a program. Can be handled/ignored/blocked
+      | Doesn`t kill the child processes. Process gets the time to send the information to its parent and
+      | child processes. It’s child processes are handled by init.
+      |
+      | Once the process receives the notice, a few different things can happen:
+      | - the process may stop immediately
+      | - the process may stop after a short delay after cleaning up resources
+      | - the process may keep running indefinitely
+      |
+      | By defaut is used by kill command
+      |
+KILL  | Immediate termination of a process. Cannot be handled/blocked.
+      |     kill -9 <pid>
+      |
+      | Process will be terminated along with its threads/childs (if any).
+      | This may lead to  may lead to the creation of a zombie process because the killed process doesn’t
+      | get the chance to tell its parent process that it has received a kill signal.
+      |
+      | It is the brutal way of killing a process and it should only be used as the last resort, e.g.
+      | to stop unresponsive process.
+      | 
+
+https://major.io/2010/03/18/sigterm-vs-sigkill/
+https://linuxhandbook.com/sigterm-vs-sigkill/
 =========================================================================================================
                                     Busybox
 =========================================================================================================

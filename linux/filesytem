@@ -191,17 +191,6 @@ https://cromwell-intl.com/open-source/sysfs.html
 directories, files, and symbolic links. Since filesystem resides in RAM, there is no physical disk access
 and files have no size (there is an exception). 
 
-Understaing device path
-/sys/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.4/3-3.4:1.2/0003:2965:5023.0006/input/input7
-/sys/ => mountpint of the sysfs filesystem
-/devices/ => contains a filesystem representation of the device tree
-/pci0000:00/ => PCI domain (0000) and the bus number (00)
-/0000:00:14.0/ => domain + bus repeated, along with slot (14) and function (0)
-/usb3/  => USB controller attached to bus number 3
-/3-3/3-3.4/3-3.4:1.2/ => redundant info, the last /3-3.4:1.2/ means we are referring to the USB controller
-                         attached to bus 3, port 3, port 4, configuration number 1 and interface number 2
-/0003:2965:5023.0006/ => device is attached to bus 0003, has a vendor ID of 2965 and a product ID of 5023
-
 https://cromwell-intl.com/open-source/sysfs.html
 http://www.linux-usb.org/FAQ.html#i6
 =========================================================================================================
@@ -711,8 +700,15 @@ affecting it`s usage, it should be used as developer wish. By default it is moun
 
 https://unix.stackexchange.com/questions/377428/how-do-i-generate-the-sys-kernel-debug-tracing-folder-in-kernel-with-yocto-proj
 =========================================================================================================
-Some questions
----------------------------------------------------------------------------------------------------------
+                                Troubleshooting
+=========================================================================================================
+lsof. Can be used to detect if someone is using a file, and if they are, who. It reads kernel memory in
+its search for open files and helps you list all open files.
+  $ lsof /dev/null
+
+=========================================================================================================
+                                      Misc
+=========================================================================================================
                                Moving vs copying
 ---------------------------------------------------------------------------------------------------------
 If a directory is moved within the same filesystem (the same partition), then all that is needed is to

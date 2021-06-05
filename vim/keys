@@ -38,6 +38,7 @@ C-I/O   # for jumping
 ---------------------------------------------------------------------------------------------------------
 vim -V20 2>&1 | tee logfile     | save logs for a new session
                                 | usefull when you want to see what commands are executed
+    --startuptime <out_file>    | profile vim initialization in case it takes long time to open a file
 verb map                        | verbose listing of active mappings
 messages                        | TODO
 
@@ -356,6 +357,11 @@ Small keys to overwrite, capital to append
 :let @a=<value>             | to mannyaly assign value
 "=1+1<Enter>p               | execute calculation, save to register, paste
 
+Save line matched by regex to register and then print
+let @A=""A                  | reset old value
+:g/regex/y A                | save match
+"Ap                         | print
+
 :registers                  | display the values in all registers
             a,b,c,d         |                    in registers a,b,c,d
 
@@ -398,7 +404,7 @@ Save lines matching patern
 "ap                         | print register 'a'
 
 =========================================================================================================
-                              Indentation/Folding
++                          Indentation/Folding/Sorting
 =========================================================================================================
 Indentation uses 'shiftwidth'
 [n]>>       | right indent
@@ -451,6 +457,7 @@ gg=G                | reindent entire file, good for markup files
 ---------------------------------------------------------------------------------------------------------
                                     Sorting
 ---------------------------------------------------------------------------------------------------------
+:%sort u            | remove duplicate lines in file
 
 =========================================================================================================
                                       Misc

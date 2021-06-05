@@ -1,18 +1,17 @@
 This is my knowledge base, or at least a part that is more or less structured and well explained.
-Purpose of this project, is to make short description of things I`m studing, therefore I can read
-the most important parts here, when I need it again. Most of notes are expected to have links/references
-to resources from which this data was taken. Therefore, if some deeper explanation is required, you
-can look through resources without parsing hundreds of web pages to find one or two crucial sentences.
-It was created when I noticed that there is to much of information that I start to forget things.
-Hope, this can be usefull for somebody, except me)
+Purpose of this project, is to collect short notes on things I`m studing, therefore it can be
+read later for repetition or used as a reference.
+
+Most of notes are expected to have links/references to resources from which this data was taken.
+This way, if some deeper explanation is required, user can look through resources without researching
+hundreds of web pages to find 1 or 2 crucial sentences.
 
 All notes are expected to follow next rulles:
-Themes are outline with lines of `=` characters.
-Subject are outlined with lines of `-` characters
-Line lenght 105 characters (I like to highlight it with :set colorcolumn=105)
-Theme names are center aligned using vim `:center` without arguments (80 by default)
-Definitions are usually of form 
-`#Number. Definition name. Expansiong of symbols. Description`
-
-Consider writing command exmaples from a new line and comment to the right after #,
-therefore it can be copied as entire line within text editor of choise and paster to shell
+- Themes are outline with lines of `=` characters.
+- Subject are outlined with lines of `-` characters
+- Line lenght 105 characters (I like to highlight it with :set colorcolumn=105)
+- Topics are center aligned using vim `:center` without arguments (80 by default)
+- Shell commands have some indentation so it`s clear visible from rest of the text
+- Each file has it`s own set of separator used for different context, e.g.
+  comments to shell comands are explained after `#` separator, so it can be easily copied
+- Topics preferrably should contain examples inplace

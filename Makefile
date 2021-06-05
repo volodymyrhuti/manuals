@@ -3,7 +3,7 @@
 PRIVATE=private.tar.gz
 PRIVATE_CPT=$(PRIVATE).cpt
 
-merge: clean
+merge:
 	@echo Merging mannuals
 	@git ls-files | grep -vE 'Makefile|*.cpt|gitignore|README' | \
 		xargs -I{} cat {} > mannual.txt

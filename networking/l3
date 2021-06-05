@@ -782,3 +782,5 @@ FF02::1:FFxx:xxxx   solicited-node for reso;ution process
 
 TODO
 =========================================================================================================
+Special-Use IPv4 Addresses: https://titools.ietf.org/html/rfc3330
+global and other specialized IPv4 address blocks that have been assigned by the IANA

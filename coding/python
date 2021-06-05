@@ -170,6 +170,14 @@ expression. It also returns an iterable object itself, so we must wrap it in a l
 give us all its values at once.
 
 =========================================================================================================
+                                      PIP
+=========================================================================================================
+
+sudo -H pip3 install --upgrade pip
+sudo -H pip2 install --upgrade pip
+
+https://askubuntu.com/questions/712339/how-can-i-upgrade-pip-to-the-latest-version
+=========================================================================================================
     To study
 =========================================================================================================
 https://benhoyt.com/writings/pygit/

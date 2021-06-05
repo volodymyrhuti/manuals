@@ -1,0 +1,328 @@
+                                   Mobile PC
+=========================================================================================================
+                                 Form factors
+---------------------------------------------------------------------------------------------------------
+Laptop/Notebook:
+    Laptop/Notebook
+        Subnotebook
+        Netbook
+        Smartbook 
+        Ultra-mobile PC
+    Ultrabook
+    Intel Core Processors for Ultrabooks
+        Skylake, Kaby Lake, Cannonlake, Ice Lake
+        Broadwell vs Haswell vs Ivy Bridge  
+    Intel Bay Trail M Processors for Budget Laptops
+    Convertible
+        Swivel/Flip
+        Slider
+        Dual Screen
+    Hybrid Ultramobile  
+    Two-in-One Device 
+    Three-in-One Device
+    Slate 
+
+Tablet:
+    Business Tablet PC
+    Consumer Tablet 
+    Other Tablets:
+        Booklet
+        Mini Tablet
+        Phablet
+    Tablet Processors
+        ARM vs Atom
+
+Other Forms:
+    Industrial/Rugged
+        Thinnest Rugged Convertible
+        Thinnest Rugged Tablet
+    Chromebook 
+    Sleekbook  
+    All-in-One Computer
+        Chromebase All-in-One
+    Chromebox Web Terminal
+
+http://www.ctimls.com/Support/KB/How%20To/MobilePC-Tablet_FormFactors.htm#Tablet%20forms
+---------------------------------------------------------------------------------------------------------
+Subnotebook. Mini notebook. Small laptop/notebook with:
+- Display screen less than 14 inches
+- Weighs less than 4.4 pounds
+- At least 30 GB local storage (HDD or SSD)
+- Uses a computer processor (such as Intel Atom or Celeron CPU, or AMD equivalent)
+- Runs full desktop operating systems (such as Windows or Linux).
+- Typically omit ports, removable media or optical disc drives to reduce weight
+  Many offer optional docking stations to compensate.
+
+Netbook. Small, low cost subnotebook, designed to sacrifice performance for smaller size, battery and
+affordability.
+- Display screen less than 10 inches
+- Reduced power processor (such as Intel's older "Atom")
+- No more than 2 GB of RAM
+- Optimized for portable access to the Internet
+
+Smartbook. ARM based mobile device combining smartphone and netbook features such as:
+- always on, all-day battery life
+- 3G or Wi-Fi connectivity and GPS in a laptop or tablet-style body
+- screen size of 5 to 10 inches and a physical or touchscreen keyboard
+
+Promoted as "a truly pocketable computer" in 2009 and 2010 but marginalized by trademark disputes,
+difficulties adapting Adobe's Flash to ARM architecture, and the overwhelming success of tablets such as
+the iPad.
+
+Ultrabook. Very thin and light-weight laptop that incorporates some tablet features (such as touch screen
+and extended  battery life), uses an Intel Core processor, and meets Intel's specifications for the
+Ultrabook™ trademark.
+
+Sleekbook. Thin and lightweight laptop, very similar to an Ultrabook form but built on an AMD rather than
+Intel computing platform. May come with or without a touchscreen, and tend to be more affordable than Ultrabooks.
+
+---------------------------------------------------------------------------------------------------------
+Chromebook/Cloudbook. Thin, lightweight cloud-based notebook computer that runs Google's "Chrome OS"
+and browser. Because the only software application that Chrome OS can run locally is a special version
+of Google's Chrome browser, a Chromebook is often described as a browser-in-a-box.
+
+User files and applications (including printer controls) are stored remotely on Google's virtual servers
+(in the cloud), and can be accessed through a Chrome browser on any computing device (including Android
+4.0+ phones and tablets).
+
+Chromebooks cannot run client (legacy) software (used in standalone computers), cannot run any browser
+other than its own version of Chrome, and does not support any browser plug-ins.
+
+Chromebooks tend to be relatively inexpensive, with most selling between $199 to $299. 
+
+=========================================================================================================
+                                   Tablets
+=========================================================================================================
+Tablet computer. Tablet. Generally refers to a range of different touch-screen devices; notebook-sized
+mobile computers, equipped with touchscreens, typically used wirelessly. Common models include:
+- Apple's iPad Air 2
+- Google's Pixel C
+- Samsung's Galaxy Tab S2
+- Microsoft's Surface
+- and Amazon's Kindle Fire
+
+---------------------------------------------------------------------------------------------------------
+                                    Features
+---------------------------------------------------------------------------------------------------------
+- Portability is one of the main reasons for selecting a tablet computer over another type of device.
+  Tablet computers are smaller, thinner, and more lightweight than laptop computers. The screen size is
+  larger than that of a smartphone, making it easier to read and navigate the touchscreen.
+- Connectivity is another key feature. Like a smartphone, a tablet computer is designed to operate
+  wirelessly, either over a Wi-Fi network or via a 3G or 4G cell phone network.
+- Compatibility is another feature of a tablet computer. Many tablets share operating systems (OS) with
+  smartphones or computers, making it relatively easy to sync data back and forth.
+
+---------------------------------------------------------------------------------------------------------
+                               Specifications
+---------------------------------------------------------------------------------------------------------
+Types. One may be simply a tablet, while another has an attached keyboard or is designed to operate in
+extreme conditions.
+
+- Slate. Traditional standalone tablet. E.g. Apple iPad or Samsung Galaxy Tab.
+  Used for consumer activity and occasionally in professional and industrial applications.
+  Have been popular for years in vertical markets such as health care, education, hospitality, aviation
+  (pilot documentation and maps), and field work.
+  May come in regular or mini sizes.
+- Convertible. Has an attached full keyboard.
+  The keyboard can be folded behind the screen so the device can be held as a tablet. It can also lie in
+  front of the screen like a laptop computer.
+- Booklet. Tablet computers with two screens.
+  The device opens like a book with a screen on each side. 
+  Can be used as a notebook by displaying a virtual keyboard on one of the screens.
+  Aid in multi-tasking and may accommodate handwriting recognition.
+- Mini-tablet. 8 inches or less diagonally.
+  One-piece tablet designed for one-hand operation and to more readily slip into users' pocket or purse.
+  Feature set differs to accommodate smaller size and reduced purchase price.
+- Phablet. Phone-Tablet. Crossover phone-tablet. 5 to 7 inches
+  Larger than Smartphone but smaller and thinner than typical tablets, and designed to combine or
+  straddle the functionalities of a Smartphone and tablet
+- Gaming. Some tablets are modified by adding physical gamepad buttons such as D-pad and thumb sticks for
+  better gaming experience combined with the touchscreen and all other features of a typical tablet
+  computer. Most of these tablets are targeted to run native OS games and emulator games.
+- Rugged. Designed for use in environments where less durable tablets would break or fail to operate.
+  According to MobileDemand, a standard tablet that "spends more than 40% of its time outside of the office"
+  has an annual failure rate of "more than 30% per device."
+  Failure rates for rugged tablets in similar conditions are less than 4% per year.
+
+  They are durable and shockproof to withstand research, military, construction, or other outdoor work.
+  Some conditions that rugged tablets are built to
+  - Extremely high or low temperatures
+  - Vibration
+  - Dusty conditions
+  - Direct sunlight
+  - Wet conditions
+  - Drops onto hard surfaces 
+
+---------------------------------------------------------------------------------------------------------
+OS. A number of OS are available for tablet computers. These can be specific to a certain manufacturer.
+For example, iPads are manufactured by Apple and will carry that company's OS, called iOS.
+While Google's Android platform is available on models by multiple manufacturers.
+
+Software designed for use on personal computers cannot be installed on most tablet computers.
+Each OS is compatible with certain apps developed for it.
+OS                  |  Devices                             | Market Share %
+iOS      Apple      | iPads, iPhones, iPods                | 55.3 
+Android  Google     | Many tablets and smartphones, Nexus, | 44.58
+                    | Samsung                              |
+Windows  Microsoft  | Surface Tablets, smartphones, and    | 0.06
+                    | computers                            |
+Linux               |                                      | 0.03
+Blackberry RIM      | Blackberry tablets and cell phones   | 0.01
+
+https://gs.statcounter.com/os-market-share/tablet/worldwide
+---------------------------------------------------------------------------------------------------------
+Size. Sizing for tablet computers is typically broken down into two categories:
+- 6 to 8 inch 
+- 9 to 13 inch
+
+Smaller models weigh less and may lack certain features such as cameras.
+Selecting a tablet computer size should be based on the desired application and whether compactness or a
+larger functional screen size is more important.
+
+---------------------------------------------------------------------------------------------------------
+Processor. Processors vary by manufacturer. Apple, for instance, has its own processors;
+other manufacturers may use Intel or ARM processors.
+
+---------------------------------------------------------------------------------------------------------
+Storage. Because tablet computers are meant to be used wirelessly, data to be accessed is stored on the
+device itself or possibly in cloud storage.
+
+While some devices have a slot for a micro SD card to expand memory, in most cases there is no connection
+to other storage devices such as USB drives or portable hard drives. The memory on the device will
+determine how much media like photos, music, video, or other large files can be stored.
+
+Internal memory cannot be expanded at a later time and can range from 1GB to 500GB, although 8GB - 64GB
+are the most common sizes for consumer tablet computers
+
+---------------------------------------------------------------------------------------------------------
+Battery. The battery life of a tablet computer depends on a number of factors:
+- Battery size
+- Screen backlight brightness
+- Operating system efficiency
+- Sleep mode vs. powering down the tablet
+- App usage
+- Browsing the web
+- Streaming video
+
+Many tablets advertise 6 to 11 hours of battery life.
+
+---------------------------------------------------------------------------------------------------------
+Screen Type. Actions such as tapping, swiping, and turning the device can produce different results.
+A stylus, or rubber-tipped pen, can be used instead of a finger to press a button or write on the screen.
+
+- Capacitive Touchscreens (most common)
+  These screens respond to skin touch rather than pressure and have less accuracy for handwriting unless
+  used with specialized apps.
+
+  The capacitive touchscreen allows additional actions such as swiping, pinching, and expanding items on
+  the screen. The screen has a solid outer layer, such as glass, with electrostatic sensors beneath it.
+
+- Resistive Touchscreens.
+  Used in POS (point-of-sale) electronic signature pads used in retail stores and by delivery services.
+  They intended for use with a stylus but can also respond to finger or fingernail pressure.
+  Precision is required for accurate sensing and action.
+
+  These screens have multiple layers with the outer layer made of a slightly flexible material.
+
+- Active Screens are used on devices with screens that do not respond to the touch of a finger.
+  A special stylus must be used with these screens, which are the best type to translate handwriting or
+  drawing to a screen.
+
+A rugged tablet computer that will be used in extreme conditions may have other screen features. The
+screen may be scratch-resistant, reduce glare when viewed in direct sunlight, and be able to deal with
+extreme temperature ranges.
+
+---------------------------------------------------------------------------------------------------------
+Resolution. Number of pixels in each dimension that can be displayed. These include:
+1024 x 600
+1024 x 768    | Apple iPad2
+1280 x 800    | Samsung Galaxy Note 10.1
+1920 x 1200   | ASUS Transforemer Pad infinity
+2048 x 1536   | Apple new iPad
+2560 x 1600
+Screen resolution for tablet computers ranges from  to . While higher numbers
+generally indicate a clearer picture, at some point the numbers may exceed the resolution of the image
+file or the quality of a video.
+
+Pixel density. PPI (Pixel Per Inch). DPI (Dots Per Inch).
+Measurement of the number of pixels horizontally and vertically in a square inch of space.
+PPI in tablet computers can range from about 130 PPI to more than 400 PPI.
+
+---------------------------------------------------------------------------------------------------------
+Additional features:
+- Accelerometer. May be used in a device that responds to being turned, tilted, or shaken.
+  The accelerometer may also provide image stabilization for a built-in camera.
+
+  Turning a tablet computer to a vertical or horizontal orientation will change the corresponding screen
+  orientation to portrait or landscape. Tilting or shaking a device may trigger a response from an app
+  like a game.
+  Navigation is another application of an accelerometer and may be useful in apps related to mapping and
+  changes in elevation or distance.
+
+- Handwriting recognition e.g.
+- Paper drawing. You can put a peace of paper on `wacom intuos paper` and the drawing will get digitalized.
+  This might support features like multiple layer registration etc...
+  https://www.youtube.com/watch?v=BOOgPUEiBDo
+- IR support and could work as a TV remote controller
+- Speech recognition
+- NFC
+- Docking station, keyboard and added connectivity, on-board flash memory, ports for removable storage,
+  various cloud storage services for backup and syncing data across devices, local storage on a LAN
+
+---------------------------------------------------------------------------------------------------------
+Hardware:
+- Camera. Front/Back/Both.
+  Cameras vary in terms of megapixels, autofocus, flash, and incorporated microphones.
+- Internet Connection. WiFi/3G/4G
+- IO and Accessories.
+  Connection ports and buttons vary between tablet manufacturers, most devices come with the following:
+  - On/off button
+  - Power connector
+  - 3.5 mm headphone jack
+  - Speaker
+  - Volume controls and mute switch
+  These may be included
+  _ microSD card slot
+  _ USB port
+  _ Docking port
+  _ HDMI out
+
+http://www.ctimls.com/Support/KB/How%20To/MobilePC-Tablet_FormFactors.htm
+https://www.globalspec.com/learnmore/industrial_computers_embedded_computer_components/mobile_computing/tablet_pc
+=========================================================================================================
+                                Drawing Tablets
+=========================================================================================================
+There are in-total three different types of drawing tablets,
+- Simple Drawing Pen Tablet (Pad). Without Screen/Display.
+- Drawing Pen Display Tablet. With Screen/Display.
+  You have to connect it to the PC but there is no need to look at the PC screen while drawing.
+  The whole PC screen will appear on your drawing pen display tablet.
+  By default, the tablet mirrors one of the displays, thought it might be recofigure to be used as another
+  extended monitor.
+- Standalone Drawing Tablet. Requires No Computer.
+  It's a drawing tablet that comes with hardware and features of Computer like processor, graphics card, RAM,
+  storage, etc... and so won't need to connect with external one.
+
+
+https://www.xp-pen.com/forum-545.html
+TODO: Draw vs Art tablets
+https://www.archisoup.com/studio-tools/graphics-tablets-vs-drawing-tablets
+https://aaronrutten.com/drawing-tablets/
+=========================================================================================================
+                                    Stylus
+=========================================================================================================
+
+TODO https://www.youtube.com/watch?v=o4I5DA3M2zM
+=========================================================================================================
+                                  X11 Support
+=========================================================================================================
+Starting with Ubuntu 10.04 LTS, Ubuntu includes support for Multi-Pointer X. This allows the user to use
+multiple input devices simultaneously. 
+  xinput list
+  xinput create-master Second
+  sleep 1 && xinput reattach 6 11 && xinput reattach 8 12
+ 
+
+https://wiki.ubuntu.com/X/MPX
+https://wiki.archlinux.org/title/Multi-pointer_X
+=========================================================================================================

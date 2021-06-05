@@ -1,0 +1,22 @@
+=========================================================================================================
+                                   MLNX-OFED
+=========================================================================================================
+Mellanox OpenFabrics Enterprise Distribution for Linux. To enable distributed computing transparently and
+with maximum efficiency, applications in large and growing markets requires the highest I/O bandwidth and
+lowest possible latency. These requirements are compounded with the need to support a large interoperable
+ecosystem of networking, virtualization, storage, and other applications and interfaces.
+
+The OFED from OpenFabrics Alliance (www.openfabrics.org) has been hardened through collaborative development
+and testing by major high performance I/O vendors. Mellanox OFED (MLNX_OFED) is a Mellanox tested and
+packaged version of OFED that supports two interconnect types using the same RDMA (remote DMA) and kernel
+bypass APIs called OFED verbs – InfiniBand and Ethernet.
+
+Up to 200Gb/s InfiniBand and RoCE (based on the RDMA over Converged Ethernet standard) over 10/25/40/50/100GbE
+are supported with OFED by Mellanox to enable OEMs and System Integrators to meet the needs end users in
+the said markets.
+
+https://www.rohitzambre.com/blog/tag/What+is+OFED
+https://www.ibm.com/docs/en/aix/7.2?topic=ofed-concepts
+https://www.mellanox.com/pdf/products/software/OFED_PB_1.pdf
+https://www.mellanox.com/products/infiniband-drivers/linux/mlnx_ofed
+=========================================================================================================
