@@ -52,7 +52,7 @@ from vendor to vendor but all contain basically the same settings. The latest on
 usage.
 
 =========================================================================================================
-                                      PCI
+                                     PCI[e]
 =========================================================================================================
 PCI. Peripheral Component Interconnect. A standard that describes how to connect the peripheral components
 of a system together in a structured and controlled way. The standard describes the way that the system
@@ -94,8 +94,30 @@ kernel.
   instead each one has a separate connection to the CPU.
 
 ---------------------------------------------------------------------------------------------------------
-                                     Ports
+                                   ID/Port/Slot
 ---------------------------------------------------------------------------------------------------------
+Devices on the PCI bus are identified by a combination of a vendor ID (assigned by the PCI SIG) and device
+ID (assigned by the vendor). Both IDs are 16-bit integers and the device itself provides no translation to
+a human-readable string.
+In addition to the vendor and device, devices also report several other identifiers:
+•  Device class and subclass (two 8-bit numbers)
+•  Programming interface (8-bit number, meaning specific for the subclass)
+•  Subsystem, which identifies the assembly in which the device is contained.  A typical example is an
+   Ethernet add-in card: the device is the Ethernet controller chip, while the card plays the role of the
+   subsystem. Subsystems have their vendor ID (from the same namespace as device vendors) and subsystem ID.
+   Generally, the meaning of the subsystem ID depends on the device, but there are cases in which a single
+   subsystem ID is used for many devices - e.g., laptop motherboards.
+
+   The PCI utilities use the `pci.ids` file to translate all these numeric IDs to strings.
+   You can use `lspci -q` to query the database online.
+
+https://man7.org/linux/man-pages/man5/pci.ids.5.html
+---------------------------------------------------------------------------------------------------------
+PCI[e] Express Slot. Point of connection between your PC’s “peripheral components” and the motherboard.
+The term “PCIe card” and “expansion card” simply refers to hardware, like graphics cards, CPUs, solid-state
+drives (SSDs), or HDDs, you may add to your device through PCIe slots, making both catch-all terms for a
+variety of components.
+
 A PCI Express Port is a logical PCI-PCI Bridge structure. There are two types of PCI Express Port:
 1. Root Port. The Root Port originates a PCI Express link from a PCI Express Root Complex
 2. Switch Port. Connects PCI Express links to internal logical PCI buses.
@@ -110,6 +132,31 @@ management event support (PME), advanced error reporting support (AER), and virt
 These services may be handled by a single complex driver or be individually distributed and handled by
 corresponding service drivers.
 
+---------------------------------------------------------------------------------------------------------
+Size. Represents the number of direct connections provided by either a PCIe slot or card.
+Most users will only encounter four primary size specifications:
+- PCIe x1
+- PCIe x4
+- PCIe x8
+- PCIe x16
+
+These connections are typically called lanes and, in most cases, the more you have, the better your
+hardware can perform. To maximize efficiency, high-performance devices tend to rely on PCIe x16 almost
+exclusively. This makes them especially useful for competitive gamers or anyone working with visuals
+
+---------------------------------------------------------------------------------------------------------
+Can I mix and match cards and slots?
+One of the most important things to remember about PCIe is how to handle compatibility.
+Using two different size configurations to complete contact can have some negative consequences.
+
+With PCIe connections, you can hook up smaller connections to large ports. You can also connect larger
+connections to smaller ports.
+
+In particular, these connections suffer from a substantial decrease in bandwidth.
+Placing a larger card in a smaller port has a higher negative impact on the quality of your experience, but
+you can still see less than optimal performance the other way around as well.
+
+https://www.hp.com/us-en/shop/tech-takes/what-are-pcie-slots-pc
 ---------------------------------------------------------------------------------------------------------
 Transfer rate. The number of operations happening per second.
 PCI uses one wire for sending and one for receiving, such pair is called a lane.
@@ -221,11 +268,22 @@ remove and rescan will allow the kernel to cycler-power the PCI device without r
 
 echo 1 > /sys/bus/pci/devices/rescan            # rescan after plugin
 echo 1 > /sys/bus/pci/devices/xxxx/xx.x/remove  # clear cached pci device data
+---------------------------------------------------------------------------------------------------------
+  $ lspci
+    05:00.0 0200: 14e4:1659 (rev 21)
+    Field 1 | 05:00.0 | bus number (05), device number (00) and function (0)
+    Field 2 | 0200    | device class
+    Field 3 | 14e4    | vendor ID
+    Field 4 | 1659    | device ID
+cat /usr/share/hwdata/pci.ids                   # vendor and device mappings used by libpci
+# These can be looked up at http://pci-ids.ucw.cz/
+# http://pci-ids.ucw.cz/v2.2/pci.ids
 
 Reset PCI script
 https://github.com/ggeorgovassilis/linuxscripts/blob/master/reset-pci-device/reset-pci-device.sh
 https://unix.stackexchange.com/questions/73908/how-to-reset-cycle-power-to-a-pcie-device
 https://wiki.osdev.org/PCI
+https://prefetch.net/articles/linuxpci.html
 =========================================================================================================
                            DMA. Direct Memory Access
 =========================================================================================================

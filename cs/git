@@ -92,7 +92,7 @@ This can be used to find the closest common commit between them.
 Another thing that you can do is taking diff between HEAD of branches
 git diff <branch_a>..<branch_b>
 
-git-merge-base - Find as good common ancestors as possible for a merge
+git merge-base - Find as good common ancestors as possible for a merge
 
 https://thoughtbot.com/blog/compare-commits-between-git-branches
 ---------------------------------------------------------------------------------------------------------
@@ -498,6 +498,17 @@ git reset HEAD^        -- moves head to a specific commit (doesnt remove changes
 git checkout file : to clean file from chages since commit
 
 =========================================================================================================
+                                 Patch transfer
+=========================================================================================================
+git format-patch [-n]        # generate a patch set
+git am <patch_set>           # apply patch set
+       -3                    # when the patch does not apply cleanly, fall back on 3-way merge if the patch
+                             # records the identity of blobs it is supposed to apply to and we have those
+                             # blobs available locally. 
+       -i, --interactive     # run interactively.
+       --show-current-patch  # show the patch being applied when "git am" is stopped because of conflicts.
+
+=========================================================================================================
                                      Bisect
 =========================================================================================================
 When you don`t know which commit introduced a bug, use `git bisect` to find the bad commit quickly via a
@@ -655,6 +666,16 @@ git stash show -p stash@{any}       # show specific stash in patch form
 =========================================================================================================
                                     Rebasing
 =========================================================================================================
+Rebase is one of two Git utilities that specializes in integrating changes from one branch onto another.
+The other change integration utility is git merge. Merge is always a forward moving change record.
+Alternatively, rebase has powerful history rewriting features.
+
+Rebasing is the process of moving or combining a sequence of commits to a new base commit.
+
+https://www.atlassian.com/git/tutorials/merging-vs-rebasing
+https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase
+---------------------------------------------------------------------------------------------------------
+
 git rebase <destination>     # chage <current branch> base commit to point for <dst>
 git rebase -i                # rebase for all unpushed commits
 git rebase -i HEAD~5         # redo content/msg of last local commits

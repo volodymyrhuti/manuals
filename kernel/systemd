@@ -1,0 +1,358 @@
+CORE OS COMMAND LINE ARGUMENTS
+---------------------------------------------------------------------------------------------------------
+Parameters understood by the system and service manager to control system behavior.
+    ## man kernel-command-line 
+    systemd.unit=
+    rd.systemd.unit=
+    systemd.dump_core
+    systemd.crash_chvt
+    systemd.crash_shell
+    systemd.crash_reboot
+    systemd.confirm_spawn=
+    systemd.service_watchdogs=
+    systemd.show_status
+    systemd.log_target=
+    systemd.log_level=
+    systemd.log_location=
+    systemd.log_color=
+    systemd.default_standard_output=
+    systemd.default_standard_error==
+    systemd.setenv=
+    systemd.machine_id==
+    systemd.unified_cgroup_hierarchy
+    systemd.legacy_systemd_cgroup_controller
+---------------------------------------------------------------------------------------------------------
+    systemd.debug_shell
+    systemd.mask=
+    systemd.wants=
+
+systemd.unit=, rd.systemd.unit=
+    Defaults to default.target.
+    Overrides the unit to activate on boot.
+    This may be used to temporarily boot into a different boot unit, for example
+        `rescue.target` or `emergency.service`.
+    See systemd.special(7) for details about these units.
+    The option prefixed with "rd." is honored only in the initial RAM disk (initrd),
+    while the one that is not prefixed only in the main system.
+
+
+systemd.dump_core=<bool[true]>
+    If enabled, the systemd manager (PID 1) dumps core when it crashes.
+
+systemd.crash_chvt=<positive integer|boolean|true on empty>
+    Defaults to disabled, meaning that no such switch is attempted.
+    If a positive integer is specified, the system manager (PID 1) will activate the specified virtual
+    terminal (VT) when it crashes.
+    If set to enabled, the VT the kernel messages are written to is selected.
+
+systemd.crash_shell=<bool|true on empty> 
+    Defaults to disabled, for security reasons, as the shell is not protected by password authentication.
+    If enabled, the system manager (PID 1) spawns a shell when it crashes, after a 10s delay.
+    Otherwise, no shell is spawned.
+
+systemd.confirm_spawn
+    Defaults to disabled.
+    Takes a boolean argument or a path to the virtual console where the confirmation messages should be
+    emitted. Can be also specified without an argument, with the same effect as a positive boolean.
+
+    If enabled, the system manager (PID 1) asks for confirmation when spawning processes using /dev/console.
+    If a path or a console name (such as "ttyS0") is provided, the virtual console pointed to by this path
+    or described by the give name will be used instead.
+
+systemd.show_status=<bool|"auto"|true on empty>
+    If enabled, the systemd manager (PID 1) shows terse service status updates on the console during bootup.
+    "auto" behaves like false until a unit fails or there is a significant delay in boot.
+
+    Defaults to enabled, unless quiet is passed as kernel command line option, in which case it defaults to
+    auto. If specified overrides the system manager configuration file option ShowStatus=, see
+    systemd-system.conf(5). However, the process command line option --show-status= takes precedence over
+    both this kernel command line option and the configuration file option.
+
+systemd.log_target=, systemd.log_level=, systemd.log_location=,
+    systemd.log_color Controls log output, with the same effect as the
+    $SYSTEMD_LOG_TARGET, $SYSTEMD_LOG_LEVEL, $SYSTEMD_LOG_LOCATION,
+    $SYSTEMD_LOG_COLOR environment variables described above.
+    systemd.log_color can be specified without an argument, with the same effect as a positive boolean.
+
+systemd.default_standard_output=, systemd.default_standard_error=
+    Controls default standard output and error output for services, with the same effect as the
+    --default-standard-output= and --default-standard-error= command line arguments described above,
+    respectively.
+
+systemd.setenv="VAR=VAL" 
+    May be used to set default environment variables to add to forked child processes.
+    May be used more than once to set multiple variables.
+
+
+quiet
+    Turn off status output at boot, much like systemd.show_status=false would.
+    Note that this option is also read by the kernel itself and disables kernel log output.
+    Passing this option hence turns off the usual output from both the system manager and the kernel.
+
+debug | equivalent to systemd.log_level=debug.
+    Turn on debugging output. Note that this option is also read by the kernel itself and enables kernel
+    debug output.
+    Passing this option hence turns on the debug output from both the system manager and the kernel.
+
+emergency, rd.emergency, -b Boot into emergency mode.
+    This is equivalent to systemd.unit=emergency.target or rd.systemd.unit=emergency.target, respectively,
+    and provided for compatibility reasons and to be easier to type.
+
+rescue, rd.rescue, single, s, S, 1
+    Equivalent to systemd.unit=rescue.target or rd.systemd.unit=rescue.target
+    Boot into rescue mode.
+    This is  respectively, and provided for compatibility reasons and to be easier to type.
+
+2, 3, 4, 5
+    Boot into the specified legacy SysV runlevel.
+    These are equivalent to
+        systemd.unit=runlevel2.target
+        systemd.unit=runlevel3.target
+        systemd.unit=runlevel4.target
+        systemd.unit=runlevel5.target 
+    Provided for compatibility reasons and to be easier to type.
+
+locale.LANG=, locale.LANGUAGE=, locale.LC_CTYPE=, locale.LC_NUMERIC=,
+    This overrides the settings in /etc/locale.conf.
+    For more information, see locale.conf(5) and locale(7).
+
+    locale.LC_TIME=, locale.LC_COLLATE=, locale.LC_MONETARY=,
+    locale.LC_MESSAGES=, locale.LC_PAPER=, locale.LC_NAME=,
+    locale.LC_ADDRESS=, locale.LC_TELEPHONE=, locale.LC_MEASUREMENT=,
+    locale.LC_IDENTIFICATION= Set the system locale to use.
+
+---------------------------------------------------------------------------------------------------------
+SEE ALSO
+       systemd(1)
+       bootparam(7)
+       dracut.cmdline(7)
+       systemd-debug-generator(8)
+       systemd-fsck@.service(8)
+       systemd-quotacheck.service(8)
+       systemd-journald.service(8)
+       systemd-vconsole-setup.service(8)
+       systemd-udevd.service(8)
+       systemd-cryptsetup-generator(8)
+       systemd-veritysetup-generator(8)
+       systemd-fstab-generator(8)
+       plymouth(8)
+
+       systemd-gpt-auto-generator(8)
+       systemd-volatile-root.service(8)
+       systemd-modules-load.service(8)
+       systemd-backlight@.service(8)
+       systemd-rfkill.service(8)
+       systemd-hibernate-resume-generator(8)
+       systemd-firstboot.service(8)
+---------------------------------------------------------------------------------------------------------
+
+systemd.mask=, systemd.wants=, 
+    Additional parameters understood by systemd-debug-generator(8), to mask or start specific units at
+    boot, or invoke a debug shell on tty9.
+
+systemd.restore_state=
+    This parameter is understood by several system tools to control whether or not they should restore
+    system state from the previous boot. For details, see systemd-backlight@.service(8) and
+    systemd-rfkill.service(8).
+
+systemd.volatile=
+    This parameter controls whether the system shall boot up in volatile mode. Takes a boolean argument, or
+    the special value "state". If false (the default), normal boot mode is selected, the root directory and
+    /var are mounted as specified on the kernel command line or /etc/fstab, or otherwise configured. If
+    true, full state-less boot mode is selected. In this case the root directory is mounted as volatile
+    memory file system ("tmpfs"), and only /usr is mounted from the file system configured as root device,
+    in read-only mode. This enables fully state-less boots were the vendor-supplied OS is used as shipped,
+    with only default configuration and no stored state in effect, as /etc and /var (as well as all other
+    resources shipped in the root file system) are reset at boot and lost on shutdown. If this setting is
+    set to "state" the root file system is mounted as usual, however /var is mounted as a volatile memory
+    file system ("tmpfs"), so that the system boots up with the normal configuration applied, but all state
+    reset at boot and lost at shutdown. For details, see systemd-volatile-root.service(8) and
+    systemd-fstab-generator(8).
+
+
+fsck.mode=, fsck.repair=
+    Parameters understood by the file system checker services. For details, see systemd-fsck@.service(8).
+
+quotacheck.mode=
+    Parameter understood by the file quota checker service. For details, see systemd-quotacheck.service(8).
+
+systemd.journald.forward_to_syslog=, systemd.journald.forward_to_kmsg=
+systemd.journald.forward_to_console=, systemd.journald.forward_to_wall=
+    Parameters understood by the journal service. For details, see systemd-journald.service(8).
+
+vconsole.keymap=, vconsole.keymap_toggle=, vconsole.font=, vconsole.font_map=, vconsole.font_unimap=
+    Parameters understood by the virtual console setup logic. For details, see vconsole.conf(5).
+
+udev.log_priority=, rd.udev.log_priority=, udev.children_max=, rd.udev.children_max=,
+udev.exec_delay=, rd.udev.exec_delay=, udev.event_timeout=, rd.udev.event_timeout=, net.ifnames=
+    Parameters understood by the device event managing daemon. For details, see systemd-udevd.service(8).
+
+plymouth.enable=
+    May be used to disable the Plymouth boot splash. For details, see plymouth(8).
+
+mount.usr=, mount.usrfstype=, mount.usrflags=
+    Configures the /usr file system (if required) and its file system type and mount options.
+    For details, see systemd-fstab-generator(8).
+
+systemd.default_timeout_start_sec=
+    Overwrites the default start job timeout DefaultTimeoutStartSec= at boot.
+    For details, see systemd-system.conf(5).
+
+systemd.watchdog_device=
+    Overwrites the watchdog device path WatchdogDevice=.
+    For details, see systemd-system.conf(5).
+
+systemd.firstboot=<bool|on>
+     If off, systemd-firstboot.service(8) will not query the user for basic system settings, even if the
+     system boots up for the first time and the relevant settings are not initialized yet.
+
+
+
+---------------------------------------------------------------------------------------------------------
+KERNEL COMMAND LINE
+When run as system instance systemd parses a number of kernel command line
+arguments[7]:
+
+       systemd.unit=, rd.systemd.unit= Overrides the unit to activate on boot.
+       Defaults to default.target. This may be used to temporarily boot into a
+       different boot unit, for example rescue.target or emergency.service. See
+       systemd.special(7) for details about these units. The option prefixed
+       with "rd."  is honored only in the initial RAM disk (initrd), while the
+       one that is not prefixed only in the main system.
+
+       systemd.dump_core Takes a boolean argument or enables the option if
+       specified without an argument. If enabled, the systemd manager (PID 1)
+       dumps core when it crashes. Otherwise, no core dump is created. Defaults
+       to enabled.
+
+       systemd.crash_chvt Takes a positive integer, or a boolean argument. Can
+       be also specified without an argument, with the same effect as a
+       positive boolean. If a positive integer (in the range 1â63) is
+       specified, the system manager (PID 1) will activate the specified
+       virtual terminal (VT) when it crashes. Defaults to disabled, meaning
+       that no such switch is attempted. If set to enabled, the VT the kernel
+       messages are written to is selected.
+
+       systemd.crash_shell Takes a boolean argument or enables the option if
+       specified without an argument. If enabled, the system manager (PID 1)
+       spawns a shell when it crashes, after a 10s delay. Otherwise, no shell
+       is spawned. Defaults to disabled, for security reasons, as the shell is
+       not protected by password authentication.
+
+       systemd.crash_reboot Takes a boolean argument or enables the option if
+       specified without an argument. If enabled, the system manager (PID 1)
+       will reboot the machine automatically when it crashes, after a 10s
+       delay. Otherwise, the system will hang indefinitely. Defaults to
+       disabled, in order to avoid a reboot loop. If combined with
+       systemd.crash_shell, the system is rebooted after the shell exits.
+
+       systemd.confirm_spawn Takes a boolean argument or a path to the virtual
+       console where the confirmation messages should be emitted. Can be also
+       specified without an argument, with the same effect as a positive
+       boolean. If enabled, the system manager (PID 1) asks for confirmation
+       when spawning processes using /dev/console. If a path or a console name
+       (such as "ttyS0") is provided, the virtual console pointed to by this
+       path or described by the give name will be used instead. Defaults to
+       disabled.
+
+       systemd.service_watchdogs= Takes a boolean argument. If disabled, all
+       service runtime watchdogs (WatchdogSec=) and emergency actions (e.g.
+       OnFailure= or StartLimitAction=) are ignored by the system manager (PID
+       1); see systemd.service(5). Defaults to enabled, i.e. watchdogs and
+       failure actions are processed normally. The hardware watchdog is not
+       affected by this option.
+
+       systemd.show_status Takes a boolean argument or the constant auto. Can
+       be also specified without an argument, with the same effect as a
+       positive boolean. If enabled, the systemd manager (PID 1) shows terse
+       service status updates on the console during bootup.  auto behaves like
+       false until a unit fails or there is a significant delay in boot.
+       Defaults to enabled, unless quiet is passed as kernel command line
+       option, in which case it defaults to auto. If specified overrides the
+       system manager configuration file option ShowStatus=, see
+       systemd-system.conf(5). However, the process command line option
+       --show-status= takes precedence over both this kernel command line
+       option and the configuration file option.
+
+       systemd.log_target=, systemd.log_level=, systemd.log_location=,
+       systemd.log_color Controls log output, with the same effect as the
+       $SYSTEMD_LOG_TARGET, $SYSTEMD_LOG_LEVEL, $SYSTEMD_LOG_LOCATION,
+       $SYSTEMD_LOG_COLOR environment variables described above.
+       systemd.log_color can be specified without an argument, with the same
+       effect as a positive boolean.
+
+       systemd.default_standard_output=, systemd.default_standard_error=
+       Controls default standard output and error output for services, with the
+       same effect as the --default-standard-output= and
+       --default-standard-error= command line arguments described above,
+       respectively.
+
+       systemd.setenv= Takes a string argument in the form VARIABLE=VALUE. May
+       be used to set default environment variables to add to forked child
+       processes. May be used more than once to set multiple variables.
+
+       systemd.machine_id= Takes a 32 character hex value to be used for
+       setting the machine-id. Intended mostly for network booting where the
+       same machine-id is desired for every boot.
+
+       systemd.unified_cgroup_hierarchy When specified without an argument or
+       with a true argument, enables the usage of unified cgroup hierarchy[8]
+       (a.k.a. cgroups-v2). When specified with a false argument, fall back to
+       hybrid or full legacy cgroup hierarchy.
+
+           If this option is not specified, the default behaviour is determined
+           during compilation (the --with-default-hierarchy= option). If the
+           kernel does not support unified cgroup hierarchy, the legacy
+           hierarchy will be used even if this option is specified.
+
+       systemd.legacy_systemd_cgroup_controller Takes effect if the full
+       unified cgroup hierarchy is not used (see previous option). When
+       specified without an argument or with a true argument, disables the use
+       of "hybrid" cgroup hierarchy (i.e. a cgroups-v2 tree used for systemd,
+       and legacy cgroup hierarchy[9], a.k.a. cgroups-v1, for other
+       controllers), and forces a full "legacy" mode. When specified with a
+       false argument, enables the use of "hybrid" hierarchy.
+
+           If this option is not specified, the default behaviour is determined
+           during compilation (the --with-default-hierarchy= option). If the
+           kernel does not support unified cgroup hierarchy, the legacy
+           hierarchy will be used even if this option is specified.
+
+       quiet Turn off status output at boot, much like
+       systemd.show_status=false would. Note that this option is also read by
+       the kernel itself and disables kernel log output. Passing this option
+       hence turns off the usual output from both the system manager and the
+       kernel.
+
+       debug Turn on debugging output. This is equivalent to
+       systemd.log_level=debug. Note that this option is also read by the
+       kernel itself and enables kernel debug output. Passing this option hence
+       turns on the debug output from both the system manager and the kernel.
+
+       emergency, rd.emergency, -b Boot into emergency mode. This is equivalent
+       to systemd.unit=emergency.target or rd.systemd.unit=emergency.target,
+       respectively, and provided for compatibility reasons and to be easier to
+       type.
+
+       rescue, rd.rescue, single, s, S, 1 Boot into rescue mode. This is
+       equivalent to systemd.unit=rescue.target or
+       rd.systemd.unit=rescue.target, respectively, and provided for
+       compatibility reasons and to be easier to type.
+
+       2, 3, 4, 5 Boot into the specified legacy SysV runlevel. These are
+       equivalent to systemd.unit=runlevel2.target,
+       systemd.unit=runlevel3.target, systemd.unit=runlevel4.target, and
+       systemd.unit=runlevel5.target, respectively, and provided for
+       compatibility reasons and to be easier to type.
+
+       locale.LANG=, locale.LANGUAGE=, locale.LC_CTYPE=, locale.LC_NUMERIC=,
+       locale.LC_TIME=, locale.LC_COLLATE=, locale.LC_MONETARY=,
+       locale.LC_MESSAGES=, locale.LC_PAPER=, locale.LC_NAME=,
+       locale.LC_ADDRESS=, locale.LC_TELEPHONE=, locale.LC_MEASUREMENT=,
+       locale.LC_IDENTIFICATION= Set the system locale to use. This overrides
+       the settings in /etc/locale.conf. For more information, see
+       locale.conf(5) and locale(7).
+
+       For other kernel command line parameters understood by components of the
+       core OS, please refer to kernel-command-line(7).
+---------------------------------------------------------------------------------------------------------

@@ -1,0 +1,1170 @@
+                             Command Line Interface
+=========================================================================================================
+The kernel parses parameters from the kernel command line up to "--";
+if it doesn't recognize a parameter and it doesn't contain a '.', the parameter gets passed to init:
+- parameters with '=' go into init's environment
+- others are passed as command line arguments to init
+Everything after "--" is passed as an argument to init.
+
+Module parameters can be specified in two ways: via the kernel command line with a module name prefix,
+or via modprobe, e.g.:
+	(kernel command line) usbcore.blinkenlights=1
+	(modprobe command line) modprobe usbcore blinkenlights=1
+
+Parameters for modules which are built into the kernel need to be specified on the kernel command line.
+modprobe looks through the kernel command line (/proc/cmdline) and collects module parameters when it loads
+a module, so the kernel command line can be used for loadable modules too.
+
+Hyphens (dashes) and underscores are equivalent in parameter names, so
+	log_buf_len=1M print-fatal-signals=1
+can also be entered as
+	log-buf-len=1M print_fatal_signals=1
+
+Double-quotes can be used to protect spaces in values, e.g.:
+	param="spaces in here"
+
+The command "modinfo -p ${modulename}" shows a current list of all parameters of a loadable module. 
+Loadable modules, after being loaded into the running kernel, also reveal their parameters in
+     /sys/module/${modulename}/parameters/
+Some of these parameters may be changed at runtime by the command
+    "echo -n ${value} > /sys/module/${modulename}/parameters/${parm}".
+
+There are also arch-specific kernel-parameters not documented here.
+See for example <Documentation/x86/x86_64/boot-options.txt>.
+
+The number of kernel parameters is not limited, but the length of the complete command line (parameters
+including spaces etc.) is limited to a fixed number of characters.
+This limit depends on the architecture and is between 256 and 4096 characters.
+It is defined in the file ./include/asm/setup.h as COMMAND_LINE_SIZE.
+
+Note that ALL kernel parameters listed below are CASE SENSITIVE, and that
+a trailing = on the name of any parameter states that that parameter will
+be entered as an environment variable, whereas its absence indicates that
+it will appear as a kernel argument readable via /proc/cmdline by programs
+running once the system is up.
+
+---------------------------------------------------------------------------------------------------------
+                                     Legend
+---------------------------------------------------------------------------------------------------------
+	ACPI	ACPI support is enabled.
+	APIC	APIC support is enabled.
+	APM	Advanced Power Management support is enabled.
+	ARM	ARM architecture is enabled.
+	CLK	Common clock infrastructure is enabled.
+	CMA	Contiguous Memory Area support is enabled.
+	DRM	Direct Rendering Management support is enabled.
+	DYNAMIC_DEBUG Build in debug messages and enable them at runtime
+	EFI	EFI Partitioning (GPT) is enabled
+	FB	The frame buffer device is enabled.
+	FTRACE	Function tracing enabled.
+	HW	Appropriate hardware is enabled.
+	IP_PNP	IP DHCP, BOOTP, or RARP is enabled.
+	KGDB	Kernel debugger support is enabled.
+	KVM	Kernel Virtual Machine support is enabled.
+	LIBATA  Libata driver is enabled
+	LOOP	Loopback device support is enabled.
+	MDA	MDA console support is enabled.
+	MSI	Message Signaled Interrupts (PCI).
+	MTD	MTD (Memory Technology Device) support is enabled.
+	NET	Appropriate network support is enabled.
+	NUMA	NUMA support is enabled.
+	NFS	Appropriate NFS support is enabled.
+	PCI	PCI bus support is enabled.
+	PCIE	PCI Express support is enabled.
+	PNP	Plug & Play support is enabled.
+	SMP	The kernel is an SMP kernel.
+	SUSPEND	System suspend states are enabled.
+	TPM	TPM drivers are enabled.
+	UMS	USB Mass Storage support is enabled.
+	USB	USB support is enabled.
+	USBHID	USB Human Interface Device support is enabled.
+	VMMIO   Driver for memory mapped virtio devices is enabled.
+	VGA	The VGA console has been enabled.
+	VT	Virtual terminal support is enabled.
+	WDT	Watchdog support is enabled.
+	X86-32	X86-32, aka i386 architecture is enabled.
+	X86-64	X86-64 architecture is enabled.
+			More X86-64 boot options can be found in
+			Documentation/x86/x86_64/boot-options.txt .
+	X86	Either 32-bit or 64-bit x86 (same as X86-32+X86-64)
+	XEN	Xen support is enabled
+
+In addition, the following text indicates that the option:
+	BUGS=	Relates to possible processor bugs on the said processor.
+	KNL	Is a kernel start-up parameter.
+	BOOT	Is a boot loader parameter.
+
+The [KMG] suffix is commonly described after a number of kernel
+parameter values. These 'K', 'M', and 'G' letters represent the _binary_
+multipliers 'Kilo', 'Mega', and 'Giga', equalling 2^10, 2^20, and 2^30
+bytes respectively. Such letter suffixes can also be entirely omitted.
+
+
+Parameters denoted with BOOT are actually interpreted by the boot
+loader, and have no meaning to the kernel directly.
+Do not modify the syntax of boot loader parameters without extreme
+need or coordination with <Documentation/x86/boot.txt>.
+
+=========================================================================================================
+                                    Options
+=========================================================================================================
+	quiet		[KNL] Disable most log messages
+
+	loglevel=	All Kernel Messages with a loglevel smaller than the
+			console loglevel will be printed to the console. It can
+			also be changed with klogd or other programs. The
+			loglevels are defined as follows:
+
+			0 (KERN_EMERG)		system is unusable
+			1 (KERN_ALERT)		action must be taken immediately
+			2 (KERN_CRIT)		critical conditions
+			3 (KERN_ERR)		error conditions
+			4 (KERN_WARNING)	warning conditions
+			5 (KERN_NOTICE)		normal but significant condition
+			6 (KERN_INFO)		informational
+			7 (KERN_DEBUG)		debug-level messages
+
+	log_buf_len=n[KMG]	Sets the size of the printk ring buffer,
+			in bytes.  n must be a power of two and greater
+			than the minimal size. The minimal size is defined
+			by LOG_BUF_SHIFT kernel config parameter. There is
+			also CONFIG_LOG_CPU_MAX_BUF_SHIFT config parameter
+			that allows to increase the default size depending on
+			the number of CPUs. See init/Kconfig for more details.
+
+	logo.nologo	[FB] Disables display of the built-in Linux logo.
+			This may be used to provide more screen space for
+			kernel log messages and is useful when debugging
+			kernel boot problems.
+
+	debug		[KNL] Enable kernel debugging (events log level).
+	sched_debug	[KNL] Enables verbose scheduler debug messages.
+	debug_objects	[KNL] Enable object debugging
+	bootmem_debug	[KNL] Enable bootmem allocator debug messages.
+
+	slub_debug[=options[,slabs]]	[MM, SLUB]
+			Enabling slub_debug allows one to determine the
+			culprit if slab objects become corrupted. Enabling
+			slub_debug can create guard zones around objects and
+			may poison objects when not in use. Also tracks the
+			last alloc / free. For more information see
+			Documentation/vm/slub.txt.
+
+	user_debug=	[KNL,ARM]
+			Format: <int>
+			See arch/arm/Kconfig.debug help text.
+				 1 - undefined instruction events
+				 2 - system calls
+				 4 - invalid data aborts
+				 8 - SIGSEGV faults
+				16 - SIGBUS faults
+			Example: user_debug=31
+
+	profile=	[KNL] Enable kernel profiling via /proc/profile
+			Format: [schedule,]<number>
+			Param: "schedule" - profile schedule points.
+			Param: <number> - step/bucket size as a power of 2 for
+				statistical time based profiling.
+			Param: "sleep" - profile D-state sleeping (millisecs).
+				Requires CONFIG_SCHEDSTATS
+			Param: "kvm" - profile VM exits.
+
+
+	vga=		[BOOT,X86-32] Select a particular video mode
+			See Documentation/x86/boot.txt and
+			Documentation/svga.txt.
+			Use vga=ask for menu.
+			This is actually a boot loader parameter; the value is
+			passed to the kernel using a special protocol.
+
+	pnp.debug=1	[PNP]
+			Enable PNP debug messages (depends on the
+			CONFIG_PNP_DEBUG_MESSAGES option).  Change at run-time
+			via /sys/module/pnp/parameters/debug.  We always show
+			current resource usage; turning this on also shows
+			possible settings and some assignment information.
+
+---------------------------------------------------------------------------------------------------------
+                                      Init
+---------------------------------------------------------------------------------------------------------
+	init=		[KNL]
+			Format: <full_path>
+			Run specified binary instead of /sbin/init as init
+			process.
+
+	initcall_debug	[KNL] Trace initcalls as they are executed.  Useful
+			for working out where the kernel is dying during
+			startup.
+
+	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
+			initcall functions.  Useful for debugging built-in
+			modules and initcalls.
+
+	boot_delay=	Milliseconds to delay each printk during boot.
+			Values larger than 10 seconds (10000) are changed to
+			no delay (0).
+			Format: integer
+
+
+---------------------------------------------------------------------------------------------------------
+                                       FS
+---------------------------------------------------------------------------------------------------------
+	ro		[KNL] Mount root device read-only on boot
+	rw		[KNL] Mount root device read-write on boot
+
+	rodata=		[KNL]
+		on	Mark read-only kernel memory as read-only (default).
+		off	Leave read-only kernel memory writable for debugging.
+
+	root=		[KNL] Root filesystem
+			See name_to_dev_t comment in init/do_mounts.c.
+
+	rootdelay=	[KNL] Delay (in seconds) to pause before attempting to
+			mount the root filesystem
+
+	rootflags=	[KNL] Set root filesystem mount option string
+
+	rootfstype=	[KNL] Set root filesystem type
+
+	rootwait	[KNL] Wait (indefinitely) for root device to show up.
+			Useful for devices that are detected asynchronously
+			(e.g. USB and MMC devices).
+
+	S		[KNL] Run init in single mode
+
+	initrd=		[BOOT] Specify the location of the initial ramdisk
+
+	md=		[HW] RAID subsystems devices and level
+			See Documentation/md.txt.
+
+	raid=		[HW,RAID]
+			See Documentation/md.txt.
+
+    # TODO: works with simle initramfs?
+	prompt_ramdisk=	[RAM] List of RAM disks to prompt for floppy disk
+			before loading.
+			See Documentation/blockdev/ramdisk.txt.
+
+	retain_initrd	[RAM] Keep initrd memory after extraction
+
+	sysfs.deprecated=0|1 [KNL]
+			Enable/disable old style sysfs layout for old udev
+			on older distributions. When this option is enabled
+			very new udev will not work anymore. When this option
+			is disabled (or CONFIG_SYSFS_DEPRECATED not compiled)
+			in older udev will not work anymore.
+			Default depends on CONFIG_SYSFS_DEPRECATED_V2 set in
+			the kernel configuration.
+
+
+---------------------------------------------------------------------------------------------------------
+                                 Console/Printk
+---------------------------------------------------------------------------------------------------------
+	console=	[KNL] Output console device and options.
+
+		tty<n>	Use the virtual console device <n>.
+
+		ttyS<n>[,options]
+		ttyUSB0[,options]
+			Use the specified serial port.  The options are of
+			the form "bbbbpnf", where "bbbb" is the baud rate,
+			"p" is parity ("n", "o", or "e"), "n" is number of
+			bits, and "f" is flow control ("r" for RTS or
+			omit it).  Default is "9600n8".
+
+			See Documentation/serial-console.txt for more
+			information.  See
+			Documentation/networking/netconsole.txt for an
+			alternative.
+
+		uart[8250],io,<addr>[,options]
+		uart[8250],mmio,<addr>[,options]
+		uart[8250],mmio32,<addr>[,options]
+		uart[8250],0x<addr>[,options]
+			Start an early, polled-mode console on the 8250/16550
+			UART at the specified I/O port or MMIO address,
+			switching to the matching ttyS device later.
+			MMIO inter-register address stride is either 8-bit
+			(mmio) or 32-bit (mmio32).
+			If none of [io|mmio|mmio32], <addr> is assumed to be
+			equivalent to 'mmio'. 'options' are specified in the
+			same format described for ttyS above; if unspecified,
+			the h/w is not re-initialized.
+
+		hvc<n>	Use the hypervisor console device <n>. This is for
+			both Xen and PowerPC hypervisors.
+
+                If the device connected to the port is not a TTY but a braille
+                device, prepend "brl," before the device type, for instance
+			console=brl,ttyS0
+		For now, only VisioBraille is supported.
+
+	earlycon=	[KNL] Output early console device and options.
+
+			When used with no options, the early console is
+			determined by the stdout-path property in device
+			tree's chosen node.
+
+		cdns,<addr>
+			Start an early, polled-mode console on a cadence serial
+			port at the specified address. The cadence serial port
+			must already be setup and configured. Options are not
+			yet supported.
+
+		uart[8250],io,<addr>[,options]
+		uart[8250],mmio,<addr>[,options]
+		uart[8250],mmio32,<addr>[,options]
+		uart[8250],mmio32be,<addr>[,options]
+		uart[8250],0x<addr>[,options]
+			Start an early, polled-mode console on the 8250/16550
+			UART at the specified I/O port or MMIO address.
+			MMIO inter-register address stride is either 8-bit
+			(mmio) or 32-bit (mmio32 or mmio32be).
+			If none of [io|mmio|mmio32|mmio32be], <addr> is assumed
+			to be equivalent to 'mmio'. 'options' are specified
+			in the same format described for "console=ttyS<n>"; if
+			unspecified, the h/w is not initialized.
+
+	no_console_suspend
+			[HW] Never suspend the console
+			Disable suspending of consoles during suspend and
+			hibernate operations.  Once disabled, debugging
+			messages can reach various consoles while the rest
+			of the system is being put to sleep (ie, while
+			debugging driver suspend/resume hooks).  This may
+			not work reliably with all consoles, but is known
+			to work with serial and VGA consoles.
+			To facilitate more flexible debugging, we also add
+			console_suspend, a printk module parameter to control
+			it. Users could use console_suspend (usually
+			/sys/module/printk/parameters/console_suspend) to
+			turn on/off it dynamically.
+
+	keep_bootcon	[KNL]
+			Do not unregister boot console at start. This is only
+			useful for debugging when something happens in the window
+			between unregistering the boot console and initializing
+			the real console.
+
+---------------------------------------------------------------------------------------------------------
+                                     Printk
+---------------------------------------------------------------------------------------------------------
+	earlyprintk=	[X86,SH,BLACKFIN,ARM,M68k]
+			earlyprintk=vga
+			earlyprintk=efi
+			earlyprintk=xen
+			earlyprintk=serial[,ttySn[,baudrate]]
+			earlyprintk=serial[,0x...[,baudrate]]
+			earlyprintk=ttySn[,baudrate]
+			earlyprintk=dbgp[debugController#]
+			earlyprintk=pciserial,bus:device.function[,baudrate]
+
+			earlyprintk is useful when the kernel crashes before
+			the normal console is initialized. It is not enabled by
+			default because it has some cosmetic problems.
+
+			Append ",keep" to not disable it when the real console
+			takes over.
+
+			Only one of vga, efi, serial, or usb debug port can
+			be used at a time.
+
+			Currently only ttyS0 and ttyS1 may be specified by
+			name.  Other I/O ports may be explicitly specified
+			on some architectures (x86 and arm at least) by
+			replacing ttySn with an I/O port address, like this:
+				earlyprintk=serial,0x1008,115200
+			You can find the port for a given device in
+			/proc/tty/driver/serial:
+				2: uart:ST16650V2 port:00001008 irq:18 ...
+
+			Interaction with the standard serial driver is not
+			very good.
+
+			The VGA and EFI output is eventually overwritten by
+			the real console.
+
+			The xen output can only be used by Xen PV guests.
+
+	printk.always_kmsg_dump=
+			Trigger kmsg_dump for cases other than kernel oops or
+			panics
+			Format: <bool>  (1/Y/y=enable, 0/N/n=disable)
+			default: disabled
+
+    NOTE: can be used with scripts/show_delta
+	printk.time=	Show timing data prefixed to each printk message line
+			Format: <bool>  (1/Y/y=enable, 0/N/n=disable)
+
+	printk.devkmsg={on,off,ratelimit}
+			Control writing to /dev/kmsg.
+			on - unlimited logging to /dev/kmsg from userspace
+			off - logging to /dev/kmsg disabled
+			ratelimit - ratelimit the logging
+			Default: ratelimit
+
+---------------------------------------------------------------------------------------------------------
+                                     Trace
+---------------------------------------------------------------------------------------------------------
+
+	trace_buf_size=nn[KMG]
+			[FTRACE] will set tracing buffer size on each cpu.
+
+	trace_event=[event-list]
+			[FTRACE] Set and start specified trace events in order
+			to facilitate early boot debugging.
+			See also Documentation/trace/events.txt
+
+	trace_options=[option-list]
+			[FTRACE] Enable or disable tracer options at boot.
+			The option-list is a comma delimited list of options
+			that can be enabled or disabled just as if you were
+			to echo the option name into
+
+			    /sys/kernel/debug/tracing/trace_options
+
+			For example, to enable stacktrace option (to dump the
+			stack trace of each event), add to the command line:
+
+			      trace_options=stacktrace
+
+			See also Documentation/trace/ftrace.txt "trace options"
+			section.
+
+	tp_printk[FTRACE]
+			Have the tracepoints sent to printk as well as the
+			tracing ring buffer. This is useful for early boot up
+			where the system hangs or reboots and does not give the
+			option for reading the tracing buffer or performing a
+			ftrace_dump_on_oops.
+
+			To turn off having tracepoints sent to printk,
+			 echo 0 > /proc/sys/kernel/tracepoint_printk
+			Note, echoing 1 into this file without the
+			tracepoint_printk kernel cmdline option has no effect.
+
+			** CAUTION **
+
+			Having tracepoints sent to printk() and activating high
+			frequency tracepoints such as irq or sched, can cause
+			the system to live lock.
+
+	traceoff_on_warning
+			[FTRACE] enable this option to disable tracing when a
+			warning is hit. This turns off "tracing_on". Tracing can
+			be enabled again by echoing '1' into the "tracing_on"
+			file located in /sys/kernel/debug/tracing/
+
+			This option is useful, as it disables the trace before
+			the WARNING dump is called, which prevents the trace to
+			be filled with content caused by the warning output.
+
+			This option can also be set at run time via the sysctl
+			option:  kernel/traceoff_on_warning
+
+
+	ftrace=[tracer]
+			[FTRACE] will set and start the specified tracer
+			as early as possible in order to facilitate early
+			boot debugging.
+
+	ftrace_notrace=[function-list]
+			[FTRACE] Do not trace the functions specified in
+			function-list. This list can be changed at run time
+			by the set_ftrace_notrace file in the debugfs
+			tracing directory.
+
+	ftrace_filter=[function-list]
+			[FTRACE] Limit the functions traced by the function
+			tracer at boot up. function-list is a comma separated
+			list of functions. This list can be changed at run
+			time by the set_ftrace_filter file in the debugfs
+			tracing directory.
+
+	ftrace_graph_filter=[function-list]
+			[FTRACE] Limit the top level callers functions traced
+			by the function graph tracer at boot up.
+			function-list is a comma separated list of functions
+			that can be changed at run time by the
+			set_graph_function file in the debugfs tracing directory.
+
+	ftrace_graph_notrace=[function-list]
+			[FTRACE] Do not trace from the functions specified in
+			function-list.  This list is a comma separated list of
+			functions that can be changed at run time by the
+			set_graph_notrace file in the debugfs tracing directory.
+
+	ftrace_dump_on_oops[=orig_cpu]
+			[FTRACE] will dump the trace buffers on oops.
+			If no parameter is passed, ftrace will dump
+			buffers of all CPUs, but if you pass orig_cpu, it will
+			dump only the buffer of the CPU that triggered the
+			oops.
+
+
+	alloc_snapshot	[FTRACE]
+			Allocate the ftrace snapshot buffer on boot up when the
+			main buffer is allocated. This is handy if debugging
+			and you need to use tracing_snapshot() on boot up, and
+			do not want to use tracing_snapshot_alloc() as it needs
+			to be done where GFP_KERNEL allocations are allowed.
+
+	ddebug_query=   [KNL,DYNAMIC_DEBUG] Enable debug messages at early boot
+			time. See Documentation/dynamic-debug-howto.txt for
+			details.  Deprecated, see dyndbg.
+
+	dyndbg[="val"]		[KNL,DYNAMIC_DEBUG]
+	module.dyndbg[="val"]
+			Enable debug messages at boot time.  See
+			Documentation/dynamic-debug-howto.txt for details.
+
+---------------------------------------------------------------------------------------------------------
+                                   Security
+---------------------------------------------------------------------------------------------------------
+	audit=		[KNL] Enable the audit sub-system
+			Format: { "0" | "1" } (0 = disabled, 1 = enabled)
+			0 - kernel audit is disabled and can not be enabled
+			    until the next reboot
+			unset - kernel audit is initialized but disabled and
+			    will be fully enabled by the userspace auditd.
+			1 - kernel audit is initialized and partially enabled,
+			    storing at most audit_backlog_limit messages in
+			    RAM until it is fully enabled by the userspace
+			    auditd.
+			Default: unset
+
+	selinux=	[SELINUX] Disable or enable SELinux at boot time.
+			Format: { "0" | "1" }
+			See security/selinux/Kconfig help text.
+			0 -- disable.
+			1 -- enable.
+			Default value is set via kernel config option.
+			If enabled at boot time, /selinux/disable can be used
+			later to disable prior to initial policy load.
+
+	apparmor=	[APPARMOR] Disable or enable AppArmor at boot time
+			Format: { "0" | "1" }
+			See security/apparmor/Kconfig help text
+			0 -- disable.
+			1 -- enable.
+			Default value is set via kernel config option.
+
+	mitigations=
+			[X86] Control optional mitigations for CPU
+			vulnerabilities.  This is a set of curated,
+			arch-independent options, each of which is an
+			aggregation of existing arch-specific options.
+
+			off
+				Disable all optional CPU mitigations.  This
+				improves system performance, but it may also
+				expose users to several CPU vulnerabilities.
+				Equivalent to: nopti [X86]
+					       nospectre_v1 [X86]
+					       nospectre_v2 [X86]
+					       spectre_v2_user=off [X86]
+					       spec_store_bypass_disable=off [X86]
+					       mds=off [X86]
+					       tsx_async_abort=off [X86]
+
+			auto (default)
+				Mitigate all CPU vulnerabilities, but leave SMT
+				enabled, even if it's vulnerable.  This is for
+				users who don't want to be surprised by SMT
+				getting disabled across kernel upgrades, or who
+				have other ways of avoiding SMT-based attacks.
+				Equivalent to: (default behavior)
+
+---------------------------------------------------------------------------------------------------------
+                                     Stack
+---------------------------------------------------------------------------------------------------------
+	stack_guard_gap=	[MM]
+			override the default stack gap protection. The value
+			is in page units and it defines how many pages prior
+			to (for stacks growing down) resp. after (for stacks
+			growing up) the main stack are reserved for no other
+			mapping. Default value is 256 pages.
+
+	stacktrace	[FTRACE]
+			Enabled the stack tracer on boot up.
+
+	stacktrace_filter=[function-list]
+			[FTRACE] Limit the functions that the stack tracer
+			will trace at boot up. function-list is a comma separated
+			list of functions. This list can be changed at run
+			time by the stack_trace_filter file in the debugfs
+			tracing directory. Note, this enables stack tracing
+			and the stacktrace above is not needed.
+
+NOTE:
+scripts/stackusage
+scripts/stackdelta
+---------------------------------------------------------------------------------------------------------
+                                      Mem
+---------------------------------------------------------------------------------------------------------
+	vmalloc=nn[KMG]	[KNL,BOOT] Forces the vmalloc area to have an exact
+			size of <nn>. This can be used to increase the
+			minimum size (128MB on x86). It can also be used to
+			decrease the size and leave more room for directly
+			mapped kernel RAM.
+
+	kmemleak=	[KNL] Boot-time kmemleak enable/disable
+			Valid arguments: on, off
+			Default: on
+			Built with CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF=y,
+			the default is off.
+
+	kmemcheck=	[X86] Boot-time kmemcheck enable/disable/one-shot mode
+			Valid arguments: 0, 1, 2
+			kmemcheck=0 (disabled)
+			kmemcheck=1 (enabled)
+			kmemcheck=2 (one-shot mode)
+			Default: 2 (one-shot mode)
+
+
+	memory_corruption_check=0/1 [X86]
+			Some BIOSes seem to corrupt the first 64k of
+			memory when doing things like suspend/resume.
+			Setting this option will scan the memory
+			looking for corruption.  Enabling this will
+			both detect corruption and prevent the kernel
+			from using the memory being corrupted.
+			However, its intended as a diagnostic tool; if
+			repeatable BIOS-originated corruption always
+			affects the same memory, you can use memmap=
+			to prevent the kernel from using that memory.
+
+	memory_corruption_check_size=size [X86]
+			By default it checks for corruption in the low
+			64k, making this memory unavailable for normal
+			use.  Use this parameter to scan for
+			corruption in more or less memory.
+
+	memory_corruption_check_period=seconds [X86]
+			By default it checks for corruption every 60
+			seconds.  Use this parameter to check at some
+			other rate.  0 disables periodic checking.
+
+	memtest=	[KNL,X86,ARM] Enable memtest
+			Format: <integer>
+			default : 0 <disable>
+			Specifies the number of memtest passes to be
+			performed. Each pass selects another test
+			pattern from a given set of patterns. Memtest
+			fills the memory with this pattern, validates
+			memory contents and reserves bad memory
+			regions that are detected.
+
+	mminit_loglevel=
+			[KNL] When CONFIG_DEBUG_MEMORY_INIT is set, this
+			parameter allows control of the logging verbosity for
+			the additional memory initialisation checks. A value
+			of 0 disables mminit logging and a level of 4 will
+			log everything. Information is printed at KERN_DEBUG
+			so loglevel=8 may also need to be specified.
+
+	coherent_pool=nn[KMG]	[ARM,KNL]
+			Sets the size of memory pool for coherent, atomic dma
+			allocations, by default set to 256K.
+
+	dma_debug=off	If the kernel is compiled with DMA_API_DEBUG support,
+			this option disables the debugging code at boot.
+
+	dma_debug_entries=<number>
+			This option allows to tune the number of preallocated
+			entries for DMA-API debugging code. One entry is
+			required per DMA-API allocation. Use this if the
+			DMA-API debugging code disables itself because the
+			architectural default is too low.
+
+	dma_debug_driver=<driver_name>
+			With this option the DMA-API debugging driver
+			filter feature can be enabled at boot time. Just
+			pass the driver to filter for as the parameter.
+			The filter can be disabled or changed to another
+			driver later using sysfs.
+
+	iomem=		Disable strict checking of access to MMIO memory
+		strict	regions from userspace.
+		relaxed
+
+	iommu=		[x86]
+		off
+		force
+		noforce
+		biomerge
+		panic
+		nopanic
+		merge
+		nomerge
+		forcesac
+		soft
+		pt		[x86, IA-64]
+		nobypass	[PPC/POWERNV]
+			Disable IOMMU bypass, using IOMMU for PCI devices.
+
+	early_ioremap_debug [KNL]
+			Enable debug messages in early_ioremap support. This
+			is useful for tracking down temporary early mappings
+			which are not unmapped.
+
+	page_poison=	[KNL] Boot-time parameter changing the state of
+			poisoning on the buddy allocator.
+			off: turn off poisoning
+			on: turn on poisoning
+
+---------------------------------------------------------------------------------------------------------
+                                     Crash
+---------------------------------------------------------------------------------------------------------
+	coredump_filter=
+			[KNL] Change the default value for
+			/proc/<pid>/coredump_filter.
+			See also Documentation/filesystems/proc.txt.
+
+	crashkernel=size[KMG][@offset[KMG]]
+			[KNL] Using kexec, Linux can switch to a 'crash kernel'
+			upon panic. This parameter reserves the physical
+			memory region [offset, offset + size] for that kernel
+			image. If '@offset' is omitted, then a suitable offset
+			is selected automatically. Check
+			Documentation/kdump/kdump.txt for further details.
+
+	crash_kexec_post_notifiers
+			Run kdump after running panic-notifiers and dumping
+			kmsg. This only for the users who doubt kdump always
+			succeeds in any situation.
+			Note that this also increases risks of kdump failure,
+			because some panic notifiers can make the crashed
+			kernel more unstable.
+
+---------------------------------------------------------------------------------------------------------
+                                    Watchdog
+---------------------------------------------------------------------------------------------------------
+	watchdog timers	[HW,WDT] For information on watchdog timers,
+			see Documentation/watchdog/watchdog-parameters.txt
+			or other driver-specific files in the
+
+			Documentation/watchdog/ directory.
+
+---------------------------------------------------------------------------------------------------------
+                                    Disable
+---------------------------------------------------------------------------------------------------------
+	no_debug_objects
+			[KNL] Disable object debugging
+
+	nohalt		[IA-64] Tells the kernel not to use the power saving
+			function PAL_HALT_LIGHT when idle. This increases
+			power-consumption. On the positive side, it reduces
+			interrupt wake-up latency, which may improve performance
+			in certain environments such as networked servers or
+			real-time systems.
+
+	nohibernate	[HIBERNATION] Disable hibernation and resume.
+
+	noinitrd	[RAM] Tells the kernel not to load any configured
+			initial RAM disk.
+
+	nomodule	Disable module load
+
+	norandmaps	Don't use address space randomization.  Equivalent to
+			echo 0 > /proc/sys/kernel/randomize_va_space
+
+	nordrand	[X86] Disable kernel use of the RDRAND and
+			RDSEED instructions even if they are supported
+			by the processor.  RDRAND and RDSEED are still
+			available to user space applications.
+
+	noresume	[SWSUSP] Disables resume and restores original swap
+			space.
+
+	nosmp		[SMP] Tells an SMP kernel to act as a UP kernel,
+			and disable the IO APIC.  legacy for "maxcpus=0".
+
+	nosoftlockup	[KNL] Disable the soft-lockup detector.
+
+	nousb		[USB] Disable the USB subsystem
+
+	nowatchdog	[KNL] Disable both lockup detectors, i.e.
+                        soft-lockup and NMI watchdog (hard-lockup).
+
+---------------------------------------------------------------------------------------------------------
+                                      GDB
+---------------------------------------------------------------------------------------------------------
+	kgdboc=		[KGDB,HW] kgdb over consoles.
+			Requires a tty driver that supports console polling,
+			or a supported polling keyboard driver (non-usb).
+			 Serial only format: <serial_device>[,baud]
+			 keyboard only format: kbd
+			 keyboard and serial format: kbd,<serial_device>[,baud]
+			Optional Kernel mode setting:
+			 kms, kbd format: kms,kbd
+			 kms, kbd and serial format: kms,kbd,<ser_dev>[,baud]
+
+	kgdbwait	[KGDB] Stop kernel execution and enter the
+			kernel debugger at the earliest opportunity.
+
+	ekgdboc=	[X86,KGDB] Allow early kernel console debugging
+			ekgdboc=kbd
+
+			This is designed to be used in conjunction with
+			the boot argument: earlyprintk=vga
+
+---------------------------------------------------------------------------------------------------------
+                               Init Hardware Conf
+---------------------------------------------------------------------------------------------------------
+	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
+			should make use of.  maxcpus=n : n >= 0 limits the
+			kernel to using 'n' processors.  n=0 is a special case,
+			it is equivalent to "nosmp", which also disables
+			the IO APIC.
+
+	nr_cpus=	[SMP] Maximum number of processors that	an SMP kernel
+			could support.  nr_cpus=n : n >= 1 limits the kernel to
+			supporting 'n' processors. Later in runtime you can not
+			use hotplug cpu feature to put more cpu back to online.
+			just like you compile the kernel NR_CPUS=n
+
+	max_loop=	[LOOP] The number of loop block devices that get
+	(loop.max_loop)	unconditionally pre-created at init time. The default
+			number is configured by BLK_DEV_LOOP_MIN_COUNT. Instead
+			of statically allocating a predefined number, loop
+			devices can be requested on-demand with the
+			/dev/loop-control interface.
+
+---------------------------------------------------------------------------------------------------------
+                                  Signals/Oops
+---------------------------------------------------------------------------------------------------------
+	print-fatal-signals=
+			[KNL] debug: print fatal signals
+
+			If enabled, warn about various signal handling
+			related application anomalies: too many signals,
+			too many POSIX.1 timers, fatal signals causing a
+			coredump - etc.
+
+			If you hit the warning due to signal overflow,
+			you might want to try "ulimit -i unlimited".
+
+			default: off.
+
+	sysrq_always_enabled
+			[KNL]
+			Ignore sysrq setting - this boot parameter will
+			neutralize any effect of /proc/sys/kernel/sysrq.
+			Useful for debugging.
+
+	module.sig_enforce
+			[KNL] When CONFIG_MODULE_SIG is set, this means that
+			modules without (valid) signatures will fail to load.
+			Note that if CONFIG_MODULE_SIG_FORCE is set, that
+			is always true, so this option does nothing.
+
+	oops=panic	Always panic on oopses. Default is to just kill the
+			process, but there is a small probability of
+			deadlocking the machine.
+			This will also cause panics on machine check exceptions.
+			Useful together with panic=30 to trigger a reboot.
+
+	pause_on_oops=
+			Halt all CPUs after the first oops has been printed for
+			the specified number of seconds.  This is to be used if
+			your oopses keep scrolling off the screen.
+
+
+	panic=		[KNL] Kernel behaviour on panic: delay <timeout>
+			timeout > 0: seconds before rebooting
+			timeout = 0: wait forever
+			timeout < 0: reboot immediately
+			Format: <timeout>
+
+	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
+			on a WARN().
+
+	kstack=N	[X86] Print N words from the kernel stack
+			in oops dumps.
+
+
+---------------------------------------------------------------------------------------------------------
+                                      NMI
+---------------------------------------------------------------------------------------------------------
+	nmi_watchdog=	[KNL,BUGS=X86] Debugging features for SMP kernels
+			Format: [panic,][nopanic,][num]
+			Valid num: 0 or 1
+			0 - turn hardlockup detector in nmi_watchdog off
+			1 - turn hardlockup detector in nmi_watchdog on
+			When panic is specified, panic when an NMI watchdog
+			timeout occurs (or 'nopanic' to override the opposite
+			default). To disable both hard and soft lockup detectors,
+			please see 'nowatchdog'.
+			This is useful when you use a panic=... timeout and
+			need the box quickly up again.
+
+	unknown_nmi_panic
+			[X86] Cause panic on unknown NMI.
+
+---------------------------------------------------------------------------------------------------------
+                                     Locks
+---------------------------------------------------------------------------------------------------------
+	softlockup_panic=
+			[KNL] Should the soft-lockup detector generate panics.
+			Format: <integer>
+
+	softlockup_all_cpu_backtrace=
+			[KNL] Should the soft-lockup detector generate
+			backtraces on all cpus.
+			Format: <integer>
+
+	debug_locks_verbose=
+			[KNL] verbose self-tests
+			Format=<0|1>
+			Print debugging info while doing the locking API
+			self-tests.
+			We default to 0 (no extra messages), setting it to
+			1 will print _a lot_ more information - normally
+			only useful to kernel developers.
+
+---------------------------------------------------------------------------------------------------------
+                                      NET
+---------------------------------------------------------------------------------------------------------
+	netdev=		[NET] Network devices parameters
+			Format: <irq>,<io>,<mem_start>,<mem_end>,<name>
+			Note that mem_start is often overloaded to mean
+			something different and driver-specific.
+			This usage is only documented in each driver source
+			file if at all.
+
+	nf_conntrack.acct=
+			[NETFILTER] Enable connection tracking flow accounting
+			0 to disable accounting
+			1 to enable accounting
+			Default value is 0.
+
+	nfsaddrs=	[NFS] Deprecated.  Use ip= instead.
+			See Documentation/filesystems/nfs/nfsroot.txt.
+
+	nfsroot=	[NFS] nfs root filesystem for disk-less boxes.
+			See Documentation/filesystems/nfs/nfsroot.txt.
+
+	nfsrootdebug	[NFS] enable nfsroot debugging messages.
+			See Documentation/filesystems/nfs/nfsroot.txt.
+
+	ip=		[IP_PNP]
+			See Documentation/filesystems/nfs/nfsroot.txt.
+
+---------------------------------------------------------------------------------------------------------
+                                      PCI
+---------------------------------------------------------------------------------------------------------
+	pci=option[,option...]	[PCI] various PCI subsystem options:
+		earlydump	[X86] dump PCI config space before the kernel
+			        changes anything
+		off		[X86] don't probe for the PCI bus
+		bios		[X86-32] force use of PCI BIOS, don't access
+				the hardware directly. Use this if your machine
+				has a non-standard PCI host bridge.
+		nobios		[X86-32] disallow use of PCI BIOS, only direct
+				hardware access methods are allowed. Use this
+				if you experience crashes upon bootup and you
+				suspect they are caused by the BIOS.
+		conf1		[X86] Force use of PCI Configuration
+				Mechanism 1.
+		conf2		[X86] Force use of PCI Configuration
+				Mechanism 2.
+		noaer		[PCIE] If the PCIEAER kernel config parameter is
+				enabled, this kernel boot option can be used to
+				disable the use of PCIE advanced error reporting.
+		nodomains	[PCI] Disable support for multiple PCI
+				root domains (aka PCI segments, in ACPI-speak).
+		nommconf	[X86] Disable use of MMCONFIG for PCI
+				Configuration
+		check_enable_amd_mmconf [X86] check for and enable
+				properly configured MMIO access to PCI
+				config space on AMD family 10h CPU
+		nomsi		[MSI] If the PCI_MSI kernel config parameter is
+				enabled, this kernel boot option can be used to
+				disable the use of MSI interrupts system-wide.
+		noioapicquirk	[APIC] Disable all boot interrupt quirks.
+				Safety option to keep boot IRQs enabled. This
+				should never be necessary.
+		ioapicreroute	[APIC] Enable rerouting of boot IRQs to the
+				primary IO-APIC for bridges that cannot disable
+				boot IRQs. This fixes a source of spurious IRQs
+				when the system masks IRQs.
+		noioapicreroute	[APIC] Disable workaround that uses the
+				boot IRQ equivalent of an IRQ that connects to
+				a chipset where boot IRQs cannot be disabled.
+				The opposite of ioapicreroute.
+		biosirq		[X86-32] Use PCI BIOS calls to get the interrupt
+				routing table. These calls are known to be buggy
+				on several machines and they hang the machine
+				when used, but on other computers it's the only
+				way to get the interrupt routing table. Try
+				this option if the kernel is unable to allocate
+				IRQs or discover secondary PCI buses on your
+				motherboard.
+		rom		[X86] Assign address space to expansion ROMs.
+				Use with caution as certain devices share
+				address decoders between ROMs and other
+				resources.
+		norom		[X86] Do not assign address space to
+				expansion ROMs that do not already have
+				BIOS assigned address ranges.
+		nobar		[X86] Do not assign address space to the
+				BARs that weren't assigned by the BIOS.
+		irqmask=0xMMMM	[X86] Set a bit mask of IRQs allowed to be
+				assigned automatically to PCI devices. You can
+				make the kernel exclude IRQs of your ISA cards
+				this way.
+		pirqaddr=0xAAAAA	[X86] Specify the physical address
+				of the PIRQ table (normally generated
+				by the BIOS) if it is outside the
+				F0000h-100000h range.
+		lastbus=N	[X86] Scan all buses thru bus #N. Can be
+				useful if the kernel is unable to find your
+				secondary buses and you want to tell it
+				explicitly which ones they are.
+		assign-busses	[X86] Always assign all PCI bus
+				numbers ourselves, overriding
+				whatever the firmware may have done.
+		usepirqmask	[X86] Honor the possible IRQ mask stored
+				in the BIOS $PIR table. This is needed on
+				some systems with broken BIOSes, notably
+				some HP Pavilion N5400 and Omnibook XE3
+				notebooks. This will have no effect if ACPI
+				IRQ routing is enabled.
+		noacpi		[X86] Do not use ACPI for IRQ routing
+				or for PCI scanning.
+		use_crs		[X86] Use PCI host bridge window information
+				from ACPI.  On BIOSes from 2008 or later, this
+				is enabled by default.  If you need to use this,
+				please report a bug.
+		nocrs		[X86] Ignore PCI host bridge windows from ACPI.
+			        If you need to use this, please report a bug.
+		routeirq	Do IRQ routing for all PCI devices.
+				This is normally done in pci_enable_device(),
+				so this option is a temporary workaround
+				for broken drivers that don't call it.
+		skip_isa_align	[X86] do not align io start addr, so can
+				handle more pci cards
+		firmware	[ARM] Do not re-enumerate the bus but instead
+				just use the configuration from the
+				bootloader. This is currently used on
+				IXP2000 systems where the bus has to be
+				configured a certain way for adjunct CPUs.
+		noearly		[X86] Don't do any early type 1 scanning.
+				This might help on some broken boards which
+				machine check when some devices' config space
+				is read. But various workarounds are disabled
+				and some IOMMU drivers will not work.
+		bfsort		Sort PCI devices into breadth-first order.
+				This sorting is done to get a device
+				order compatible with older (<= 2.4) kernels.
+		nobfsort	Don't sort PCI devices into breadth-first order.
+		pcie_bus_tune_off	Disable PCIe MPS (Max Payload Size)
+				tuning and use the BIOS-configured MPS defaults.
+		pcie_bus_safe	Set every device's MPS to the largest value
+				supported by all devices below the root complex.
+		pcie_bus_perf	Set device MPS to the largest allowable MPS
+				based on its parent bus. Also set MRRS (Max
+				Read Request Size) to the largest supported
+				value (no larger than the MPS that the device
+				or bus can support) for best performance.
+		pcie_bus_peer2peer	Set every device's MPS to 128B, which
+				every device is guaranteed to support. This
+				configuration allows peer-to-peer DMA between
+				any pair of devices, possibly at the cost of
+				reduced performance.  This also guarantees
+				that hot-added devices will work.
+		cbiosize=nn[KMG]	The fixed amount of bus space which is
+				reserved for the CardBus bridge's IO window.
+				The default value is 256 bytes.
+		cbmemsize=nn[KMG]	The fixed amount of bus space which is
+				reserved for the CardBus bridge's memory
+				window. The default value is 64 megabytes.
+		resource_alignment=
+				Format:
+				[<order of align>@][<domain>:]<bus>:<slot>.<func>[; ...]
+				Specifies alignment and device to reassign
+				aligned memory resources.
+				If <order of align> is not specified,
+				PAGE_SIZE is used as alignment.
+				PCI-PCI bridge can be specified, if resource
+				windows need to be expanded.
+		ecrc=		Enable/disable PCIe ECRC (transaction layer
+				end-to-end CRC checking).
+				bios: Use BIOS/firmware settings. This is the
+				the default.
+				off: Turn ECRC off
+				on: Turn ECRC on.
+		hpiosize=nn[KMG]	The fixed amount of bus space which is
+				reserved for hotplug bridge's IO window.
+				Default size is 256 bytes.
+		hpmemsize=nn[KMG]	The fixed amount of bus space which is
+				reserved for hotplug bridge's memory window.
+				Default size is 2 megabytes.
+		realloc=	Enable/disable reallocating PCI bridge resources
+				if allocations done by BIOS are too small to
+				accommodate resources required by all child
+				devices.
+				off: Turn realloc off
+				on: Turn realloc on
+		realloc		same as realloc=on
+		noari		do not use PCIe ARI.
+		pcie_scan_all	Scan all possible PCIe devices.  Otherwise we
+				only look for one device below a PCIe downstream
+				port.
+
+---------------------------------------------------------------------------------------------------------
+                                     VT100
+---------------------------------------------------------------------------------------------------------
+	vt.color=	[VT] Default text color.
+			Format: 0xYX, X = foreground, Y = background.
+			Default: 0x07 = light gray on black.
+
+	vt.cur_default=	[VT] Default cursor shape.
+			Format: 0xCCBBAA, where AA, BB, and CC are the same as
+			the parameters of the <Esc>[?A;B;Cc escape sequence;
+			see VGA-softcursor.txt. Default: 2 = underline.
+
+	vt.default_blu=	[VT]
+			Format: <blue0>,<blue1>,<blue2>,...,<blue15>
+			Change the default blue palette of the console.
+			This is a 16-member array composed of values
+			ranging from 0-255.
+
+	vt.default_grn=	[VT]
+			Format: <green0>,<green1>,<green2>,...,<green15>
+			Change the default green palette of the console.
+			This is a 16-member array composed of values
+			ranging from 0-255.
+
+	vt.default_red=	[VT]
+			Format: <red0>,<red1>,<red2>,...,<red15>
+			Change the default red palette of the console.
+			This is a 16-member array composed of values
+			ranging from 0-255.
+
+	vt.default_utf8=
+			[VT]
+			Format=<0|1>
+			Set system-wide default UTF-8 mode for all tty's.
+			Default is 1, i.e. UTF-8 mode is enabled for all
+			newly opened terminals.
+
+	vt.global_cursor_default=
+			[VT]
+			Format=<-1|0|1>
+			Set system-wide default for whether a cursor
+			is shown on new VTs. Default is -1,
+			i.e. cursors will be created by default unless
+			overridden by individual drivers. 0 will hide
+			cursors, 1 will display them.
+
+	vt.italic=	[VT] Default color for italic text; 0-15.
+			Default: 2 = green.
+
+	vt.underline=	[VT] Default color for underlined text; 0-15.
+			Default: 3 = cyan.
+
+---------------------------------------------------------------------------------------------------------
+Documentation/trace/events.txt
+Documentation/serial-console.txt

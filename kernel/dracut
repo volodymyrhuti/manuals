@@ -1,0 +1,197 @@
+                                   Dracut
+=========================================================================================================
+An initial ramdisk is a temporary file system used in the boot process of the Linux kernel. initrd and
+initramfs refer to slightly different schemes for loading this file system into memory. Both are commonly
+used to make preparations before the real root file system can be mounted.
+
+Many Linux distributions ship a single, generic kernel image that is intended to boot as wide a variety of
+hardware as possible. The device drivers for this generic kernel image are included as loadable modules, as
+it is not possible to statically compile them all into the one kernel without making it too large to boot
+from computers with limited memory or from lower-capacity media like floppy disks.
+
+This then raises the problem of detecting and loading the modules necessary to mount the root file system
+at boot time (or, for that matter, deducing where or what the root file system is).
+
+To further complicate matters, the root file system may be on a software RAID volume, LVM, NFS (on diskless
+workstations), or on an encrypted partition. All of these require special preparations to mount.
+
+Another complication is kernel support for hibernation, which suspends the computer to disk by dumping an
+image of the entire system to a swap partition or a regular file, then powering off. On next boot, this
+image has to be made accessible before it can be loaded back into memory.
+
+To avoid having to hardcode handling for so many special cases into the kernel, an initial boot stage with
+a temporary root file system —now dubbed early user space— is used. This root file system would contain
+user-space helpers that would do the hardware detection, module loading and device discovery necessary to
+get the real root file system mounted.
+
+lsinitrd - tool to show the contents of an initramfs image
+man dracut.bootup
+---------------------------------------------------------------------------------------------------------
+                                   Files
+---------------------------------------------------------------------------------------------------------
+/var/log/dracut.log       | logfile of initramfs image creation 
+/tmp/dracut.log           | logfile of initramfs image creation, if /var/log/dracut.log is not writable 
+/etc/dracut.conf          | see dracut.conf5 
+/etc/dracut.conf.d/*.conf
+/usr/lib/dracut/dracut.conf.d/*.conf
+
+Configuration in the initramfs
+/etc/conf.d/      | Any files found in /etc/conf.d/ will be sourced in the initramfs to set initial
+                  | values. Command line options will override these values set in the configuration files. 
+/etc/cmdline      | Can contain additional command line options. Deprecated, better use /etc/cmdline.d/*.conf. 
+/etc/cmdline.d/*.conf   | Can contain additional command line options. 
+
+---------------------------------------------------------------------------------------------------------
+                                Troubleshooting
+---------------------------------------------------------------------------------------------------------
+If the boot process does not succeed, you have several options to debug the situation. Some of the basic
+operations are covered here. For more information you should also visit:
+https://www.kernel.org/pub/linux/utils/boot/dracut/dracut.html
+
+Identifying your problem area
+- Remove 'rhgb' and 'quiet' from the kernel command line
+- Add 'rd.shell' to the kernel command line.
+  This will present a shell should dracut be unable to locate your root device
+- Add 'rd.shell rd.debug log_buf_len=1M' to the kernel command line so that dracut shell commands are
+  printed as they are executed
+
+If you want to save that output, simply mount /boot by hand and store the output for later inspection.
+
+Things to consider:
+- The kernel command-line used. Typically from the bootloader configuration file (e.g. /boot/grub2/grub.cfg)
+  or from /proc/cmdline.
+- Disk partition information from /etc/fstab, which might be obtained booting an old working initramfs or
+  a rescue medium.
+- Turn on dracut debugging
+- Check /etc/dracut.conf and files in /etc/dracut.conf.d/*.conf 
+
+
+dracut offers a shell for interactive debugging in the event dracut fails to locate your root filesystem.
+To enable the shell:
+- Add the boot parameter 'rd.shell' to your bootloader configuration file (e.g. /boot/grub2/grub.cfg)
+- Remove the boot arguments 'rhgb' and 'quiet'
+
+To debug the shutdown sequence on systemd systems, you can rd.break on pre-shutdown or shutdown.
+To do this from an already booted system:
+# mkdir -p /run/initramfs/etc/cmdline.d
+# echo "rd.debug rd.break=pre-shutdown rd.break=shutdown" > /run/initramfs/etc/cmdline.d/debug.conf
+# touch /run/initramfs/.need_shutdown
+
+If you are dropped to an emergency shell, the file /run/initramfs/rdsosreport.txt is created, which can be
+saved to a (to be mounted by hand) partition (usually /boot) or a USB stick. Additional debugging info can
+be produced by adding rd.debug to the kernel command line. /run/initramfs/rdsosreport.txt contains all logs
+and the output of some tools. It should be attached to any report about dracut problems.
+
+rd.break        | drop to a shell at the end or at specific endpoint
+   rd.break={cmdline|pre-udev|pre-trigger|initqueue|pre-mount|mount|pre-pivot|cleanup}
+rd.info     | print informational output though "quiet" is set 
+rd.shell    | allow dropping to a shell, if root mounting fails 
+rd.debug    |
+    set -x for the dracut shell. If systemd is active in the initramfs, all output is logged to the systemd
+    journal, which you can inspect with "journalctl -ab". If systemd is not active, the logs are written to
+    dmesg and /run/initramfs/init.log. If "quiet" is set, it also logs to the console. 
+rd.memdebug=[0-5]
+    Print memory usage info at various points, set the verbose level from 0 to 5.
+    Higher level means more debugging output:
+        0 - no output
+        1 - partial /proc/meminfo
+        2 - /proc/meminfo
+        3 - /proc/meminfo + /proc/slabinfo
+        4 - /proc/meminfo + /proc/slabinfo + memstrack summary
+            NOTE: memstrack is a memory tracing tool that tracks the total memory
+                  consumption, and peak memory consumption of each kernel modules
+                  and userspace progress during the whole initramfs runtime, report
+                  is genereted and the end of initramsfs run.
+        5 - /proc/meminfo + /proc/slabinfo + memstrack (with top memory stacktrace)
+            NOTE: memstrack (with top memory stacktrace) will print top memory
+                  allocation stack traces during the whole initramfs runtime.
+rd.udev.info    | set udev to loglevel info 
+rd.udev.debug   | set udev to loglevel debug 
+plymouth.enable=0   | disable the plymouth bootsplash completely. 
+rd.plymouth=0       | disable the plymouth bootsplash only for the initramfs. 
+---------------------------------------------------------------------------------------------------------
+                                    CLI args
+---------------------------------------------------------------------------------------------------------
+--kernel-cmdline <parameters>
+    specify default kernel command line parameters 
+--kernel-only
+    only install kernel drivers and firmware files 
+--no-kernel
+    do not install kernel drivers and firmware files 
+--early-microcode
+    Combine early microcode with ramdisk 
+--no-early-microcode
+    Do not combine early microcode with ramdisk 
+--print-cmdline
+    print the kernel command line for the current disk layout 
+--mdadmconf
+    include local /etc/mdadm.conf 
+--nomdadmconf
+    do not include local /etc/mdadm.conf 
+--lvmconf
+    include local /etc/lvm/lvm.conf 
+--nolvmconf
+    do not include local /etc/lvm/lvm.conf 
+--debug
+    output debug information of the build process 
+--logfile <logfile>
+    logfile to use; overrides any setting from the configuration files.
+    Default: /var/log/dracut.log
+--list-modules
+    List all available dracut modules. 
+-M, --show-modules
+    Print included module’s name to standard output during build. 
+-L, --stdlog <level>
+    [0-6] Specify logging level (to standard error) 
+          0 - suppress any messages
+          1 - only fatal errors
+          2 - all errors
+          3 - warnings
+          4 - info
+          5 - debug info (here starts lots of output)
+          6 - trace info (and even more)
+--regenerate-all
+    Regenerate all initramfs images at the default location with the kernel versions found on the system. Additional parameters are passed through. 
+---------------------------------------------------------------------------------------------------------
+                             Environment
+---------------------------------------------------------------------------------------------------------
+INITRD_COMPRESS | sets the default compression program. See --compress. 
+DRACUT_LDCONFIG | sets the ldconfig program path and options. Optional. Used for --sysroot.
+                | Default: ldconfig
+DRACUT_LDD      | sets the ldd program path and options. Optional. Used for --sysroot.
+                | Default: ldd
+DRACUT_TESTBIN  | sets the initially tested binary for detecting library paths. Optional. Used for --sysroot.
+                | In the cross-compiled sysroot, the default value (/bin/sh) is unusable, as it is an absolute
+                | symlink and points outside the sysroot directory.
+                | Default: /bin/sh
+DRACUT_INSTALL  | overrides path and options for executing dracut-install internally. Optional.
+                | Can be used to debug dracut-install while running the main dracut script.
+                | Default: dracut-install
+                | Example: DRACUT_INSTALL="valgrind dracut-install"
+DRACUT_ARCH     | overrides the value of uname -m. Used for --sysroot.
+                | Default: empty (the value of uname -m on the host system)
+SYSTEMD_VERSION | overrides systemd version. Used for --sysroot. 
+SYSTEMCTL       | overrides the systemctl binary. Used for --sysroot. 
+NM_VERSION      | overrides the NetworkManager version. Used for --sysroot. 
+
+DRACUT_COMPRESS_BZIP2 , DRACUT_COMPRESS_BZIP2 , DRACUT_COMPRESS_LBZIP2 , DRACUT_COMPRESS_LZMA ,
+DRACUT_COMPRESS_XZ , DRACUT_COMPRESS_GZIP , DRACUT_COMPRESS_PIGZ , DRACUT_COMPRESS_LZOP ,
+DRACUT_COMPRESS_ZSTD , DRACUT_COMPRESS_LZ4 , DRACUT_COMPRESS_CAT
+    overrides for compression utilities to support using them from non-standard paths.
+    Default values are the default compression utility names to be found in PATH.
+DRACUT_INSTALL_PATH
+    overrides PATH environment for dracut-install to look for binaries relative to --sysroot. In a
+    cross-compiled environment (e.g. Yocto), PATH points to natively built binaries that are not in the
+    host’s /bin, /usr/bin, etc. dracut-install still needs plain /bin and /usr/bin that are relative to the
+    cross-compiled sysroot.
+    Default: PATH
+DRACUT_INSTALL_LOG_TARGET
+    overrides DRACUT_LOG_TARGET for dracut-install. It allows running dracut-install* to run with different
+    log target that dracut** runs with.
+    Default: DRACUT_LOG_TARGET
+DRACUT_INSTALL_LOG_LEVEL
+    overrides DRACUT_LOG_LEVEL for dracut-install. It allows running dracut-install* to run with different
+    log level that dracut** runs with.
+    Default: DRACUT_LOG_LEVEL
+
+=========================================================================================================

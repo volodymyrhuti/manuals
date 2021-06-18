@@ -1,0 +1,74 @@
+                                Syntax Highlight
+=========================================================================================================
+To enable syntax highlight, use `syntax on/off`
+
+There are nine syntax highlighting groups for vim editor. These are mentioned below.
+---------------------------------------------------------------------------------------------------------
+Group Name  | Description
+---------------------------------------------------------------------------------------------------------
+Normal      |
+NonText     |
+Identifier  | It belongs to the variable names of the source code
+Statement   | It belongs to any programming language statement, such as if, else, do, while etc.
+Comment     | It belongs to the comments part of the program
+Constant    | It belongs to any constant value, such as numbers, quoted strings,  true/false etc.
+Type        | The datatype of the variables is defined by this group, such as int, double, string etc.
+PreProc     | It belongs to any preprocessor statement, such as #include.
+Special     | It belongs to any special symbol, such as ‘\t, ‘\n’ etc.
+Underlined  | It belongs to any underlined text.
+Error       | It belongs to any source code error
+:h *highlight-groups*
+---------------------------------------------------------------------------------------------------------
+*cterm-colors*
+NR-16   NR-8    COLOR NAME 
+0       0       Black
+1       4       DarkBlue
+2       2       DarkGreen
+3       6       DarkCyan
+4       1       DarkRed
+5       5       DarkMagenta
+6       3       Brown, DarkYellow
+7       7       LightGray, LightGrey, Gray, Grey
+8       0*      DarkGray, DarkGrey
+9       4*      Blue, LightBlue
+10      2*      Green, LightGreen
+11      6*      Cyan, LightCyan
+12      1*      Red, LightRed
+13      5*      Magenta, LightMagenta
+14      3*      Yellow, LightYellow
+15      7*      White
+---------------------------------------------------------------------------------------------------------
+cterm: bold, underline, reverse, italic
+---------------------------------------------------------------------------------------------------------
+The highlight commands are powerful, you need a little bit of background information to learn how to use
+them. Let’s look at a sample command to help us get rolling:
+    highlight Normal ctermbg=Blue
+
+This highlight command can be read as 
+  => “When using a color terminal (cterm), set the background terminal color (ctermbg)
+     to Blue for the ‘Normal’ group.”
+---------------------------------------------------------------------------------------------------------
+highlight Comment ctermbg=DarkGray
+highlight Comment ctermbg=Blue ctermfg=White                  " using multiple attributes
+highlight Comment cterm=underline ctermbg=Blue ctermfg=White  " additional configurations via cterm
+highlight Comment ctermfg=119
+highlight Identifier ctermfg=99AA00
+highlight Group font-key-value-terms ...
+
+none
+
+highlight Constant ctermbg=Blue
+highlight Normal ctermbg=Black
+highlight NonText ctermbg=Black
+highlight Special ctermbg=DarkMagenta
+highlight Cursor ctermbg=Green
+
+" this next line is needed to enable your custom colors:
+syntax enable
+hi Statement ctermfg=red       ” change color of programming statements of the script into red 
+---------------------------------------------------------------------------------------------------------
+
+https://linuxhint.com/vim_syntax_highlighting/
+https://alvinalexander.com/linux/vi-vim-editor-color-scheme-syntax/
+https://superuser.com/questions/923275/how-can-i-make-grep-respects-colors-on-a-pipe
+=========================================================================================================

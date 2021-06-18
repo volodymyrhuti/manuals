@@ -39,6 +39,8 @@ C-I/O   # for jumping
 vim -V20 2>&1 | tee logfile     | save logs for a new session
                                 | usefull when you want to see what commands are executed
     --startuptime <out_file>    | profile vim initialization in case it takes long time to open a file
+    -D                          | go to debugging mode when executing the first command from a script
+
 verb map                        | verbose listing of active mappings
 messages                        | TODO
 

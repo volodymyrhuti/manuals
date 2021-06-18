@@ -8,6 +8,10 @@ PTY(pseudoteletype) => software simulation of physical terminal which is attache
 and transfers input and output to another program. It is a device enty that acts like a terminal to the
 process reading and writing there, but is managed by something else.
 
+terminal = tty = text input/output environment
+console  = physical terminal
+shell    = command line interpreter
+
 PTM => Pseudo Terminal Master, replacement of the TX/RX wires
 PTS => Pseudo Terminal Slave
 
@@ -64,8 +68,6 @@ Or you can press SHIFT+NUMLOCK
 =========================================================================================================
                               Terminfo && termcap
 =========================================================================================================
-infocmp             # list of termcaps and escape codes
-
 urxvt       # sends escape codes to program (like shell readline)
   |         # can be configured in xresources
   |
@@ -73,23 +75,6 @@ readLine    # lookups key in termcap (not sure about terminfo)
   |         # and forwards to terminal ?
   |
 terminal
-
-=========================================================================================================
-                Changing terminfo database
-
-infocmp $TERM > terminfo.src
-change escape code
-tic terminfo.src
-??? export TERMINFO=~/.terminfo
-
-
-=========================================================================================================
-
-terminal = tty = text input/output environment
-console  = physical terminal
-shell    = command line interpreter
-
-=========================================================================================================
 
 terminal emulator
        ||          # connected to
@@ -99,6 +84,60 @@ virtual terminal   # identified by tty
        \/
      shell
 
+=========================================================================================================
+                             ANSI escape sequences
+=========================================================================================================
+The most basic terminals have a set of 8 different colors:
+  \u001b[30m  |  Black 
+  \u001b[31m  |  Red 
+  \u001b[32m  |  Green 
+  \u001b[33m  |  Yellow 
+  \u001b[34m  |  Blue 
+  \u001b[35m  |  Magenta 
+  \u001b[36m  |  Cyan 
+  \u001b[37m  |  White 
+  \u001b[0m   |  Reset 
+
+  printf "\u001b[31mHelloWorld"   # red background
+  print u"\u001b[30m A \u001b[31m B \u001b[32m C \u001b[33m D \u001b[0m"
+  print u"\u001b[34m E \u001b[35m F \u001b[36m G \u001b[37m H \u001b[0m"
+
+In general, you should always remember to end any colored string you're printing with a Reset, to clean
+yout modifications.
+---------------------------------------------------------------------------------------------------------
+Most terminals, apart from the basic set of 8 colors, also support the "bright" or "bold" colors.
+These have their own set of codes, mirroring the normal colors, but with an additional ;1 in their codes:
+    \u001b[30;1m  |  Bright Black
+    \u001b[31;1m  |  Bright Red
+    \u001b[32;1m  |  Bright Green
+    \u001b[33;1m  |  Bright Yellow
+    \u001b[34;1m  |  Bright Blue
+    \u001b[35;1m  |  Bright Magenta
+    \u001b[36;1m  |  Bright Cyan
+    \u001b[37;1m  |  Bright White
+    Reset: \u001b[0m
+
+---------------------------------------------------------------------------------------------------------
+After the 16 colors, some terminals support a 256-color extended color set.
+These are of the form: \u001b[38;5;${ID}m
+
+
+---------------------------------------------------------------------------------------------------------
+                                    Vi mode
+---------------------------------------------------------------------------------------------------------
+set show-mode-in-prompt on
+set vi-cmd-mode-string "\1\e[1 q\2"set vi-ins-mode-string "\1\e[5 q\2"
+
+# [0 - blinking block.
+# [1 - blinking block (default).
+# [2 - steady block.
+# [3 - blinking underline.
+# [4 - steady underline.
+# [5 - blinking bar (xterm).
+# [6 - steady bar (xterm).
+
+=========================================================================================================
+                                   Unfiltered
 =========================================================================================================
 
 ??Control Codes => first 32 bytes of ascii
@@ -129,21 +168,6 @@ Control character => characters that makes terminal move the cursor, change colo
 A few keys or key combination have a control character corresponding to them n ASCII.
 
 lnext (literal-next) ^V         # suppress interpretation of the next char
-
-=========================================================================================================
-                             Bash escape sequences
-=========================================================================================================
-Vi mode
-set show-mode-in-prompt on
-set vi-cmd-mode-string "\1\e[1 q\2"set vi-ins-mode-string "\1\e[5 q\2"
-
-# [0 - blinking block.
-# [1 - blinking block (default).
-# [2 - steady block.
-# [3 - blinking underline.
-# [4 - steady underline.
-# [5 - blinking bar (xterm).
-# [6 - steady bar (xterm).
 
 =========================================================================================================
                                      Links

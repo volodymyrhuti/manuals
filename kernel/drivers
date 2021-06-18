@@ -1,0 +1,151 @@
+                                      PCI
+=========================================================================================================
+BAR. Base Address Register. Used to:
+- Specify how much memory a device wants to be mapped into main memory
+- After device enumeration, it holds the (base) address, where the mapped memory block begins.
+# BAR is record of the device address starting at memory.
+
+Each BAR corresponds to an address range that serves as a separate communication channel to the PCI device.
+The length of each region is defined by the hardware, and communicated to software via the configuration
+registers.
+
+A device can have up to six 32-bit BARs or combine two BARs to a 64-bit BAR.
+
+https://stackoverflow.com/questions/30190050/what-is-the-base-address-register-bar-in-pcie
+=========================================================================================================
+                                    Memory
+=========================================================================================================
+Linux is a virtual memory system, meaning that the addresses seen by user programs do not directly
+correspond to the physical addresses used by the hardware.
+
+Virtual memory introduces a layer of indirection that allows a number of nice things.
+With virtual memory, programs running on the system can allocate far more memory than is physically
+available; indeed, even a single process can have a virtual address space larger than the system’s physical
+memory. Virtual memory also allows the program to play a number of tricks with the process’s address space,
+including mapping the program’s memory to device memory.
+
+The Linux system deals with several types of addresses, each with its own semantics.
+NOTE: Unfortunately, the kernel code is not always very clear on exactly which type of address is being
+used in each situation, so the prgorammer must be careful.
+---------------------------------------------------------------------------------------------------------
+In response to commercial pressure to support more memory while not breaking 32bit applications and the
+system’s compatibility, the processor manufacturers have added “address extension” features to their
+products.
+
+The result is that, in many cases, even 32-bit processors can address more than 4 GB of physical memory.
+The limitation on how much memory can be directly mapped with logical addresses remains, however.
+
+Only the lowest portion of memory (up to 1 or 2 GB, depending on the hardware and the kernel configuration)
+has logical addresses; * the rest (high memory) does not. Before accessing a specific high-memory page, the
+kernel must set up an explicit virtual mapping to make that page available in the kernel’s address space.
+Thus, many kernel data structures must be placed in low memory; high memory tends to be reserved for
+user-space process pages.
+
+The term “high memory” can be confusing to some, especially since it has other meanings in the PC world.
+So, to make things clear, we’ll define the terms here:
+1. Low memory. Memory for which logical addresses exist in kernel space.
+   On almost every system you will likely encounter, all memory is low memory.
+2. High memory. Memory for which logical addresses do not exist, because it is beyond the address range set
+   aside for kernel virtual addresses.
+
+---------------------------------------------------------------------------------------------------------
+1. User Virtual addresses. RegulaR ADDRESSes seen by user-space programs.
+   These are either 32 or 64 bits in length, depending on the underlying hardware architecture,
+   and each process has its own virtual address space.
+
+---------------------------------------------------------------------------------------------------------
+2. Physical addresses. Used between the processor and the system’s memory.
+   These are 32/64-bit quantities; even 32-bit systems can use larger physical addresses in some cases.
+
+Physical memory is divided into discrete units called pages.
+Much of the system’s internal handling of memory is done on a per-page basis.
+Page size varies from one architecture to the next, although most systems currently use 4096-byte pages.
+The constant PAGE_SIZE (defined in <asm/page.h>) gives the page size on any given architecture.
+
+---------------------------------------------------------------------------------------------------------
+3. Bus addresses. Used between peripheral buses and memory.
+   NOTE: Bus addresses are highly architecture dependent, of course.
+   Often, they are the same as the physical addresses used by the processor, but that is not necessarily
+   the case.
+
+   Some architectures can provide an I/O memory management unit (IOMMU) that remaps addresses between a bus
+   and main memory. An IOMMU can make life easier in a number of ways (making a buffer scattered in memory
+   appear contiguous to the device, for example), but programming the IOMMU is an extra step that must be
+   performed when setting up DMA operations.
+
+---------------------------------------------------------------------------------------------------------
+4. Kernel Logical Addresses. Normal address space of the kernel.
+   Memory returned from kmalloc has a kernel logical address.
+
+   These addresses map some portion (perhaps all) of main memory and are often treated as if they were
+   physical addresses. On most architectures, logical addresses and their associated physical addresses
+   differ only by a constant offset.
+
+   Logical addresses use the hardware’s native pointer size and, therefore, may be unable to address all
+   of physical memory on heavily equipped 32-bit systems.
+   Logical addresses are usually stored in variables of type `unsigned long` or `void*`
+
+---------------------------------------------------------------------------------------------------------
+5. Kernel virtual addresses.
+   Similar to logical addresses in that they are a mapping from a kernel-space address to a physical address.
+   Kernel virtual addresses do not necessarily have the linear, one-to-one mapping to physical
+   addresses that characterize the logical address space, however.
+
+   All logical addresses are kernel virtual addresses, but many kernel virtual addresses are not logical
+   addresses. I.e. memory allocated by vmalloc has a virtual address (but no direct physical mapping).
+   The kmap function also returns virtual addresses.
+
+   Virtual addresses are usually stored in pointer variables.
+---------------------------------------------------------------------------------------------------------
+Mapping a device means associating a range of user-space addresses to device memory.
+Whenever the program reads or writes in the assigned address range, it is actu ally accessing the device.
+For a performance-critical application like this, direct access makes a large difference.
+
+=========================================================================================================
+                                     DMA
+=========================================================================================================
+Programmed I/O data transferring between the hard disk and the rest of the system has a serious flaw:
+- it requires a fair bit of overhead, as well as the care and attention of the system's CPU.
+Clearly, a better solution is to take the CPU out of the picture entirely, and have the hard disk and
+system memory communicate directly.
+
+DMA. Direct Memory Access. Generic term used to refer to a transfer protocol where a peripheral device
+transfers information directly to or from memory, without the system processor being required to perform
+the transaction; the hardware mechanism that allows peripheral components to transfer their I/O data
+directly to and from main memory without the need to involve the system processor.
+
+Data transfer can be triggered in two ways:
+1. The software asks for data (via a function such as read)
+2. Hardware asynchronously pushes data to the system.
+
+In the first case, the steps involved can be summarized as follows:
+1. When a process calls read, the driver method allocates a DMA buffer and instructs the hardware to transfer
+   its data into that buffer. The process is put to sleep.
+2. The hardware writes data to the DMA buffer and raises an interrupt when it’s done.
+3. The interrupt handler gets the input data, acknowledges the interrupt, and awakens the process, which
+   is now able to read data.
+
+The second case comes about when DMA is used asynchronously. This happens, for example, with data
+acquisition devices that go on pushing data even if nobody is reading them. In this case, the driver should
+maintain a buffer so that a subsequent read call will return all the accumulated data to user space.
+The steps involved in this kind of transfer are slightly different:
+1. The hardware raises an interrupt to announce that new data has arrived.
+2. The interrupt handler allocates a buffer and tells the hardware where to transfer its data.
+3. The peripheral device writes the data to the buffer and raises another interrupt when it’s done.
+4. The handler dispatches the new data, wakes any relevant process, and takes care of housekeeping.
+
+---------------------------------------------------------------------------------------------------------
+Bus mastering. bus architecture feature that allows a control bus to communicate directly with other
+components without having to go through the CPU;  bus design that allows an expansion card (or plug-in
+board) to access the computer's memory independently of the CPU. This allows data transfer between the
+peripheral and the main system memory while the CPU is being used by other devices.
+
+It is designed to allow data transfer between a peripheral component and RAM while the CPU implements other
+responsibilities. 
+Bus mastering usually requires that the device have its own built-in processor so that it can operate
+independently of the CPU. A bus-mastering peripheral can control the bus and act as if it were its own
+separate computer system.
+
+https://kb.iu.edu/d/ahxa
+https://www.techopedia.com/definition/299/bus-mastering
+=========================================================================================================

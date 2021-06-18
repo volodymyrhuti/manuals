@@ -1,0 +1,19 @@
+                               Linux Device Model
+=========================================================================================================
+PNP. Technology that offers support for automatically adding and removing devices to the system.
+This reduces conflicts with the resources they use by automatically configuring them at system startup.
+In order to achieve these goals, the following features are required:
+- Automatic detection of adding and removing devices in the system (the device and its bus must notify the
+  appropriate driver that a configuration change occurred).
+- Resource management (addresses, irq lines, DMA channels, memory areas), including resource allocation to
+  devices and solving conflicts that may arise.
+- Devices must allow for software configuration (device resources - ports, interrupts, DMA resources - must
+  allow for driver assignment).
+- The drivers required for new devices must be loaded automatically by the operating system when needed.
+- When the device and its bus allow, the system should be able to add or remove the device from the system
+  while it is running, without having to reboot the system (hotplug).
+
+
+
+https://linux-kernel-labs.github.io/refs/heads/master/labs/device_model.html
+=========================================================================================================
